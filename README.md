@@ -1,12 +1,6 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-    #> Warning in lav_object_post_check(object): lavaan WARNING: some estimated ov
-    #> variances are negative
-
-    #> Warning in lav_object_post_check(object): lavaan WARNING: some estimated ov
-    #> variances are negative
-
 # semselector <img src="man/figures/logo.png" align="right" width="210" height="130" />
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semselector)](https://cran.r-project.org/package=semselector)
