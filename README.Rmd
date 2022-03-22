@@ -1,0 +1,91 @@
+---
+output:
+  github_document:
+    html_preview: true
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-"
+)
+```
+
+```{r, echo = FALSE, cache = TRUE}
+library("semselector")
+set.seed(313)
+model <- "A =~ A1+A2+A3+A4+A5;
+          C =~ C1+C2+C3+C4+C5"
+n <- 200
+object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
+boots <- bootstrapper(object, n_reps = 5000)
+options(warn=-1)
+
+```
+
+
+# semselector <img src="man/figures/logo.png" align="right" width="210" height="130" />
+
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semselector)](https://cran.r-project.org/package=semselector)
+[![R-CMD-check](https://github.com/JonasMoss/semselector/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semselector/actions)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+
+An R package for goodness of fit testing for structural equation models
+```{r setup, include=FALSE}
+#library("semselector")
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(out.width='750px', dpi=200)
+```
+
+## Installation
+Use the following command from inside `R`:
+```{r install, echo = TRUE, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("JonasMoss/semselector")
+```
+
+## Usage
+Call the `library` function, prepare data into matrix form, and run the 
+`semselector` function. 
+
+```{r prepare, echo = TRUE, eval = TRUE}
+library("semselector")
+model <- "A =~ A1+A2+A3+A4+A5;
+          C =~ C1+C2+C3+C4+C5"
+n <- 200
+object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
+pvalues(object)
+        
+```
+
+You can calculate the distribution of *p*-values using the following command:
+``` {r plot_echo, echo = TRUE, eval = FALSE}
+library("semselector")
+set.seed(313)
+boots <- bootstrapper(object, n_reps = 5000)
+
+library("ggplot2")
+theme_set(theme_minimal())
+ggplot(reshape2::melt(as.data.frame(t(boots))), aes(value)) +
+  geom_histogram() +
+  xlab("p-value") +
+  facet_wrap(~variable, nrow = 3)
+```
+
+``` {r plot_eval, echo = FALSE, eval = TRUE}
+library("ggplot2")
+theme_set(theme_minimal())
+ggplot(reshape2::melt(as.data.frame(t(boots))), aes(value)) +
+  geom_histogram() +
+  xlab("p-value") +
+  facet_wrap(~variable, nrow = 3)
+```
+
+## References
+* **fill in**.
+
+## How to Contribute or Get Help
+If you encounter a bug, have a feature request or need some help, open a [Github issue](https://github.com/JonasMoss/semselector/issues). Create a pull requests to contribute. This project follows a [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).

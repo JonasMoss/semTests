@@ -1,0 +1,24 @@
+Package: semselector
+Type: Package
+Title: Goodness of fit testing for structural equation models
+Description: Implements the bootstrap selector method to choose between measures
+   of goodness of fit in structural equation models. Built on top of lavaan.
+Version: 0.1.0
+Authors@R: c(
+    person("Jonas", "Moss", , "jonas.gjertsen@gmail.com", role = c("aut", "cre"), 
+      comment = c(ORCID = "0000-0002-6876-6964")))
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+  lavaan,
+  CompQuadForm,
+  psych,
+  BAMMtools,
+  goftest,
+  progressr
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
