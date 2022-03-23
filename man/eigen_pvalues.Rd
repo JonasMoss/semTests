@@ -2,14 +2,14 @@
 % Please edit documentation in R/pvalues.R
 \name{eigen_pvalues}
 \alias{eigen_pvalues}
-\title{Get eigenvalue based p-values.}
+\title{Get eigenvalue-based p-values.}
 \usage{
-eigen_pvalues(tml, eigenvalues)
+eigen_pvalues(tml, eig)
 }
 \arguments{
 \item{tml}{Chi-square fit value from a lavaan object.}
 
-\item{eigenvalues}{Eigenvalues of the UG matrix.}
+\item{eig}{Eigenvalues of the UG matrix.}
 }
 \value{
 List of eigenvalue-based p-values. \code{psb} is Satorra--Bentler,
@@ -17,6 +17,6 @@ List of eigenvalue-based p-values. \code{psb} is Satorra--Bentler,
 half of the (largest) p-values.
 }
 \description{
-Get eigenvalue based p-values.
+Get eigenvalue-based p-values.
 }
 \keyword{internal}

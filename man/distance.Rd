@@ -2,18 +2,44 @@
 % Please edit documentation in R/utility.R
 \name{distance}
 \alias{distance}
-\title{Calculate distances between an vector and the uniform distribution.}
+\title{Estimate the distance between a sample and the uniform distribution.}
 \usage{
-distance(x, dist = c("kolmogorov-smirnov", "anderson-darling"))
+distance(
+  x,
+  dist = c("kolmogorov-smirnov", "anderson-darling", "kullback-leibler",
+    "cramer-von mises")
+)
 }
 \arguments{
-\item{x}{Vector of observations in \verb{[0,1]}.}
+\item{x}{a numeric vector of observations in \verb{[0,1]}.}
 
-\item{dist}{Distance measure.}
+\item{dist}{a distance measure.}
 }
 \value{
-The calculated distance.
+Estimated distance between the distribution of \code{x} and the uniform
+distribution.
 }
 \description{
-Calculate distances between an vector and the uniform distribution.
+Estimate the distance between a sample and the uniform distribution using
+a statistical distance measure.
+}
+\details{
+The option \code{kullback-leibler} uses the Vasicek estimator of the differential
+entropy, implemented in \code{vsgoftest.} The option \verb{cramer-von mises}
+returns the Cramer-von Mises distance, the option \code{anderson-darling}
+returns the Anderson-Darling distance (implemented in \code{goftest}), and
+the \code{kolmogorov-smirnov} option return the Kolmogorov-Smirmov distance.
+}
+\references{
+Anderson, T.W. and Darling, D.A. (1954) A test of goodness of fit.
+Journal of the American Statistical Association 49, 765-69.
+
+Cramer, H. (1928). "On the Composition of Elementary Errors".
+Scandinavian Actuarial Journal. 1928 (1): 13-4.
+
+Vasicek, O., A test for normality based on sample entropy,
+Journal of the Royal Statistical Society, 38(1), 54-59 (1976).
+
+Daniel, Wayne W. (1990). "Kolmogorov-Smirnov one-sample test".
+Applied Nonparametric Statistics (2nd ed.). Boston: PWS-Kent. pp. 319-30.
 }

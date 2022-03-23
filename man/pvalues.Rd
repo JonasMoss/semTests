@@ -14,5 +14,15 @@ A named vector containing the p-values \code{pml}. \code{psb}, \code{pfull},
 \code{phalf}, \code{pcf}, \code{pss}.
 }
 \description{
-Calculate p-values for a lavaan object.
+Calculate p-values for a \code{lavaan} object using several methods.
+}
+\details{
+\itemize{
+\item \code{pml} the standard \emph{p}-value extracted from lavaan.
+\item \code{psb} Satorra-Bentler \emph{p}-value.
+\item \code{pfull} \emph{p}-value based on all eigenvalues of the gamma matrix.
+\item \code{phalf} \emph{p}-value based on largest half of eigenvalues of the gamma matrix.
+\item \code{pcf} Scaled F \emph{p}-value.
+\item \code{pss} Scaled and shifted \emph{p}-value.
+}
 }

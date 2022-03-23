@@ -9,7 +9,7 @@
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-An R package for goodness of fit testing for structural equation models
+An R package for goodness of fit testing of structural equation models
 
 ## Installation
 
@@ -22,7 +22,7 @@ remotes::install_github("JonasMoss/semselector")
 
 ## Usage
 
-Call the `library` function, prepare data into matrix form, and run the
+Call the `library` function, create a `lavaan` model, and run the
 `semselector` function.
 
 ``` r
@@ -32,34 +32,58 @@ model <- "A =~ A1+A2+A3+A4+A5;
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
 pvalues(object)
-#>        pml        psb      pfull      phalf        pcf        pss 
-#> 0.01038449 0.03688981 0.06563318 0.05535394 0.06540780 0.06287733
+#>        pml        psb      pfull      phalf        pcf        pss        pmv 
+#> 0.01038449 0.03688981 0.06563318 0.05535394 0.06540780 0.06287764 0.06446270
 ```
 
-You can calculate the distribution of *p*-values using the following
-command:
+You can find the best-performing *p*-values:
 
 ``` r
 library("semselector")
+library("progressr")
+handlers(global = TRUE) # For progress bar.
 set.seed(313)
-boots <- bootstrapper(object, n_reps = 5000)
-
-library("ggplot2")
-theme_set(theme_minimal())
-ggplot(reshape2::melt(as.data.frame(t(boots))), aes(value)) +
-  geom_histogram() +
-  xlab("p-value") +
-  facet_wrap(~variable, nrow = 3)
+selector <- semselect(object, n_reps = 5000)
+print(selector)
 ```
 
-    #> No id variables; using all as measure variables
-    #> `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+    #>                       distance  type     pvalue
+    #> kolmogorov-smirnov 0.052532872 phalf 0.05535394
+    #> anderson-darling   0.211631490 phalf 0.05535394
+    #> cramer-von mises   0.001552526 phalf 0.05535394
+    #> kullback-leibler   0.044537118 phalf 0.05535394
+
+***Note:*** The `semselector` function is time-consuming. The example
+takes approximately 6 minutes to run on a 2.5Ghz computer.
+
+and plot the distribution of the *p*-values:
+
+``` r
+library("ggplot2")
+theme_set(theme_minimal())
+plot(selector)
+```
 
 <img src="man/figures/README-plot_eval-1.png" width="750px" />
 
 ## References
 
--   **fill in**.
+Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics
+Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1),
+101–114. <https://doi.org/10.1080/10705511.2017.1373021>
+
+Grønneberg, S., & Foldnes, N. (2019). Testing Model Fit by Bootstrap
+Selection. Structural Equation Modeling, 26(2), 182–190.
+<https://doi.org/10.1080/10705511.2018.1503543>
+
+Marcoulides, K. M., Foldnes, N., & Grønneberg, S. (2020). Assessing
+Model Fit in Structural Equation Modeling Using Appropriate Test
+Statistics. Structural Equation Modeling, 27(3), 369–379.
+<https://doi.org/10.1080/10705511.2019.1647785>
+
+Rosseel, Y. (2012). lavaan: An R package for structural equation
+modeling. Journal of Statistical Software, 48(2), 1–36.
+<https://doi.org/10.18637/jss.v048.i02>
 
 ## How to Contribute or Get Help
 

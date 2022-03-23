@@ -10,6 +10,9 @@ bootstrapper(object, n_reps = 10)
 \item{object}{A \code{lavaan} object.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
+
+\item{custom}{List of named custom functions passed that take
+\code{lavaan} objects as input.}
 }
 \value{
 Bootstrapped p-values.
@@ -17,3 +20,4 @@ Bootstrapped p-values.
 \description{
 Bootstrap p-values for a \code{lavaan} object.
 }
+\keyword{internal}

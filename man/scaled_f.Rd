@@ -4,12 +4,12 @@
 \alias{scaled_f}
 \title{Calculate the scaled_f p-value.}
 \usage{
-scaled_f(tml, eigenvalues)
+scaled_f(tml, eig)
 }
 \arguments{
 \item{tml}{Chi-square fit value from a lavaan object.}
 
-\item{eigenvalues}{Eigenvalues of UG matrix.}
+\item{eig}{eig of UG matrix.}
 }
 \value{
 scaled f p-value.

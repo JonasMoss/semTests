@@ -16,7 +16,10 @@ Imports:
   psych,
   BAMMtools,
   goftest,
-  progressr
+  tidyr,
+  progressr,
+  ggplot2,
+  vsgoftest
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

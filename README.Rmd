@@ -17,23 +17,21 @@ knitr::opts_chunk$set(
 ```{r, include = FALSE, cache = TRUE}
 library("semselector")
 set.seed(313)
-model <- "A =~ A1+A2+A3+A4+A5;
+model <- "A =~ A1+A2+A3+A4+A5; 
           C =~ C1+C2+C3+C4+C5"
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
-boots <- bootstrapper(object, n_reps = 5000)
+selector <- semselector(object, n_reps = 5000)
 options(warn=-1)
 
 ```
-
-
 # semselector <img src="man/figures/logo.png" align="right" width="210" height="130" />
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semselector)](https://cran.r-project.org/package=semselector)
 [![R-CMD-check](https://github.com/JonasMoss/semselector/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semselector/actions)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-An R package for goodness of fit testing for structural equation models
+An R package for goodness of fit testing of structural equation models
 ```{r setup, include=FALSE}
 #library("semselector")
 knitr::opts_chunk$set(echo = TRUE)
@@ -48,7 +46,7 @@ remotes::install_github("JonasMoss/semselector")
 ```
 
 ## Usage
-Call the `library` function, prepare data into matrix form, and run the 
+Call the `library` function, create a `lavaan` model, and run the 
 `semselector` function. 
 
 ```{r prepare, echo = TRUE, eval = TRUE}
@@ -61,31 +59,39 @@ pvalues(object)
         
 ```
 
-You can calculate the distribution of *p*-values using the following command:
+You can find the best-performing *p*-values:
 ``` {r plot_echo, echo = TRUE, eval = FALSE}
 library("semselector")
+library("progressr")
+handlers(global = TRUE) # For progress bar.
 set.seed(313)
-boots <- bootstrapper(object, n_reps = 5000)
-
-library("ggplot2")
-theme_set(theme_minimal())
-ggplot(reshape2::melt(as.data.frame(t(boots))), aes(value)) +
-  geom_histogram() +
-  xlab("p-value") +
-  facet_wrap(~variable, nrow = 3)
+selector <- semselect(object, n_reps = 5000)
+print(selector)
+```
+``` {r print, echo = FALSE, eval = TRUE}
+print(selector)
 ```
 
-``` {r plot_eval, echo = FALSE, eval = TRUE}
+***Note:*** The `semselector` function is time-consuming. The example takes 
+approximately 6 minutes to run on a 2.5Ghz computer. 
+
+and plot the distribution of the *p*-values:
+
+``` {r plot_eval, echo = TRUE, eval = TRUE}
 library("ggplot2")
 theme_set(theme_minimal())
-ggplot(reshape2::melt(as.data.frame(t(boots))), aes(value)) +
-  geom_histogram() +
-  xlab("p-value") +
-  facet_wrap(~variable, nrow = 3)
+plot(selector)
 ```
 
 ## References
-* **fill in**.
+Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101–114. https://doi.org/10.1080/10705511.2017.1373021
+
+Grønneberg, S., & Foldnes, N. (2019). Testing Model Fit by Bootstrap Selection. Structural Equation Modeling, 26(2), 182–190. https://doi.org/10.1080/10705511.2018.1503543
+
+Marcoulides, K. M., Foldnes, N., & Grønneberg, S. (2020). Assessing Model Fit in Structural Equation Modeling Using Appropriate Test Statistics. Structural Equation Modeling, 27(3), 369–379. https://doi.org/10.1080/10705511.2019.1647785
+
+Rosseel, Y. (2012). lavaan: An R package for structural equation modeling.
+Journal of Statistical Software, 48(2), 1–36. https://doi.org/10.18637/jss.v048.i02
 
 ## How to Contribute or Get Help
 If you encounter a bug, have a feature request or need some help, open a [Github issue](https://github.com/JonasMoss/semselector/issues). Create a pull requests to contribute. This project follows a [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).

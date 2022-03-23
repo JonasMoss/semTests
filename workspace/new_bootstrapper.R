@@ -1,4 +1,5 @@
 library("progressr")
+handlers(global = TRUE)
 handlers(list(
   handler_progress(
     format   = ":spin :current/:total [:bar] :percent in :elapsed ETA: :eta",
@@ -6,6 +7,9 @@ handlers(list(
     complete = "+"
   )
 ))
+
+semselector(object, 5000)
+
 
 set.seed(313)
 boots <- bootstrapper(object, n_reps = 100)

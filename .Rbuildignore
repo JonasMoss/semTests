@@ -5,3 +5,4 @@ README.Rmd
 ^\.github$
 man-roxygen
 workspace
+README_cache
