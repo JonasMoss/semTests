@@ -70,10 +70,6 @@ lambda_log_1 <- mean(eigs) + mean(log(seq(df)))
 lambdas_log <- lambda_log_1 - log(seq(df))
 
 
-
-
-
-
 rowMeans(eigens)
 cov(t(eigens))[1, ] * n
 plot(1:34, rowMeans(eigens))
