@@ -1,4 +1,8 @@
 #' Bootstrap p-values for a `lavaan` object.
+#'
+#' TODO: Fix bootstrap for groups.
+#'
+#'
 #' @param object A `lavaan` object.
 #' @param n_reps Number of bootstrap repetitions.
 #' @param custom List of named custom functions passed that take
