@@ -18,7 +18,8 @@ semselector = function(
     "kolmogorov-smirnov",
     "anderson-darling",
     "cramer-von mises",
-    "kullback-leibler"),
+    "kullback-leibler",
+    "0.05-distance"),
   custom = NULL,
   type = NULL) {
 
@@ -31,8 +32,9 @@ semselector = function(
   colnames(minimals) = c("distance", "type", "pvalue")
 
   class(minimals) <- c("semselector", "data.frame")
-  attr(minimals, "boots") <- samples
+  attr(minimals, "boots") <- as.data.frame(t(samples))
   attr(minimals, "n_reps") <- n_reps
+  attr(minimals, "pvalues") <- pvals
   attr(minimals, "distances") <- boot_dists
   minimals
 
@@ -42,16 +44,19 @@ semselector = function(
 #' @param x `semselector` object.
 #' @param y Ignored.
 #' @param nrow Passed to `ggplot2::facet_wrap`.
-#' @param binwidth Passed to `ggplot2::geom_histogram`.
+#' @param binwidth Passed to `ggplot2::geom_histogram`. Defaults to `0.05`, to
+#'   make it easier to see the significance cutoff.
 #' @param ... Passed to `ggplot2::geom_histogram`.
 #' @export
-plot.semselector = function(x, y, nrow = 3, binwidth = 0.1, ...) {
+plot.semselector = function(x, y, nrow = 3, binwidth = 0.05, ...) {
   value = NULL # To avoid CRAN check note.
-  data = tidyr::pivot_longer(
-    as.data.frame(t(attr(x, "boots"))),
-    tidyr::everything())
+  data = dplyr::arrange(tidyr::pivot_longer(
+    attr(x, "boots"),
+    tidyr::everything()), name)
   ggplot2::ggplot(data, ggplot2::aes(value)) +
-    ggplot2::geom_histogram(binwidth = binwidth ,...) +
+    ggplot2::geom_histogram(ggplot2::aes(y = ..density..),
+                            binwidth = binwidth,
+                            boundary = 0, ...) +
     ggplot2::xlab("p-value") +
     ggplot2::facet_wrap(~name, nrow = nrow)
 }

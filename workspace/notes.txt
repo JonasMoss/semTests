@@ -1,2 +1,2 @@
-- [ ] ANOVA.
-- [ ] lavaan fit object.
+- [ ] Expand the main functions to take two objects, following the lrt test
+      conventions from lavaan.

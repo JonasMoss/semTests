@@ -14,7 +14,9 @@ chunk <- function(x, n) split(x, cut(seq_along(x), n, labels = FALSE))
 #'   entropy, implemented in `vsgoftest.` The option `cramer-von mises`
 #'   returns the Cramer-von Mises distance, the option `anderson-darling`
 #'   returns the Anderson-Darling distance (implemented in `goftest`), and
-#'   the `kolmogorov-smirnov` option return the Kolmogorov-Smirmov distance.
+#'   the `kolmogorov-smirnov` option return the Kolmogorov-Smirmov distance. The
+#'   option `0.05-distance` measures the distances between the observed
+#'   proportion below `0.05` and `0.05` itself.
 #'
 #' @param x a numeric vector of observations in `[0,1]`.
 #' @param dist a distance measure.
@@ -39,7 +41,8 @@ distance <- function(x, dist = c(
   "kolmogorov-smirnov",
   "anderson-darling",
   "kullback-leibler",
-  "cramer-von mises")) {
+  "cramer-von mises",
+  "0.05-distance")) {
   dist <- match.arg(dist)
   stopifnot(all(x >= 0) && all(x <= 1))
   unname(if (dist == "kolmogorov-smirnov") {
@@ -52,5 +55,7 @@ distance <- function(x, dist = c(
     (1/(12 * n) + sum(((2 * seq(n) - 1)/(2 * n) - sort(x))^2))/n
   } else if (dist == "kullback-leibler") {
     vsgoftest::vs.test(x, "dunif", simulate.p.value = FALSE)$statistic
+  } else if (dist == "0.05-distance") {
+    abs(mean(x <= 0.05) - 0.05)
   })
 }

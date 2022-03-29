@@ -83,6 +83,7 @@ pvalues <- function(object) {
     psb = eigenps$psb,
     pfull = eigenps$pfull,
     phalf = eigenps$phalf,
+    plog = eigenps$plog,
     pcf = scaled_f(tml, lambdas),
     pss = scaled_and_shifted(object),
     pmv = mean_var_adjusted (object)
@@ -123,13 +124,17 @@ scaled_f <- function(tml, eig) {
 #'    half of the (largest) p-values.
 #' @keywords internal
 eigen_pvalues <- function(tml, eig) {
+  m <- length(eig)
   pfull <- CompQuadForm::imhof(tml, eig)$Qq
-  psb <- CompQuadForm::imhof(tml, rep(mean(eig), length(eig)))$Qq
-  k <- ceiling(length(eig) / 2)
+  psb <- CompQuadForm::imhof(tml, rep(mean(eig), m))$Qq
+  alpha <- 0.0
+  lambdas_log <- mean(eig) + (1 - alpha)* (mean(log(seq(m))) - log(seq(m)))
+  plog <- CompQuadForm::imhof(tml, lambdas_log)$Qq
 
+  k <- ceiling(m / 2)
   eig[1:k] <- mean(eig[1:k])
-  eig[(k + 1):length(eig)] <- mean(eig[(k + 1):length(eig)])
+  eig[(k + 1):m] <- mean(eig[(k + 1):m])
 
   phalf <- CompQuadForm::imhof(tml, eig)$Qq
-  list(pfull = pfull, phalf = phalf, psb = psb)
+  list(pfull = pfull, phalf = phalf, psb = psb, plog = plog)
 }

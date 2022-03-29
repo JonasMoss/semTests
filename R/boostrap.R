@@ -24,7 +24,6 @@ bootstrapper <- function(object, n_reps = 10) {
           boot_sample <- transformed[sample(nrow(data), replace = T), ]
           object_ <- lavaan::sem(object, boot_sample)
           stopifnot(lavaan::inspect(object_, "converged"))
-          object_
           progress()
           pvalues(object_)
         },
