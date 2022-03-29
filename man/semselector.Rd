@@ -8,7 +8,7 @@ semselector(
   object,
   n_reps = 1000,
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
-    "kullback-leibler"),
+    "kullback-leibler", "0.05-distance"),
   custom = NULL,
   type = NULL
 )

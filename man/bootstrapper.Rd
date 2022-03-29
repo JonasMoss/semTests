@@ -18,6 +18,6 @@ bootstrapper(object, n_reps = 10)
 Bootstrapped p-values.
 }
 \description{
-Bootstrap p-values for a \code{lavaan} object.
+TODO: Fix bootstrap for groups.
 }
 \keyword{internal}

@@ -7,7 +7,7 @@
 distance(
   x,
   dist = c("kolmogorov-smirnov", "anderson-darling", "kullback-leibler",
-    "cramer-von mises")
+    "cramer-von mises", "0.05-distance")
 )
 }
 \arguments{
@@ -28,7 +28,9 @@ The option \code{kullback-leibler} uses the Vasicek estimator of the differentia
 entropy, implemented in \code{vsgoftest.} The option \verb{cramer-von mises}
 returns the Cramer-von Mises distance, the option \code{anderson-darling}
 returns the Anderson-Darling distance (implemented in \code{goftest}), and
-the \code{kolmogorov-smirnov} option return the Kolmogorov-Smirmov distance.
+the \code{kolmogorov-smirnov} option return the Kolmogorov-Smirmov distance. The
+option \code{0.05-distance} measures the distances between the observed
+proportion below \code{0.05} and \code{0.05} itself.
 }
 \references{
 Anderson, T.W. and Darling, D.A. (1954) A test of goodness of fit.

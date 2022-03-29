@@ -4,7 +4,7 @@
 \alias{plot.semselector}
 \title{Plotting generic for \code{semselector} objects.}
 \usage{
-\method{plot}{semselector}(x, y, nrow = 3, binwidth = 0.1, ...)
+\method{plot}{semselector}(x, y, nrow = 3, binwidth = 0.05, ...)
 }
 \arguments{
 \item{x}{\code{semselector} object.}
@@ -13,7 +13,8 @@
 
 \item{nrow}{Passed to \code{ggplot2::facet_wrap}.}
 
-\item{binwidth}{Passed to \code{ggplot2::geom_histogram}.}
+\item{binwidth}{Passed to \code{ggplot2::geom_histogram}. Defaults to \code{0.05}, to
+make it easier to see the significance cutoff.}
 
 \item{...}{Passed to \code{ggplot2::geom_histogram}.}
 }
