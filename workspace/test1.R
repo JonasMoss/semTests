@@ -1,8 +1,7 @@
-rm(list=ls())
-source("UGamma.R")
+library("lavaan")
+library("Matrix")
 
-
-#TESTS FOR NESTED MODEL COMPARISONS:
+# TESTS FOR NESTED MODEL COMPARISONS:
 
 
 ## TESTS:
@@ -28,7 +27,7 @@ m0 <- cfa(HS.model,
 
 #same same
 lavaan:::lav_test_diff_Satorra2000(m1, m0)$scaling.factor
-sum(diag(UGamma_nested(m0, m1)))/(fitmeasures(m0, "df")-fitmeasures(m1, "df"))
+sum(diag(ugamma_nested(m0, m1)))/(fitmeasures(m0, "df")-fitmeasures(m1, "df"))
 
 
 ## TEST 2 Larger cfas
@@ -39,30 +38,28 @@ model <- paste(model, paste("\n G=~", paste0("y", 1:p, collapse = "+"), "; F~~st
 sigma.hat <- lavInspect(cfa(model, data=NULL), "sigma.hat")
 
 # Simulate large sample
-set.seed(1)
+set.seed(2)
 big.sample <- data.frame(covsim::rIG(10^4, sigma.hat, skewness = rep(2, 2*p),
                                      excesskurtosis=rep(20, 2*p))[[1]])
 #add groups
 big.sample$school=sample(c("a", "b"), size=10^4, replace=T, prob=c(.1, .9))
 
-m0 <- cfa(model, data.frame(big.sample), estimator="MLM", group.equal="loadings")
+m0 <- cfa(model, data.frame(big.sample), group="school", estimator="MLM", group.equal="loadings")
 m1 <- cfa(model, data.frame(big.sample), group="school", estimator="MLM", start=m0)
 
 lavaan:::lav_test_diff_Satorra2000(m1, m0)$scaling.factor
-sum(diag(UGamma_nested(m0, m1)))/(fitmeasures(m0, "df")-fitmeasures(m1, "df"))
-
-
-
-
-
+sum(diag(ugamma_nested(m0, m1)))/(fitmeasures(m0, "df")-fitmeasures(m1, "df"))
 #NON-NESTED TESTS:
 
-
-UGamma <- UGamma_nonNested(m1)
-sum(diag(UGamma))/fitMeasures(m1, "df")
+ugamma <- ugamma_non_nested(m1)
+sum(diag(ugamma))/fitMeasures(m1, "df")
 fitMeasures(m1, "chisq.scaling.factor")
 
-UGamma <- UGamma_nonNested(m0)
-sum(diag(UGamma))
+
+## not exact match.
+ugamma <- ugamma_non_nested(m0)
+as.numeric(sum(diag(ugamma))/fitMeasures(m0, "df"))
 #/fitMeasures(m0, "df")
-lavaan:::lav_test_satorra_bentler(m0)
+as.numeric(fitmeasures(m0,"chisq.scaling.factor"))
+
+

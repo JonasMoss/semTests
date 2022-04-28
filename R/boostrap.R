@@ -24,7 +24,8 @@ bootstrapper <- function(object, n_reps = 10) {
   replicate(n_reps, {
     result <- NULL
     while (is.null(result)) {
-      result <- tryCatch({
+      result <- tryCatch(
+        {
           boot_sample <- transformed[sample(nrow(data), replace = T), ]
           object_ <- lavaan::sem(object, boot_sample)
           stopifnot(lavaan::inspect(object_, "converged"))

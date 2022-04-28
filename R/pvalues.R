@@ -4,10 +4,9 @@
 #' @param pvalue Passed to `lavaan::fitmeasures` as `fit.measures`.
 #'   Defaults to `pvalue.scaled`.
 #' @param ... Passed to `lavaan::sem`.
-refitted_pvalue <- function(
-  object,
-  pvalue = c("pvalue.scaled", "pvalue"),
-  ...) {
+refitted_pvalue <- function(object,
+                            pvalue = c("pvalue.scaled", "pvalue"),
+                            ...) {
   pvalue <- match.arg(pvalue)
   data <- object@Data@X[[1]]
   colnames(data) <- object@Data@ov.names[[1]]
@@ -25,33 +24,33 @@ refitted_pvalue <- function(
 NULL
 
 #' @rdname laavan_tests
-scaled_and_shifted = function(object) {
+scaled_and_shifted <- function(object) {
   df <- object@test$standard$df
   ug <- lavaan::inspect(object, "UG")
   trace_ug <- sum(diag(ug))
   trace_ug2 <- sum(diag(ug %*% ug))
   group <- object@test$standard$stat.group
-  lavsamplestats = object@SampleStats
-  fg <- unlist(lavsamplestats@nobs)/lavsamplestats@ntotal
-  a <- sqrt(df/trace_ug2)
-  shift_parameter <- fg * (df - a*trace_ug)
-  scaling_factor  <- 1/a
-  if(scaling_factor < 0) scaling_factor <- as.numeric(NA)
-  stat.group <- (group * a + shift_parameter)
-  stat <- sum(stat.group)
+  lavsamplestats <- object@SampleStats
+  fg <- unlist(lavsamplestats@nobs) / lavsamplestats@ntotal
+  a <- sqrt(df / trace_ug2)
+  shift_parameter <- fg * (df - a * trace_ug)
+  scaling_factor <- 1 / a
+  if (scaling_factor < 0) scaling_factor <- as.numeric(NA)
+  stat_group <- (group * a + shift_parameter)
+  stat <- sum(stat_group)
   unname(1 - stats::pchisq(stat, df))
 }
 
 #' @rdname laavan_tests
-mean_var_adjusted = function(object) {
+mean_var_adjusted <- function(object) {
   ug <- lavaan::inspect(object, "UG")
   trace_ug <- sum(diag(ug))
   trace_ug2 <- sum(diag(ug %*% ug))
-  df <- trace_ug ^ 2 / trace_ug2
-  scaling_factor <- trace_ug/df
+  df <- trace_ug^2 / trace_ug2
+  scaling_factor <- trace_ug / df
   group <- object@test$standard$stat.group
-  if(scaling_factor < 0) scaling_factor <- as.numeric(NA)
-  stat_group <- group/ scaling_factor
+  if (scaling_factor < 0) scaling_factor <- as.numeric(NA)
+  stat_group <- group / scaling_factor
   stat <- sum(stat_group)
   unname(1 - stats::pchisq(stat, df))
 }
@@ -71,7 +70,6 @@ mean_var_adjusted = function(object) {
 #' @export
 #' @return A named vector containing the p-values `pml`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-
 pvalues <- function(object) {
   tml <- lavaan::fitmeasures(object, "chisq")
   df <- lavaan::fitmeasures(object, "df")
@@ -86,7 +84,7 @@ pvalues <- function(object) {
     plog = eigenps$plog,
     pcf = scaled_f(tml, lambdas),
     pss = scaled_and_shifted(object),
-    pmv = mean_var_adjusted (object)
+    pmv = mean_var_adjusted(object)
   )
 }
 
@@ -128,7 +126,7 @@ eigen_pvalues <- function(tml, eig) {
   pfull <- CompQuadForm::imhof(tml, eig)$Qq
   psb <- CompQuadForm::imhof(tml, rep(mean(eig), m))$Qq
   alpha <- 0.0
-  lambdas_log <- mean(eig) + (1 - alpha)* (mean(log(seq(m))) - log(seq(m)))
+  lambdas_log <- mean(eig) + (1 - alpha) * (mean(log(seq(m))) - log(seq(m)))
   plog <- CompQuadForm::imhof(tml, lambdas_log)$Qq
 
   k <- ceiling(m / 2)
