@@ -4,10 +4,10 @@
 \alias{eigen_pvalues}
 \title{Get eigenvalue-based p-values.}
 \usage{
-eigen_pvalues(tml, eig)
+eigen_pvalues(chisq, eig)
 }
 \arguments{
-\item{tml}{Chi-square fit value from a lavaan object.}
+\item{chisq}{Chi-square fit value from a lavaan object.}
 
 \item{eig}{Eigenvalues of the UG matrix.}
 }
