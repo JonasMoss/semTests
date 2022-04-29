@@ -36,7 +36,6 @@ chunk <- function(x, n) split(x, cut(seq_along(x), n, labels = FALSE))
 #'
 #' Daniel, Wayne W. (1990). "Kolmogorov-Smirnov one-sample test".
 #'   Applied Nonparametric Statistics (2nd ed.). Boston: PWS-Kent. pp. 319-30.
-
 distance <- function(x, dist = c(
                        "kolmogorov-smirnov",
                        "anderson-darling",
@@ -66,23 +65,24 @@ distance <- function(x, dist = c(
 #' @param object A `lavaan` object.
 #' @return A fitted saturated model.
 get_saturated <- function(object) {
-  data <- lavInspect(object, "data", drop.list.single.group = T)
-  data_g <- lapply(seq_len(data), function(x) {
+  data <- lavaan::lavInspect(object, "data", drop.list.single.group = T)
+  data_g <- lapply(seq_along(data), function(x) {
     data_g <- data.frame(data[[x]])
     data_g$g <- x
     data_g
   })
   data <- do.call(rbind, data_g)
-  vars <- lavNames(object)
+  vars <- lavaan::lavNames(object)
   model <- NULL
   for (i in 1:(length(vars) - 1)) {
     ind <- vars[(i + 1):length(vars)]
     model <- paste(model, ";", paste(vars[i], "~~", paste(ind, collapse = "+")))
   }
-  lavaan::cfa(model, data, group = "g", estimator = "MLM")
+  estimator <- lavaan::lavInspect(object, "options")$estimator
+  lavaan::lavaan(model, data, group = "g", estimator = estimator)
 }
 
-#' Calculate non-nested ugamma.
+#' Calculate non-nested ugamma for multiple groups.
 #' @param object A `lavaan` object.
 #' @keywords internal
 #' @return Ugamma for non-nested object.
@@ -90,15 +90,15 @@ ugamma_non_nested <- function(object) {
 
   # We presently do not support restrictions
   lavmodel <- object@Model
+
+  if (object@SampleStats@ngroups == 1) {
+    return(lavaan::lavInspect(object, "Ugamma"))
+  }
+
+  # We presently do not support restriction fully.
   ceq_idx <- attr(lavmodel@con.jac, "ceq_idx")
   if (length(ceq_idx) > 0L) {
-    if (object@SampleStats@ngroups == 1) {
-      return(lavInspect(object, "ugamma"))
-    } else {
-      warning("Restrictions uses 'nested with saturated', not exact match.")
-      saturated <- get_saturated(object)
-      return(ugamma_nested(object, saturated))
-    }
+    return(ugamma_nested(object, get_saturated(object)))
   }
 
   test <- list()
@@ -127,25 +127,27 @@ ugamma_non_nested <- function(object) {
 
   gamma <- lavsamplestats@NACOV
   if (is.null(gamma[[1]])) {
-    gamma <- lavaan:::lavgamma(object)
+    gamma <- lavaan::lavInspect(object, "gamma")
   }
 
-  gamma_global <- as.matrix(bdiag(gamma))
+  gamma_global <- as.matrix(Matrix::bdiag(gamma))
   delta_global <- do.call(rbind, delta)
-  v_global <- as.matrix(bdiag(wls_v))
+  v_global <- as.matrix(Matrix::bdiag(wls_v))
   x <- v_global %*% delta_global
   u_global <- v_global - crossprod(t(x), solve(t(delta_global) %*% x, t(x)))
   u_global %*% gamma_global
 }
 
-#' Calculate non-nested ugamma.
+#' Calculate nested ugamma.
+#'
+#' This can also be used with restrictions.
+#'
 #' @param m0,m1 Two nested `lavaan` objects.
 #' @param a The `A` matrix. If if `NULL`, gets calculated by
 #'    `lavaan:::lav_test_diff_A` with `method = method`.
 #' @param method Method passed to `lavaan:::lav_test_diff_A`.
 #' @keywords internal
 #' @return Ugamma for non-nested object.
-#'
 ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
   # extract information from m1 and m2
   t1 <- m1@test[[1]]$stat
@@ -165,21 +167,21 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
     ))
   }
 
-  gamma <- lavTech(m1, "gamma") # the same for m1 and m0
+  gamma <- lavaan::lavTech(m1, "gamma") # the same for m1 and m0
   # check for NULL
   if (is.null(gamma)) {
-    stop("lavaan ERROR: Can not compute gamma matrix; perhaps missing \"ml\"?")
+    stop("lavaan error: Can not compute gamma matrix; perhaps missing \"ml\"?")
   }
 
 
-  wls_v <- lavTech(m1, "WLS.V")
-  pi <- lavaan:::computeDelta(m1@Model)
+  wls_v <- lavaan::lavTech(m1, "WLS.V")
+  pi <- lavaan::lavInspect(m1, "delta")
   p_inv <- lavaan:::lav_model_information_augment_invert(m1@Model,
-    information = lavTech(m1, "information"),
+    information = lavaan::lavTech(m1, "information"),
     inverted = TRUE
   )
 
-  # compute 'a' matrix
+  # compute A matrix
   # NOTE: order of parameters may change between H1 and H0, so be careful!
   if (is.null(a)) {
     a <- lavaan:::lav_test_diff_A(m1, m0, method = method, reference = "H1")
@@ -199,9 +201,9 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
   for (i in (seq_along(gamma))) {
     gamma_rescaled[[i]] <- fg[i] * gamma_rescaled[[i]]
   }
-  gamma_global <- as.matrix(bdiag(gamma_rescaled))
+  gamma_global <- as.matrix(Matrix::bdiag(gamma_rescaled))
   # Also the global V:
-  v_global <- as.matrix(bdiag(wls_v))
+  v_global <- as.matrix(Matrix::bdiag(wls_v))
   pi_global <- do.call(rbind, pi)
   # U global version, eq.~(22) in Satorra (2000).
   u_global <- v_global %*% pi_global %*% paapaap %*% t(pi_global) %*% v_global
