@@ -4,20 +4,23 @@
 \alias{bootstrapper}
 \title{Bootstrap p-values for a \code{lavaan} object.}
 \usage{
-bootstrapper(object, n_reps = 10)
+bootstrapper(..., functional, n_reps = 10)
 }
 \arguments{
-\item{object}{A \code{lavaan} object.}
+\item{...}{Several \code{lavaan} objects.}
+
+\item{functional}{The functional to calculate. Takes a list of \code{lavaan}
+objects as its argument.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
-
-\item{custom}{List of named custom functions passed that take
-\code{lavaan} objects as input.}
 }
 \value{
 Bootstrapped p-values.
 }
 \description{
 TODO: Fix bootstrap for groups.
+}
+\details{
+TODO: Bollen-Stine
 }
 \keyword{internal}

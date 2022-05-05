@@ -17,5 +17,5 @@ mean_var_adjusted(object)
 The scaled and shifted p-value or the mean-variance adjusted p-value.
 }
 \description{
-Code copied from \code{lavaan:::lav_test_satorra_bentler}.
+Calculate the scaled and shifted / the mean-variance adjusted p-value
 }

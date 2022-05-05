@@ -5,27 +5,21 @@
 \title{Select p-value for a lavaan model using the bootstrap selector.}
 \usage{
 semselector(
-  object,
+  m0,
+  m1,
   n_reps = 1000,
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
-    "kullback-leibler", "0.05-distance"),
-  custom = NULL,
-  type = NULL
+    "kullback-leibler", "0.05-distance")
 )
 }
 \arguments{
-\item{object}{A fitted \code{lavaan} object.}
+\item{m0, m1}{One or two \code{lavaan} objects. If two, the first object should be
+with restrictions and the second without.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
 
 \item{distances}{A vector of strings containing the distances to calculate.
-Passed to \code{distance}. \strong{Note:} \code{kullback-leibler} is very slow, hence not
-in the default arguments.}
-
-\item{custom}{List of named custom functions passed that take
-\code{lavaan} objects as input.}
-
-\item{type}{Normal parametric bootstrap / transformed samples bootstrap.}
+Passed to \code{distance}.}
 }
 \value{
 An object of class \code{semselector}.

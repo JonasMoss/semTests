@@ -1,17 +1,14 @@
 #' Select p-value for a lavaan model using the bootstrap selector.
 #'
-#' @param object A fitted `lavaan` object.
+#' @param m0,m1 One or two `lavaan` objects. If two, the first object should be
+#'    with restrictions and the second without.
 #' @param n_reps Number of bootstrap repetitions.
 #' @param distances A vector of strings containing the distances to calculate.
-#'    Passed to `distance`. **Note:** `kullback-leibler` is very slow, hence not
-#'    in the default arguments.
-#' @param custom List of named custom functions passed that take
-#'   `lavaan` objects as input.
-#' @param type Normal parametric bootstrap / transformed samples bootstrap.
+#'    Passed to `distance`.
 #' @export
 #' @return An object of class `semselector`.
 
-semselector <- function(object,
+semselector <- function(m0, m1,
                         n_reps = 1000,
                         distances = c(
                           "kolmogorov-smirnov",
@@ -19,11 +16,12 @@ semselector <- function(object,
                           "cramer-von mises",
                           "kullback-leibler",
                           "0.05-distance"
-                        ),
-                        custom = NULL,
-                        type = NULL) {
+                        )) {
   pvals <- pvalues(object)
-  samples <- bootstrapper(object, n_reps)
+
+  f = function(...) pvalues(..1, ..2)
+
+  samples <- do.call(bootstrapper, m0, m1, n_reps = n_reps, functional = f)
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
   minimals <- data.frame(
     apply(boot_dists, 2, min),

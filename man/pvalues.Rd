@@ -2,12 +2,13 @@
 % Please edit documentation in R/pvalues.R
 \name{pvalues}
 \alias{pvalues}
-\title{Calculate p-values for a lavaan object.}
+\title{Calculate p-values for one or two lavaan objects.}
 \usage{
-pvalues(object)
+pvalues(m0, m1)
 }
 \arguments{
-\item{object}{A \code{lavaan} object.}
+\item{m0, m1}{One or two \code{lavaan} objects. If two, the first object should be
+with restrictions and the second without.}
 }
 \value{
 A named vector containing the p-values \code{pml}. \code{psb}, \code{pfull},
