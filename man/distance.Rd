@@ -45,3 +45,4 @@ Journal of the Royal Statistical Society, 38(1), 54-59 (1976).
 Daniel, Wayne W. (1990). "Kolmogorov-Smirnov one-sample test".
 Applied Nonparametric Statistics (2nd ed.). Boston: PWS-Kent. pp. 319-30.
 }
+\keyword{internal}
