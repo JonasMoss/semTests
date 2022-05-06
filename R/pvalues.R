@@ -38,10 +38,10 @@ pvalues_one <- function(object) {
   }
 
   chisq <- lavaan::fitmeasures(object, "chisq")
-  df <- lavaan::fitmeasures(object, "df")
-  ug <- lavaan::inspect(object, "UG")
-  lambdas <- Re(eigen(ug)$values[1:df])
+  ug <- ugamma_non_nested(object)
+  lambdas <- Re(eigen(ug)$values)
   eigenps <- eigen_pvalues(chisq, lambdas)
+
   c(
     pstd = unname(lavaan::fitmeasures(object, "pvalue")),
     psb = eigenps$psb,
@@ -77,9 +77,6 @@ pvalues_two <- function(m0, m1) {
   )
 }
 
-
-
-
 #' Calculate the scaled and shifted / the mean-variance adjusted p-value
 #'
 #' @param object `lavaan` object.
@@ -91,12 +88,14 @@ NULL
 scaled_and_shifted <- function(object) {
   model <- lavaan::parTable(object)
   m <- lavaan::update(object, model = model, test = "scaled.shifted")
+  unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
 }
 
 #' @rdname laavan_tests
 mean_var_adjusted <- function(object) {
   model <- lavaan::parTable(object)
   m <- lavaan::update(object, model = model, test = "mean.var.adjusted")
+  unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
 }
 
 #' Calculate the scaled_f p-value.
@@ -163,7 +162,7 @@ ugamma_non_nested <- function(object) {
   }
 
   # We presently do not support restriction fully.
-  ceq_idx <- attr(lavmodel@con.jac, "ceq_idx")
+  ceq_idx <- attr(lavmodel@con.jac, "ceq.idx")
   if (length(ceq_idx) > 0L) {
     return(ugamma_nested(object, get_saturated(object)))
   }
@@ -194,7 +193,10 @@ ugamma_non_nested <- function(object) {
 
   gamma <- lavsamplestats@NACOV
   if (is.null(gamma[[1]])) {
-    gamma <- lavaan::lavInspect(object, "gamma")
+    gamma <- lapply(lavaan::lavInspect(object, "gamma"), function(x) {
+      class(x) = "matrix"
+      x
+    })
   }
 
   gamma_global <- as.matrix(Matrix::bdiag(gamma))
