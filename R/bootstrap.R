@@ -16,8 +16,7 @@ bootstrapper <- function(..., functional = identity, n_reps = 1000) {
   replicate(n_reps, {
     result <- NULL
     while (is.null(result)) {
-      result <- tryCatch(
-        {
+      result <- tryCatch({
           boots <- lapply(seq_along(models), function(i) {
             bootstrap(models[[i]], data[[i]])
           })
@@ -32,7 +31,6 @@ bootstrapper <- function(..., functional = identity, n_reps = 1000) {
     }
     result
   })
-
 }
 
 #' Bootstrap a single model with groups one time.
