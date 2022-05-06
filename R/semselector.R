@@ -19,9 +19,12 @@ semselector <- function(m0, m1,
                         )) {
   pvals <- pvalues(m0)
 
-  f = function(...) pvalues(..1, ..2)
+  f <- function(...) pvalues(..1, ..2)
 
-  samples <- do.call(bootstrapper, args = list(m0, m1, functional = f, n_reps = n_reps))
+  samples <- do.call(
+    bootstrapper,
+    args = list(m0, m1, functional = f, n_reps = n_reps)
+  )
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
   minimals <- data.frame(
     apply(boot_dists, 2, min),
