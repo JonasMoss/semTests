@@ -13,7 +13,7 @@ bootstrapper <- function(..., functional = identity, n_reps = 1000) {
   data <- bollen_stine_transform(...)
   errors <- 0 # Not in use for the moment.
   models <- list(...)
-  replicate(n_reps, {
+  future.apply::future_replicate(n_reps, {
     result <- NULL
     while (is.null(result)) {
       result <- tryCatch({
@@ -30,7 +30,7 @@ bootstrapper <- function(..., functional = identity, n_reps = 1000) {
       progress()
     }
     result
-  })
+  }, future.seed = TRUE)
 }
 
 #' Bootstrap a single model with groups one time.

@@ -65,6 +65,8 @@ You can find the best-performing *p*-values:
 ``` {r plot_echo, echo = TRUE, eval = FALSE}
 library("semselector")
 library("progressr")
+library("future") # for parallel processing
+plan(multisession)
 handlers(global = TRUE) # For progress bar.
 set.seed(313)
 selector <- semselect(object, n_reps = 5000)
