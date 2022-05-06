@@ -1,7 +1,7 @@
 test_that("bollens_stine_transform works", {
   models <- list(m0)
   s <- s_and_s_inv(models[[1]])
-  lhs = lapply(models, function(model) {
+  lhs <- lapply(models, function(model) {
     lapply(seq(model@SampleStats@ngroups), function(i) {
       data <- model@Data@X[[i]]
       s_sqrt <- s[[i]]$s_sqrt
@@ -11,12 +11,12 @@ test_that("bollens_stine_transform works", {
       frame
     })
   })
-  rhs = bollen_stine_transform(m0)
+  rhs <- bollen_stine_transform(m0)
   expect_equal(lhs, rhs)
 
   models <- list(m0, m1)
   s <- s_and_s_inv(models[[1]])
-  lhs = lapply(models, function(model) {
+  lhs <- lapply(models, function(model) {
     lapply(seq(model@SampleStats@ngroups), function(i) {
       data <- model@Data@X[[i]]
       s_sqrt <- s[[i]]$s_sqrt
@@ -26,7 +26,7 @@ test_that("bollens_stine_transform works", {
       frame
     })
   })
-  rhs = bollen_stine_transform(m0, m1)
+  rhs <- bollen_stine_transform(m0, m1)
   expect_equal(lhs, rhs)
 })
 
@@ -52,7 +52,7 @@ test_that("bootstrap works", {
 })
 
 test_that("s_and_s_inv works", {
-  lhs = lapply(seq(object@SampleStats@ngroups), function(i) {
+  lhs <- lapply(seq(object@SampleStats@ngroups), function(i) {
     s_hat <- lavaan::lav_model_implied(object@Model)$cov[[i]]
     s_inv_hat <- object@SampleStats@icov[[i]]
     list(
@@ -61,6 +61,6 @@ test_that("s_and_s_inv works", {
     )
   })
 
-  rhs = s_and_s_inv(object)
+  rhs <- s_and_s_inv(object)
   expect_equal(lhs, rhs)
 })
