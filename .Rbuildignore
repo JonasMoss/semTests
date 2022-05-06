@@ -6,3 +6,4 @@ README.Rmd
 man-roxygen
 workspace
 README_cache
+^codecov\.yml$

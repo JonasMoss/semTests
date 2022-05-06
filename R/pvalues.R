@@ -32,7 +32,7 @@ pvalues <- function(m0, m1) {
 NULL
 
 #' @rdname pvalue_internal
-pvalues_one = function(object) {
+pvalues_one <- function(object) {
   if (object@Options$estimator != "ML") {
     warning("Only the 'ML' estimator has currently tested.")
   }
@@ -55,12 +55,12 @@ pvalues_one = function(object) {
 }
 
 #' @rdname pvalue_internal
-pvalues_two = function(m0, m1) {
+pvalues_two <- function(m0, m1) {
   if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
     warning("Only the 'ML' estimator has currently tested.")
   }
 
-  aov <- anova(m1, m0)
+  aov <- lavaan::anova(m1, m0)
   chisq <- aov$`Chisq diff`[[2]]
   aov$`Pr(>Chisq)`[[2]]
 
@@ -75,7 +75,6 @@ pvalues_two = function(m0, m1) {
     phalf = eigenps$phalf,
     plog = eigenps$plog
   )
-
 }
 
 
@@ -90,14 +89,14 @@ NULL
 
 #' @rdname laavan_tests
 scaled_and_shifted <- function(object) {
-  model = lavaan::parTable(object)
-  m = update(object, model = model, test = "scaled.shifted")
+  model <- lavaan::parTable(object)
+  m <- lavaan::update(object, model = model, test = "scaled.shifted")
 }
 
 #' @rdname laavan_tests
 mean_var_adjusted <- function(object) {
-  model = lavaan::parTable(object)
-  m = update(object, model = model, test = "mean.var.adjusted")
+  model <- lavaan::parTable(object)
+  m <- lavaan::update(object, model = model, test = "mean.var.adjusted")
 }
 
 #' Calculate the scaled_f p-value.
@@ -245,8 +244,8 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
   p_inv <- lavaan:::lav_model_information_augment_invert(m1@Model,
-                                                         information = lavaan::lavTech(m1, "information"),
-                                                         inverted = TRUE
+    information = lavaan::lavTech(m1, "information"),
+    inverted = TRUE
   )
 
   # compute A matrix
@@ -278,4 +277,3 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
 
   return(u_global %*% gamma_global)
 }
-

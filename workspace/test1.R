@@ -25,6 +25,9 @@ m0 <- cfa(HS.model,
 
 
 
+bootstrapper(m0)
+
+
 #same same
 lavaan:::lav_test_diff_Satorra2000(m1, m0)$scaling.factor
 sum(diag(ugamma_nested(m0, m1)))/(fitmeasures(m0, "df")-fitmeasures(m1, "df"))

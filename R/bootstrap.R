@@ -1,24 +1,19 @@
-#' Bootstrap p-values for a `lavaan` object.
-#'
-#' TODO: Fix bootstrap for groups.
-#'
-#' TODO: Bollen-Stine
+#' Bootstrap `lavaan` objects using the
 #'
 #' @param ... Several `lavaan` objects.
 #' @param functional The functional to calculate. Takes a list of `lavaan`
-#'   objects as its argument.
+#'   objects as its argument. Defaults to `identity`, but that's not
+#'   a good idea to use, as it consumes a lot of memory.
 #' @param n_reps Number of bootstrap repetitions.
 #' @keywords internal
-#' @return Bootstrapped p-values.
-
-bootstrapper <- function(..., functional, n_reps = 10) {
+#' @return Bootstrapped objects as calculated by `functional`.
+bootstrapper <- function(..., functional = identity, n_reps = 1000) {
   progress <- progressr::progressor(n_reps)
 
   data <- bollen_stine_transform(...)
   errors <- 0 # Not in use for the moment.
-
   models <- list(...)
-  result <- replicate(n_reps, {
+  replicate(n_reps, {
     result <- NULL
     while (is.null(result)) {
       result <- tryCatch(
@@ -26,7 +21,6 @@ bootstrapper <- function(..., functional, n_reps = 10) {
           boots <- lapply(seq_along(models), function(i) {
             bootstrap(models[[i]], data[[i]])
           })
-          progress()
           functional(boots)
         },
         error = function(e) {
@@ -34,15 +28,16 @@ bootstrapper <- function(..., functional, n_reps = 10) {
           NULL
         }
       )
+      progress()
     }
     result
   })
 
-  # Calculate Bollen-Stine
 }
 
 #' Bootstrap a single model with groups one time.
 #'
+#' @keywords internal
 #' @param object A `lavaan` object.
 #' @param data The data used to sample from, e.g. Bollen-Stein transformed
 #'    data.
@@ -51,13 +46,13 @@ bootstrap <- function(object, data) {
   ns <- object@Data@nobs
   ids <- lapply(ns, function(n) sample(x = n, size = n, replace = TRUE))
 
-  boot_sample <- lav_data_update(
+  boot_sample <- lavaan::lav_data_update(
     lavdata = object@Data,
     newX = lapply(seq_along(ns), function(i) data[[i]][ids[[i]], ]),
-    lavoptions = lavInspect(object, "options")
+    lavoptions = lavaan::lavInspect(object, "options")
   )
 
-  boot_object <- lavaan(
+  boot_object <- lavaan::lavaan(
     slotOptions = object@Options,
     slotParTable = object@ParTable,
     slotData = boot_sample
@@ -72,6 +67,7 @@ bootstrap <- function(object, data) {
 #' Does the Bollen-Stine transform on a list of models using the implied
 #'    covariance structure of the first model.
 #'
+#' @keywords internal
 #' @param ... Models to transform.
 #' @return A list of Bollen-Stine transformed data.
 bollen_stine_transform <- function(...) {
@@ -87,7 +83,7 @@ bollen_stine_transform <- function(...) {
       s_sqrt <- s[[i]]$s_sqrt
       s_inv_sqrt <- s[[i]]$s_inv_sqrt
       frame <- data.frame(as.matrix(data) %*% s_inv_sqrt %*% s_sqrt)
-      colnames(frame) <- object@Data@ov.names[[i]]
+      colnames(frame) <- model@Data@ov.names[[i]]
       frame
     })
   })
@@ -96,6 +92,7 @@ bollen_stine_transform <- function(...) {
 #' Calculate s and s_inv for all subgroups of a `lavaan` object.
 #'
 #' @param object A `lavaan` object.
+#' @keywords internal
 #' @return A list containing s and s_inv for all subgroups of a `lavaan` object.
 s_and_s_inv <- function(object) {
   lapply(seq(object@SampleStats@ngroups), function(i) {

@@ -16,3 +16,4 @@ A list of Bollen-Stine transformed data.
 Does the Bollen-Stine transform on a list of models using the implied
 covariance structure of the first model.
 }
+\keyword{internal}

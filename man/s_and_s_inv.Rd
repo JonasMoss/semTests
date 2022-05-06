@@ -15,3 +15,4 @@ A list containing s and s_inv for all subgroups of a \code{lavaan} object.
 \description{
 Calculate s and s_inv for all subgroups of a \code{lavaan} object.
 }
+\keyword{internal}

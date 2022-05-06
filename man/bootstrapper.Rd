@@ -2,25 +2,23 @@
 % Please edit documentation in R/bootstrap.R
 \name{bootstrapper}
 \alias{bootstrapper}
-\title{Bootstrap p-values for a \code{lavaan} object.}
+\title{Bootstrap \code{lavaan} objects using the}
 \usage{
-bootstrapper(..., functional, n_reps = 10)
+bootstrapper(..., functional = identity, n_reps = 1000)
 }
 \arguments{
 \item{...}{Several \code{lavaan} objects.}
 
 \item{functional}{The functional to calculate. Takes a list of \code{lavaan}
-objects as its argument.}
+objects as its argument. Defaults to \code{identity}, but that's not
+a good idea to use, as it consumes a lot of memory.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
 }
 \value{
-Bootstrapped p-values.
+Bootstrapped objects as calculated by \code{functional}.
 }
 \description{
-TODO: Fix bootstrap for groups.
-}
-\details{
-TODO: Bollen-Stine
+Bootstrap \code{lavaan} objects using the
 }
 \keyword{internal}

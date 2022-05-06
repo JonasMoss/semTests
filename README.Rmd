@@ -30,6 +30,8 @@ options(warn=-1)
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semselector)](https://cran.r-project.org/package=semselector)
 [![R-CMD-check](https://github.com/JonasMoss/semselector/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semselector/actions)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Codecov test coverage](https://codecov.io/gh/JonasMoss/semselector/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semselector?branch=main)
+
 
 An R package for goodness of fit testing of structural equation models
 ```{r setup, include=FALSE}

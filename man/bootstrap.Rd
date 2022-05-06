@@ -18,3 +18,4 @@ A bootstrapped \code{lavaan} object.
 \description{
 Bootstrap a single model with groups one time.
 }
+\keyword{internal}
