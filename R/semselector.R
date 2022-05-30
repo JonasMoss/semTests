@@ -8,7 +8,7 @@
 #' @export
 #' @return An object of class `semselector`.
 
-semselector <- function(m0, m1,
+semselector <- function(m0, m1 = NULL,
                         n_reps = 1000,
                         distances = c(
                           "kolmogorov-smirnov",
@@ -21,10 +21,19 @@ semselector <- function(m0, m1,
 
   f <- function(...) pvalues(..1, ..2)
 
-  samples <- do.call(
-    bootstrapper,
-    args = list(m0, m1, functional = f, n_reps = n_reps)
-  )
+
+  if(!is.null(m1)) {
+    samples <- do.call(
+      bootstrapper,
+      args = list(m0, m1, functional = f, n_reps = n_reps)
+    )
+  } else {
+    samples <- do.call(
+      bootstrapper,
+      args = list(m0, functional = f, n_reps = n_reps)
+    )
+  }
+
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
   minimals <- data.frame(
     apply(boot_dists, 2, min),
