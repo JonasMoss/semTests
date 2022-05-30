@@ -73,7 +73,10 @@ pvalues_two <- function(m0, m1) {
     psb = eigenps$psb,
     pfull = eigenps$pfull,
     phalf = eigenps$phalf,
-    plog = eigenps$plog
+    plog = eigenps$plog,
+    psf = scaled_f(chisq, lambdas),
+    pss = scaled_and_shifted(object),
+    pmv = mean_var_adjusted(object)
   )
 }
 
@@ -86,6 +89,8 @@ NULL
 
 #' @rdname laavan_tests
 scaled_and_shifted <- function(object) {
+  # Putte inn lavLRTTest.
+
   model <- lavaan::parTable(object)
   m <- lavaan::update(object, model = model, test = "scaled.shifted")
   unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
