@@ -7,3 +7,11 @@ object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
 selector <- semselector(object, n_reps = 50)
 options(warn=-1)
 
+
+
+
+
+data <- bollen_stine_transform(object)
+boot_object <- bootstrap(object, data[[1]])
+
+pvalues_one(boot_object)

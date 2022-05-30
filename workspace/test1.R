@@ -1,20 +1,6 @@
-library("lavaan")
-library("Matrix")
-
-# TESTS FOR NESTED MODEL COMPARISONS:
-
-
-## TESTS:
-
-## TEST 1: HS
-
-
 HS.model <- ' visual  =~ x1 + x2 + x3
               textual =~ x4 + x5 + x6
               speed   =~ x7 + x8 + x9 '
-
-
-#HolzingerSwineford1939$school2 = c(rep("a", 100), rep("b", 301-100))
 
 m1 <- cfa(HS.model,
           data = HolzingerSwineford1939,
@@ -24,8 +10,30 @@ m0 <- cfa(HS.model,
           group = "school", estimator="MLM", group.equal="loadings")
 
 
+bootstrapper(m0, m1, n_reps = 50)
+semselector(m0, m1, n_reps = 50)
 
-bootstrapper(m0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #same same
