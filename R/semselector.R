@@ -17,22 +17,25 @@ semselector <- function(m0, m1 = NULL,
                           "kullback-leibler",
                           "0.05-distance"
                         )) {
-  pvals <- pvalues(m0)
-
-  f <- function(...) pvalues(..1, ..2)
 
 
-  if(!is.null(m1)) {
-    samples <- do.call(
-      bootstrapper,
-      args = list(m0, m1, functional = f, n_reps = n_reps)
-    )
+  pvals <- if(!is.null(m1)) pvalues_two(m0, m1) else pvalues_one(m0)
+
+
+  samples <- if(!is.null(m1)) {
+    bootstrapper(
+      m0,
+      m1,
+      functional = function(x) pvalues_two(x[[1]], x[[2]]),
+      n_reps = n_reps)
   } else {
-    samples <- do.call(
-      bootstrapper,
-      args = list(m0, functional = f, n_reps = n_reps)
-    )
+    bootstrapper(
+      m0,
+      functional = function(x) pvalues_one(x[[1]]),
+      n_reps = n_reps)
   }
+
+  samples = pmin(pmax(samples, 0), 1)
 
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
   minimals <- data.frame(

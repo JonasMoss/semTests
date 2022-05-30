@@ -62,7 +62,6 @@ pvalues_two <- function(m0, m1) {
 
   aov <- lavaan::anova(m1, m0)
   chisq <- aov$`Chisq diff`[[2]]
-  aov$`Pr(>Chisq)`[[2]]
 
   ug <- ugamma_nested(m0, m1)
   lambdas <- Re(eigen(ug)$values)
@@ -75,32 +74,49 @@ pvalues_two <- function(m0, m1) {
     phalf = eigenps$phalf,
     plog = eigenps$plog,
     psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(object),
-    pmv = mean_var_adjusted(object)
+    pss = scaled_and_shifted(m0, m1),
+    pmv = mean_var_adjusted(m0, m1)
   )
 }
 
 #' Calculate the scaled and shifted / the mean-variance adjusted p-value
 #'
-#' @param object `lavaan` object.
+#' @param m0,m1 `lavaan` objects.
 #' @name laavan_tests
 #' @return The scaled and shifted p-value or the mean-variance adjusted p-value.
 NULL
 
 #' @rdname laavan_tests
-scaled_and_shifted <- function(object) {
-  # Putte inn lavLRTTest.
+scaled_and_shifted <- function(m0, m1 = NULL) {
 
-  model <- lavaan::parTable(object)
-  m <- lavaan::update(object, model = model, test = "scaled.shifted")
-  unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
+  if (is.null(m1)) {
+    m <- suppressWarnings(lavaan::lavaan(
+      slotOptions = m0@Options,
+      slotParTable = m0@ParTable,
+      slotData = m0@Data,
+      test = "scaled.shifted"
+    ))
+    unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
+  } else {
+    lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = TRUE)$`Pr(>Chisq)`[2]
+  }
 }
 
 #' @rdname laavan_tests
-mean_var_adjusted <- function(object) {
-  model <- lavaan::parTable(object)
-  m <- lavaan::update(object, model = model, test = "mean.var.adjusted")
-  unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
+mean_var_adjusted <- function(m0, m1 = NULL) {
+
+  if (is.null(m1)) {
+    m <- suppressWarnings(lavaan::lavaan(
+      slotOptions = m0@Options,
+      slotParTable = m0@ParTable,
+      slotData = m0@Data,
+      test = "mean.var.adjusted"
+    ))
+    unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
+  } else {
+    lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = FALSE)$`Pr(>Chisq)`[2]
+  }
+
 }
 
 #' Calculate the scaled_f p-value.

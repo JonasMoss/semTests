@@ -6,12 +6,12 @@
 \alias{mean_var_adjusted}
 \title{Calculate the scaled and shifted / the mean-variance adjusted p-value}
 \usage{
-scaled_and_shifted(object)
+scaled_and_shifted(m0, m1 = NULL)
 
-mean_var_adjusted(object)
+mean_var_adjusted(m0, m1 = NULL)
 }
 \arguments{
-\item{object}{\code{lavaan} object.}
+\item{m0, m1}{\code{lavaan} objects.}
 }
 \value{
 The scaled and shifted p-value or the mean-variance adjusted p-value.

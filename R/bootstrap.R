@@ -23,6 +23,7 @@ bootstrapper <- function(..., functional = identity, n_reps = 1000) {
           functional(boots)
         },
         error = function(e) {
+          print(e)
           errors <<- errors + 1
           NULL
         }

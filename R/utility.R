@@ -54,7 +54,14 @@ distance <- function(x, dist = c(
     n <- length(x)
     (1 / (12 * n) + sum(((2 * seq(n) - 1) / (2 * n) - sort(x))^2)) / n
   } else if (dist == "kullback-leibler") {
-    vsgoftest::vs.test(x, "dunif", simulate.p.value = FALSE)$statistic
+    tryCatch({
+      vsgoftest::vs.test(x, "dunif", simulate.p.value = FALSE)$statistic
+    },
+    error = function(e) {
+      warning(e)
+      NA
+    })
+
   } else if (dist == "0.05-distance") {
     abs(mean(x <= 0.05) - 0.05)
   })
