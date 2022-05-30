@@ -6,7 +6,7 @@
 \usage{
 semselector(
   m0,
-  m1,
+  m1 = NULL,
   n_reps = 1000,
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
     "kullback-leibler", "0.05-distance")

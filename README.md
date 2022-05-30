@@ -34,8 +34,10 @@ model <- "A =~ A1+A2+A3+A4+A5;
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
 pvalues(object)
-#>        pml        psb      pfull      phalf        pcf        pss        pmv 
-#> 0.01038449 0.03688981 0.06563318 0.05535394 0.06540780 0.06287764 0.06446270
+#>       pstd        psb      pfull      phalf       plog        psf        pss 
+#> 0.01038449 0.01267351 0.06563318 0.04386403 0.07594468 0.06540780 0.06287733 
+#>        pmv 
+#> 0.06446240
 ```
 
 You can find the best-performing *p*-values:
@@ -43,6 +45,8 @@ You can find the best-performing *p*-values:
 ``` r
 library("semselector")
 library("progressr")
+library("future") # for parallel processing
+plan(multisession)
 handlers(global = TRUE) # For progress bar.
 set.seed(313)
 selector <- semselect(object, n_reps = 5000)
@@ -50,10 +54,11 @@ print(selector)
 ```
 
     #>                       distance  type     pvalue
-    #> kolmogorov-smirnov 0.052532872 phalf 0.05535394
-    #> anderson-darling   0.211631490 phalf 0.05535394
-    #> cramer-von mises   0.001552526 phalf 0.05535394
-    #> kullback-leibler   0.044537118 phalf 0.05535394
+    #> kolmogorov-smirnov 0.063754984 phalf 0.04386403
+    #> anderson-darling   0.230139957 phalf 0.04386403
+    #> cramer-von mises   0.001391622 phalf 0.04386403
+    #> kullback-leibler   0.050841437 phalf 0.04386403
+    #> 0.05-distance      0.000400000   pss 0.06287733
 
 ***Note:*** The `semselector` function is time-consuming. The example
 takes approximately 6 minutes to run on a 2.5Ghz computer.
