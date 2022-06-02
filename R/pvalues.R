@@ -34,8 +34,10 @@ NULL
 #' @rdname pvalue_internal
 pvalues_one <- function(object) {
   if (object@Options$estimator != "ML") {
-    warning("Only the 'ML' estimator has currently tested.")
+    stop("Only the 'ML' estimator has currently tested.")
   }
+
+
 
   chisq <- lavaan::fitmeasures(object, "chisq")
   ug <- ugamma_non_nested(object)
@@ -57,7 +59,7 @@ pvalues_one <- function(object) {
 #' @rdname pvalue_internal
 pvalues_two <- function(m0, m1) {
   if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
-    warning("Only the 'ML' estimator has currently tested.")
+    stop("Only the 'ML' estimator has currently tested.")
   }
 
   aov <- lavaan::anova(m1, m0)
@@ -185,6 +187,7 @@ ugamma_non_nested <- function(object) {
   # We presently do not support restriction fully.
   ceq_idx <- attr(lavmodel@con.jac, "ceq.idx")
   if (length(ceq_idx) > 0L) {
+    stop("Testing of models with groups and equality constraints not supported.")
     return(ugamma_nested(object, get_saturated(object)))
   }
 
