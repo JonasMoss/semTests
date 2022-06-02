@@ -21,7 +21,6 @@ semselector <- function(m0, m1 = NULL,
 
   pvals <- if(!is.null(m1)) pvalues_two(m0, m1) else pvalues_one(m0)
 
-
   samples <- if(!is.null(m1)) {
     bootstrapper(
       m0,
