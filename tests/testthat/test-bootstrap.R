@@ -1,59 +1,36 @@
-test_that("bootstrapper runs", {
+test_that("bootstrapper runs, two models.", {
   boots = bootstrapper(m0, m1, functional = identity, n_reps = 1)
   expect_equal(dim(boots), c(2, 1))
 })
 
-test_that("bollens_stine_transform works", {
-  models <- list(m0)
-  s <- s_and_s_inv(models[[1]])
-  lhs <- lapply(models, function(model) {
-    lapply(seq(model@SampleStats@ngroups), function(i) {
-      data <- model@Data@X[[i]]
-      s_sqrt <- s[[i]]$s_sqrt
-      s_inv_sqrt <- s[[i]]$s_inv_sqrt
-      frame <- data.frame(as.matrix(data) %*% s_inv_sqrt %*% s_sqrt)
-      colnames(frame) <- model@Data@ov.names[[i]]
-      frame
-    })
-  })
-  rhs <- bollen_stine_transform(m0)
-  expect_equal(lhs, rhs)
+test_that("bootstrapper runs, one models", {
+  boots = bootstrapper(m0, m1 = NULL, functional = identity, n_reps = 2)
+  expect_equal(length(boots), 2)
+})
 
-  models <- list(m0, m1)
-  s <- s_and_s_inv(models[[1]])
-  lhs <- lapply(models, function(model) {
-    lapply(seq(model@SampleStats@ngroups), function(i) {
-      data <- model@Data@X[[i]]
-      s_sqrt <- s[[i]]$s_sqrt
-      s_inv_sqrt <- s[[i]]$s_inv_sqrt
-      frame <- data.frame(as.matrix(data) %*% s_inv_sqrt %*% s_sqrt)
-      colnames(frame) <- model@Data@ov.names[[i]]
-      frame
-    })
+
+test_that("bollens_stine_transform works", {
+  s <- s_and_s_inv(object)
+
+  lhs <- lapply(seq(object@SampleStats@ngroups), function(i) {
+    data <- object@Data@X[[i]]
+    s_sqrt <- s[[i]]$s_sqrt
+    s_inv_sqrt <- s[[i]]$s_inv_sqrt
+    frame <- data.frame(as.matrix(data) %*% s_inv_sqrt %*% s_sqrt)
+    colnames(frame) <- object@Data@ov.names[[i]]
+    frame
   })
-  rhs <- bollen_stine_transform(m0, m1)
+
+  rhs <- bollen_stine_transform(object)
   expect_equal(lhs, rhs)
 })
 
-test_that("bootstrap works", {
-  set.seed(1)
-  data <- object@Data@X
-  ns <- object@Data@nobs
-  ids <- lapply(ns, function(n) sample(x = n, size = n, replace = TRUE))
-
-  boot_sample <- lavaan::lav_data_update(
-    lavdata = object@Data,
-    newX = lapply(seq_along(ns), function(i) data[[i]][ids[[i]], ]),
-    lavoptions = lavaan::lavInspect(object, "options")
-  )
-
-  boot_object <- lavaan::lavaan(
-    slotOptions = object@Options,
-    slotParTable = object@ParTable,
-    slotData = boot_sample
-  )
-  set.seed(1)
-  expect_equal(boot_object@ParTable, bootstrap(object, data)@ParTable)
+test_that("bootstrap runs", {
+  set.seed(313)
+  boot_1 = bootstrap(m0, m0, data)
+  set.seed(313)
+  boot_2 = bootstrap(m0, data = data)
+  expect_equal(boot_2, boot_2)
 })
 
 test_that("s_and_s_inv works", {
