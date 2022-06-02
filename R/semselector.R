@@ -30,7 +30,7 @@ semselector <- function(m0, m1 = NULL,
   } else {
     bootstrapper(
       m0,
-      functional = function(x) pvalues_one(x[[1]]),
+      functional = function(x) pvalues_one(x),
       n_reps = n_reps)
   }
 
