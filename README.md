@@ -35,7 +35,7 @@ n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
 pvalues(object)
 #>       pstd        psb      pfull      phalf       plog        psf        pss 
-#> 0.01038449 0.01267351 0.06563318 0.04386403 0.07594468 0.06540780 0.06287733 
+#> 0.01038449 0.03688981 0.06563318 0.05535394 0.07301038 0.06540780 0.06287733 
 #>        pmv 
 #> 0.06446240
 ```
@@ -55,10 +55,10 @@ print(selector)
 
     #>                       distance  type     pvalue
     #> kolmogorov-smirnov 0.066729676   pss 0.06287733
-    #> anderson-darling   0.009065017 phalf 0.04386403
-    #> cramer-von mises   0.001610393 phalf 0.04386403
-    #> kullback-leibler   0.065092653 phalf 0.04386403
-    #> 0.05-distance      0.006000000   pss 0.06287733
+    #> anderson-darling   0.008451422 phalf 0.05535394
+    #> cramer-von mises   0.001686626 phalf 0.05535394
+    #> kullback-leibler   0.061154813 phalf 0.05535394
+    #> 0.05-distance      0.006000000  plog 0.07301038
 
 ***Note:*** The `semselector` function is time-consuming. The example
 takes approximately 6 minutes to run on a 2.5Ghz computer.
