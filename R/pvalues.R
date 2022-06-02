@@ -37,11 +37,10 @@ pvalues_one <- function(object) {
     stop("Only the 'ML' estimator has currently tested.")
   }
 
-
-
   chisq <- lavaan::fitmeasures(object, "chisq")
   ug <- ugamma_non_nested(object)
-  lambdas <- Re(eigen(ug)$values)
+  df <- lavaan::fitmeasures(object, "df")
+  lambdas <- Re(eigen(ug)$values)[seq(df)]
   eigenps <- eigen_pvalues(chisq, lambdas)
 
   c(
@@ -66,7 +65,8 @@ pvalues_two <- function(m0, m1) {
   chisq <- aov$`Chisq diff`[[2]]
 
   ug <- ugamma_nested(m0, m1)
-  lambdas <- Re(eigen(ug)$values)
+  df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
+  lambdas <- Re(eigen(ug)$values)[seq(df)]
   eigenps <- eigen_pvalues(chisq, lambdas)
 
   c(
