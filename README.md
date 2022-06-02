@@ -49,16 +49,16 @@ library("future") # for parallel processing
 plan(multisession)
 handlers(global = TRUE) # For progress bar.
 set.seed(313)
-selector <- semselect(object, n_reps = 5000)
+selector <- semselector(object)
 print(selector)
 ```
 
     #>                       distance  type     pvalue
-    #> kolmogorov-smirnov 0.063754984 phalf 0.04386403
-    #> anderson-darling   0.230139957 phalf 0.04386403
-    #> cramer-von mises   0.001391622 phalf 0.04386403
-    #> kullback-leibler   0.050841437 phalf 0.04386403
-    #> 0.05-distance      0.000400000   pss 0.06287733
+    #> kolmogorov-smirnov 0.066729676   pss 0.06287733
+    #> anderson-darling   0.009065017 phalf 0.04386403
+    #> cramer-von mises   0.001610393 phalf 0.04386403
+    #> kullback-leibler   0.065092653 phalf 0.04386403
+    #> 0.05-distance      0.006000000   pss 0.06287733
 
 ***Note:*** The `semselector` function is time-consuming. The example
 takes approximately 6 minutes to run on a 2.5Ghz computer.
