@@ -1,3 +1,8 @@
+test_that("bootstrapper runs", {
+  boots = bootstrapper(m0, m1, functional = identity, n_reps = 1)
+  expect_equal(dim(boots), c(2, 1))
+})
+
 test_that("bollens_stine_transform works", {
   models <- list(m0)
   s <- s_and_s_inv(models[[1]])
