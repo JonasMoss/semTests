@@ -2,12 +2,13 @@
 % Please edit documentation in R/bootstrap.R
 \name{bootstrap}
 \alias{bootstrap}
-\title{Bootstrap a single model with groups one time.}
+\title{Bootstrap \code{lavaan} models.}
 \usage{
-bootstrap(object, data)
+bootstrap(m0, m1 = NULL, data)
 }
 \arguments{
-\item{object}{A \code{lavaan} object.}
+\item{m0, m1}{\code{lavaan} objects. Data is sample from \code{m0} and fitted with
+\code{m0} and \code{m1}. If \code{m1} is \code{NULL}, only \code{m0} is fitted.}
 
 \item{data}{The data used to sample from, e.g. Bollen-Stein transformed
 data.}
@@ -16,6 +17,6 @@ data.}
 A bootstrapped \code{lavaan} object.
 }
 \description{
-Bootstrap a single model with groups one time.
+Bootstrap \code{lavaan} models.
 }
 \keyword{internal}

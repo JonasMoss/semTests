@@ -4,16 +4,15 @@
 \alias{bollen_stine_transform}
 \title{Bollen-Stine transformer}
 \usage{
-bollen_stine_transform(...)
+bollen_stine_transform(object)
 }
 \arguments{
-\item{...}{Models to transform.}
+\item{object}{A \code{lavaan} object.}
 }
 \value{
 A list of Bollen-Stine transformed data.
 }
 \description{
-Does the Bollen-Stine transform on a list of models using the implied
-covariance structure of the first model.
+Bollen-Stine transformer
 }
 \keyword{internal}

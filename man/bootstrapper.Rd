@@ -4,16 +4,16 @@
 \alias{bootstrapper}
 \title{Bootstrap \code{lavaan} objects using the}
 \usage{
-bootstrapper(..., functional = identity, n_reps = 1000)
+bootstrapper(m0, m1 = NULL, functional = identity, n_reps = 1000)
 }
 \arguments{
-\item{...}{Several \code{lavaan} objects.}
-
 \item{functional}{The functional to calculate. Takes a list of \code{lavaan}
 objects as its argument. Defaults to \code{identity}, but that's not
 a good idea to use, as it consumes a lot of memory.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
+
+\item{...}{Several \code{lavaan} objects.}
 }
 \value{
 Bootstrapped objects as calculated by \code{functional}.
