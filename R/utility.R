@@ -45,8 +45,8 @@ distance <- function(x, dist = c(
                      )) {
   dist <- match.arg(dist)
   stopifnot(all(x >= 0) && all(x <= 1))
+  n <- length(x)
   unname(if (dist == "kolmogorov-smirnov") {
-    n <- length(x)
     max(abs(sort(x) - (0:(n - 1)) / n))
   } else if (dist == "anderson-darling") {
     goftest::ad.test(x, null = "punif")$statistic / n
