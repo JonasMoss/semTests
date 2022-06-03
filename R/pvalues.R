@@ -50,8 +50,7 @@ pvalues_one <- function(object) {
     phalf = eigenps$phalf,
     plog = eigenps$plog,
     psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(object),
-    pmv = mean_var_adjusted(object)
+    pss = scaled_and_shifted(object)
   )
 }
 
@@ -76,8 +75,7 @@ pvalues_two <- function(m0, m1) {
     phalf = eigenps$phalf,
     plog = eigenps$plog,
     psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(m0, m1),
-    pmv = mean_var_adjusted(m0, m1)
+    pss = scaled_and_shifted(m0, m1)
   )
 }
 
@@ -102,23 +100,6 @@ scaled_and_shifted <- function(m0, m1 = NULL) {
   } else {
     lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = TRUE)$`Pr(>Chisq)`[2]
   }
-}
-
-#' @rdname laavan_tests
-mean_var_adjusted <- function(m0, m1 = NULL) {
-
-  if (is.null(m1)) {
-    m <- suppressWarnings(lavaan::lavaan(
-      slotOptions = m0@Options,
-      slotParTable = m0@ParTable,
-      slotData = m0@Data,
-      test = "mean.var.adjusted"
-    ))
-    unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
-  } else {
-    lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = FALSE)$`Pr(>Chisq)`[2]
-  }
-
 }
 
 #' Calculate the scaled_f p-value.
