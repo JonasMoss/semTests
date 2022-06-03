@@ -62,7 +62,7 @@ pvalues_two <- function(m0, m1) {
   }
 
   aov <- lavaan::anova(m1, m0)
-  chisq <- aov$`Chisq diff`[[2]]
+  chisq <- lavaan::fitmeasures(m0, "chisq") - lavaan::fitmeasures(m1, "chisq")
 
   ug <- ugamma_nested(m0, m1)
   df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
