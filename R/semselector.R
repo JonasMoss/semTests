@@ -1,4 +1,4 @@
-#' Select p-value for a lavaan model using the bootstrap selector.
+#' Select *p*-value for a lavaan model using the bootstrap selector.
 #'
 #' @param m0,m1 One or two `lavaan` objects. If two, the first object should be
 #'    with restrictions and the second without.
@@ -6,7 +6,14 @@
 #' @param distances A vector of strings containing the distances to calculate.
 #'    Passed to `distance`.
 #' @export
-#' @return An object of class `semselector`.
+#' @return An object of class `semselector`, inheriting from `data.frame`,
+#'    containing the winning *p*-values for the selected distances.
+#'    The attributes are:
+#'    * `boots`: The data frame of bootstrap samples.
+#'    * `n_reps`: Argument passed to `n_reps`.
+#'    * `pvalues`: The calculated p-values.
+#'    * `distances` The estimated distances.
+#'    * `bollen-stine`: The Bollen-Stine *p*-value.
 
 semselector <- function(m0, m1 = NULL,
                         n_reps = 1000,
@@ -34,6 +41,7 @@ semselector <- function(m0, m1 = NULL,
       n_reps = n_reps)
   }
 
+
   samples = pmin(pmax(samples, 0), 1)
 
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
@@ -44,11 +52,14 @@ semselector <- function(m0, m1 = NULL,
   )
   colnames(minimals) <- c("distance", "type", "pvalue")
 
+
   class(minimals) <- c("semselector", "data.frame")
   attr(minimals, "boots") <- as.data.frame(t(samples))
   attr(minimals, "n_reps") <- n_reps
   attr(minimals, "pvalues") <- pvals
   attr(minimals, "distances") <- boot_dists
+  bs <- mean(attr(minimals, "boots")$pstd < pvals[1])
+  attr(minimals, "bollen-stine") <- bs
   minimals
 }
 

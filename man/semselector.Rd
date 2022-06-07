@@ -2,7 +2,7 @@
 % Please edit documentation in R/semselector.R
 \name{semselector}
 \alias{semselector}
-\title{Select p-value for a lavaan model using the bootstrap selector.}
+\title{Select \emph{p}-value for a lavaan model using the bootstrap selector.}
 \usage{
 semselector(
   m0,
@@ -22,8 +22,17 @@ with restrictions and the second without.}
 Passed to \code{distance}.}
 }
 \value{
-An object of class \code{semselector}.
+An object of class \code{semselector}, inheriting from \code{data.frame},
+containing the winning \emph{p}-values for the selected distances.
+The attributes are:
+\itemize{
+\item \code{boots}: The data frame of bootstrap samples.
+\item \code{n_reps}: Argument passed to \code{n_reps}.
+\item \code{pvalues}: The calculated p-values.
+\item \code{distances} The estimated distances.
+\item \code{bollen-stine}: The Bollen-Stine \emph{p}-value.
+}
 }
 \description{
-Select p-value for a lavaan model using the bootstrap selector.
+Select \emph{p}-value for a lavaan model using the bootstrap selector.
 }
