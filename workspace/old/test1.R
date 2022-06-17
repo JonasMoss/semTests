@@ -12,7 +12,7 @@ m0 <- cfa(HS.model,
           group = "school", estimator="MLM", group.equal="loadings")
 
 
-bootstrapper(m0, m1, n_reps = 50)
+#bootstrapper(m0, m1, n_reps = 50)
 semselector(m0, m1, n_reps = 50)
 
 

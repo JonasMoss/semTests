@@ -33,8 +33,8 @@ NULL
 
 #' @rdname pvalue_internal
 pvalues_one <- function(object) {
-  if (object@Options$estimator != "ML") {
-    stop("Only the 'ML' estimator has currently tested.")
+  if (object@Options$estimator != "ML" || object@Options$se == "standard") {
+    stop("Only the 'MLM' estimator has currently tested.")
   }
 
   chisq <- lavaan::fitmeasures(object, "chisq")
@@ -56,7 +56,8 @@ pvalues_one <- function(object) {
 
 #' @rdname pvalue_internal
 pvalues_two <- function(m0, m1) {
-  if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
+  if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML"
+      || m0@Options$se == "standard" || m1@Options$se == "standard") {
     stop("Only the 'ML' estimator has currently tested.")
   }
 
@@ -69,7 +70,7 @@ pvalues_two <- function(m0, m1) {
   eigenps <- eigen_pvalues(chisq, lambdas)
 
   c(
-    pstd = aov$`Pr(>Chisq)`[[2]],
+    pstd = unname(1 - pchisq(chisq, df)),
     psb = eigenps$psb,
     pfull = eigenps$pfull,
     phalf = eigenps$phalf,
