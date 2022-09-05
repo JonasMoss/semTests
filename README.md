@@ -32,12 +32,10 @@ library("semselector")
 model <- "A =~ A1+A2+A3+A4+A5;
           C =~ C1+C2+C3+C4+C5"
 n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
+object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
 #>       pstd        psb      pfull      phalf       plog        psf        pss 
-#> 0.01038449 0.03688981 0.06563318 0.05535394 0.07301038 0.06540780 0.06287733 
-#>        pmv 
-#> 0.06446240
+#> 0.01038449 0.03688981 0.06563318 0.05535394 0.07301038 0.06540780 0.06287733
 ```
 
 You can find the best-performing *p*-values:
@@ -61,12 +59,13 @@ print(selector)
     #> 0.05-distance      0.006000000  plog 0.07301038
 
 ***Note:*** The `semselector` function is time-consuming. The example
-takes approximately 6 minutes to run on a 2.5Ghz computer.
+takes approximately 2 minutes to run on a 2.5Ghz computer.
 
-and plot the distribution of the *p*-values:
+And plot the distribution of the *p*-values:
 
 ``` r
 library("ggplot2")
+#> Warning: package 'ggplot2' was built under R version 4.1.3
 theme_set(theme_minimal())
 plot(selector)
 ```

@@ -20,7 +20,7 @@ set.seed(313)
 model <- "A =~ A1+A2+A3+A4+A5; 
           C =~ C1+C2+C3+C4+C5"
 n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
+object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 selector <- semselector(object)
 options(warn=-1)
 
@@ -56,7 +56,7 @@ library("semselector")
 model <- "A =~ A1+A2+A3+A4+A5;
           C =~ C1+C2+C3+C4+C5"
 n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10])
+object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
         
 ```
@@ -72,12 +72,13 @@ set.seed(313)
 selector <- semselector(object)
 print(selector)
 ```
+
 ``` {r print, echo = FALSE, eval = TRUE}
 print(selector)
 ```
 
 ***Note:*** The `semselector` function is time-consuming. The example takes 
-approximately 6 minutes to run on a 2.5Ghz computer. 
+approximately 2 minutes to run on a 2.5Ghz computer. 
 
 And plot the distribution of the *p*-values:
 
