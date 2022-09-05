@@ -33,8 +33,6 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000) {
 
 #' Bootstrap `lavaan` models.
 #'
-#'
-#'
 #' @keywords internal
 #' @param m0,m1 `lavaan` objects. Data is sample from `m0` and fitted with
 #'  `m0` and `m1`. If `m1` is `NULL`, only `m0` is fitted.
