@@ -5,6 +5,8 @@
 #' @param n_reps Number of bootstrap repetitions.
 #' @param distances A vector of strings containing the distances to calculate.
 #'    Passed to `distance`.
+#' @param skip_warning If `TRUE`, ignores bootstrapped estimates with
+#'   warnings.
 #' @export
 #' @return An object of class `semselector`, inheriting from `data.frame`,
 #'    containing the winning *p*-values for the selected distances.
@@ -23,26 +25,29 @@ semselector <- function(m0, m1 = NULL,
                           "cramer-von mises",
                           "kullback-leibler",
                           "0.05-distance"
-                        )) {
+                        ),
+                        skip_warning = FALSE) {
+  pvals <- pvalues(m0, m1)
 
-
-  pvals <- if(!is.null(m1)) pvalues_two(m0, m1) else pvalues_one(m0)
-
-  samples <- if(!is.null(m1)) {
+  samples <- if (!is.null(m1)) {
     bootstrapper(
       m0,
       m1,
       functional = function(x) pvalues_two(x[[1]], x[[2]]),
-      n_reps = n_reps)
+      n_reps = n_reps,
+      skip_warning = skip_warning
+    )
   } else {
     bootstrapper(
       m0,
       functional = function(x) pvalues_one(x),
-      n_reps = n_reps)
+      n_reps = n_reps,
+      skip_warning = skip_warning
+    )
   }
 
 
-  samples = pmin(pmax(samples, 0), 1)
+  samples <- pmin(pmax(samples, 0), 1)
 
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
   minimals <- data.frame(

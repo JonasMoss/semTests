@@ -9,7 +9,8 @@ semselector(
   m1 = NULL,
   n_reps = 1000,
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
-    "kullback-leibler", "0.05-distance")
+    "kullback-leibler", "0.05-distance"),
+  skip_warning = FALSE
 )
 }
 \arguments{
@@ -20,6 +21,9 @@ with restrictions and the second without.}
 
 \item{distances}{A vector of strings containing the distances to calculate.
 Passed to \code{distance}.}
+
+\item{skip_warning}{If \code{TRUE}, ignores bootstrapped estimates with
+warnings.}
 }
 \value{
 An object of class \code{semselector}, inheriting from \code{data.frame},

@@ -5,30 +5,57 @@
 #'   objects as its argument. Defaults to `identity`, but that's not
 #'   a good idea to use, as it consumes a lot of memory.
 #' @param n_reps Number of bootstrap repetitions.
+#' @param skip_warning If `TRUE`, ignores bootstrapped estimates with
+#'   warnings.
 #' @keywords internal
 #' @return Bootstrapped objects as calculated by `functional`.
-bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000) {
+bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
+                         skip_warning = FALSE) {
   progress <- progressr::progressor(n_reps)
 
   data <- bollen_stine_transform(m0)
   errors <- 0 # Not in use for the moment.
-  future.apply::future_replicate(n_reps, {
-    result <- NULL
-    while (is.null(result)) {
-      result <- tryCatch({
-          boots <- bootstrap(m0, m1, data)
-          functional(boots)
-        },
-        error = function(e) {
-          print(e)
-          errors <<- errors + 1
-          NULL
+  future.apply::future_replicate(n_reps,
+    {
+      result <- NULL
+      if (skip_warning) {
+        while (is.null(result)) {
+          result <- tryCatch(
+            {
+              boots <- bootstrap(m0, m1, data)
+              functional(boots)
+            },
+            error = function(e) {
+              print(paste0("Skipping simulation due to: ", e))
+              NULL
+            }
+          )
+
+          progress()
         }
-      )
-      progress()
-    }
-    result
-  }, future.seed = TRUE)
+      } else {
+        while (is.null(result)) {
+          result <- tryCatch(
+            {
+              boots <- bootstrap(m0, m1, data)
+              functional(boots)
+            },
+            error = function(e) {
+              print(paste0("Skipping simulation due to: ", e))
+              NULL
+            },
+            warning = function(w) {
+              print(paste0("Skipping simulation due to: ", w))
+              NULL
+            }
+          )
+          progress()
+        }
+      }
+      result
+    },
+    future.seed = TRUE
+  )
 }
 
 #' Bootstrap `lavaan` models.
@@ -55,9 +82,9 @@ bootstrap <- function(m0, m1 = NULL, data) {
     slotData = boot_sample
   )
 
-  stopifnot(lavaan::inspect(boot_m0, "converged"))
+  # stopifnot(lavaan::inspect(boot_m0, "converged"))
 
-  if(!is.null(m1)) {
+  if (!is.null(m1)) {
     boot_m1 <- lavaan::lavaan(
       slotOptions = m1@Options,
       slotParTable = m1@ParTable,
@@ -68,7 +95,6 @@ bootstrap <- function(m0, m1 = NULL, data) {
   } else {
     boot_m0
   }
-
 }
 
 #' Bollen-Stine transformer
@@ -77,18 +103,16 @@ bootstrap <- function(m0, m1 = NULL, data) {
 #' @param object A `lavaan` object.
 #' @return A list of Bollen-Stine transformed data.
 bollen_stine_transform <- function(object) {
-
   s <- s_and_s_inv(object)
 
   lapply(seq(object@SampleStats@ngroups), function(i) {
-      data <- object@Data@X[[i]]
-      s_sqrt <- s[[i]]$s_sqrt
-      s_inv_sqrt <- s[[i]]$s_inv_sqrt
-      frame <- data.frame(as.matrix(data) %*% s_inv_sqrt %*% s_sqrt)
-      colnames(frame) <- object@Data@ov.names[[i]]
-      frame
+    data <- object@Data@X[[i]]
+    s_sqrt <- s[[i]]$s_sqrt
+    s_inv_sqrt <- s[[i]]$s_inv_sqrt
+    frame <- data.frame(as.matrix(data) %*% s_inv_sqrt %*% s_sqrt)
+    colnames(frame) <- object@Data@ov.names[[i]]
+    frame
   })
-
 }
 
 #' Calculate s and s_inv for all subgroups of a `lavaan` object.

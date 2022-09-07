@@ -17,6 +17,8 @@
 pvalues <- function(m0, m1) {
   if (missing(m1)) {
     pvalues_one(m0)
+  } else if (is.null(m1)) {
+    pvalues_one(m0)
   } else {
     pvalues_two(m0, m1)
   }
@@ -56,8 +58,8 @@ pvalues_one <- function(object) {
 
 #' @rdname pvalue_internal
 pvalues_two <- function(m0, m1) {
-  if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML"
-      || m0@Options$se == "standard" || m1@Options$se == "standard") {
+  if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML" ||
+    m0@Options$se == "standard" || m1@Options$se == "standard") {
     stop("Only the 'ML' estimator has currently tested.")
   }
 
@@ -70,7 +72,7 @@ pvalues_two <- function(m0, m1) {
   eigenps <- eigen_pvalues(chisq, lambdas)
 
   c(
-    pstd = unname(1 - pchisq(chisq, df)),
+    pstd = unname(1 - stats::pchisq(chisq, df)),
     psb = eigenps$psb,
     pfull = eigenps$pfull,
     phalf = eigenps$phalf,
@@ -89,7 +91,6 @@ NULL
 
 #' @rdname laavan_tests
 scaled_and_shifted <- function(m0, m1 = NULL) {
-
   if (is.null(m1)) {
     m <- suppressWarnings(lavaan::lavaan(
       slotOptions = m0@Options,
@@ -200,7 +201,7 @@ ugamma_non_nested <- function(object) {
   gamma <- lavsamplestats@NACOV
   if (is.null(gamma[[1]])) {
     gamma <- lapply(lavaan::lavInspect(object, "gamma"), function(x) {
-      class(x) = "matrix"
+      class(x) <- "matrix"
       x
     })
   }

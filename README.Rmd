@@ -67,7 +67,7 @@ library("semselector")
 library("progressr")
 library("future") # for parallel processing
 plan(multisession)
-handlers(global = TRUE) # For progress bar.
+#handlers(global = TRUE) # For progress bar.
 set.seed(313)
 selector <- semselector(object)
 print(selector)

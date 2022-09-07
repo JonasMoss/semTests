@@ -1,6 +1,6 @@
 test_that("distance function works", {
-  x = seq(0.001, 0.999, length.out = 100)
-  dist = c(
+  x <- seq(0.001, 0.999, length.out = 100)
+  dist <- c(
     "kolmogorov-smirnov",
     "anderson-darling",
     "kullback-leibler",

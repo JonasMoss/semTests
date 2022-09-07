@@ -1,10 +1,10 @@
 test_that("bootstrapper runs, two models.", {
-  boots = bootstrapper(m0, m1, functional = identity, n_reps = 1)
+  boots <- bootstrapper(m0, m1, functional = identity, n_reps = 1)
   expect_equal(dim(boots), c(2, 1))
 })
 
 test_that("bootstrapper runs, one models", {
-  boots = bootstrapper(m0, m1 = NULL, functional = identity, n_reps = 2)
+  boots <- bootstrapper(m0, m1 = NULL, functional = identity, n_reps = 2)
   expect_equal(length(boots), 2)
 })
 
@@ -27,9 +27,9 @@ test_that("bollens_stine_transform works", {
 
 test_that("bootstrap runs", {
   set.seed(313)
-  boot_1 = bootstrap(m0, m0, data)
+  boot_1 <- bootstrap(m0, m0, data)
   set.seed(313)
-  boot_2 = bootstrap(m0, data = data)
+  boot_2 <- bootstrap(m0, data = data)
   expect_equal(boot_2, boot_2)
 })
 

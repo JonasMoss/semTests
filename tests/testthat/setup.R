@@ -20,11 +20,11 @@ data <- bollen_stine_transform(m0)
 
 ## Estimation that isn't allowed.
 m1_ <- lavaan::cfa(hs_model,
-                  data = lavaan::HolzingerSwineford1939,
-                  group = "school", estimator = "GLS"
+  data = lavaan::HolzingerSwineford1939,
+  group = "school", estimator = "GLS"
 )
 
 m0_ <- lavaan::cfa(hs_model,
-                  data = lavaan::HolzingerSwineford1939,
-                  group = "school", estimator = "GLS", group.equal = "loadings"
+  data = lavaan::HolzingerSwineford1939,
+  group = "school", estimator = "GLS", group.equal = "loadings"
 )
