@@ -61,10 +61,9 @@ semselector <- function(m0, m1 = NULL,
   class(minimals) <- c("semselector", "data.frame")
   attr(minimals, "boots") <- as.data.frame(t(samples))
   attr(minimals, "n_reps") <- n_reps
-  attr(minimals, "pvalues") <- pvals
   attr(minimals, "distances") <- boot_dists
   bs <- mean(attr(minimals, "boots")$pstd < pvals[1])
-  attr(minimals, "bollen-stine") <- bs
+  attr(minimals, "pvalues") <- c(pvals, pbs = bs)
   minimals
 }
 

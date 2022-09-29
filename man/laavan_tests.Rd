@@ -5,10 +5,10 @@
 \alias{scaled_and_shifted}
 \title{Calculate the scaled and shifted / the mean-variance adjusted p-value}
 \usage{
-scaled_and_shifted(m0, m1 = NULL)
+scaled_and_shifted(chisq, lambdas)
 }
 \arguments{
-\item{m0, m1}{\code{lavaan} objects.}
+\item{m0}{\code{lavaan} objects.}
 }
 \value{
 The scaled and shifted p-value or the mean-variance adjusted p-value.

@@ -24,7 +24,6 @@ pvalues <- function(m0, m1) {
   }
 }
 
-
 #' P value function for one and two arguments.
 #'
 #' @keywords internal
@@ -35,10 +34,6 @@ NULL
 
 #' @rdname pvalue_internal
 pvalues_one <- function(object) {
-  if (object@Options$estimator != "ML" || object@Options$se == "standard") {
-    stop("Only the 'MLM' estimator has currently tested.")
-  }
-
   chisq <- lavaan::fitmeasures(object, "chisq")
   ug <- ugamma_non_nested(object)
   df <- lavaan::fitmeasures(object, "df")
@@ -48,11 +43,10 @@ pvalues_one <- function(object) {
   c(
     pstd = unname(lavaan::fitmeasures(object, "pvalue")),
     psb = eigenps$psb,
-    pfull = eigenps$pfull,
     phalf = eigenps$phalf,
-    plog = eigenps$plog,
+    pfull = eigenps$pfull,
     psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(object)
+    pss = scaled_and_shifted(chisq, lambdas)
   )
 }
 
@@ -62,10 +56,7 @@ pvalues_two <- function(m0, m1) {
     m0@Options$se == "standard" || m1@Options$se == "standard") {
     stop("Only the 'ML' estimator has currently tested.")
   }
-
-  aov <- lavaan::anova(m1, m0)
   chisq <- lavaan::fitmeasures(m0, "chisq") - lavaan::fitmeasures(m1, "chisq")
-
   ug <- ugamma_nested(m0, m1)
   df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
   lambdas <- Re(eigen(ug)$values)[seq(df)]
@@ -74,35 +65,30 @@ pvalues_two <- function(m0, m1) {
   c(
     pstd = unname(1 - stats::pchisq(chisq, df)),
     psb = eigenps$psb,
-    pfull = eigenps$pfull,
     phalf = eigenps$phalf,
-    plog = eigenps$plog,
+    pfull = eigenps$pfull,
     psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(m0, m1)
+    pss = lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = TRUE)$`Pr(>Chisq)`[2]
   )
 }
 
 #' Calculate the scaled and shifted / the mean-variance adjusted p-value
 #'
-#' @param m0,m1 `lavaan` objects.
+#' @param chisq Chi-square fit value from a lavaan object.
+#' @param lambdas Eigenvalues of UG matrix.
 #' @name laavan_tests
 #' @return The scaled and shifted p-value or the mean-variance adjusted p-value.
 NULL
 
 #' @rdname laavan_tests
-scaled_and_shifted <- function(m0, m1 = NULL) {
-  if (is.null(m1)) {
-    m <- suppressWarnings(lavaan::lavaan(
-      slotOptions = m0@Options,
-      slotParTable = m0@ParTable,
-      slotData = m0@Data,
-      test = "scaled.shifted"
-    ))
-    unname(lavaan::fitmeasures(m, fit.measures = "pvalue.scaled"))
-  } else {
-    lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = TRUE)$`Pr(>Chisq)`[2]
-  }
-}
+scaled_and_shifted <- function(chisq, lambdas) {
+  df <- length(lambdas)
+  tr_ug <- sum(lambdas)
+  tr_ug2 <- sum(lambdas ^ 2)
+  a <- sqrt(df / tr_ug2)
+  b <- df - sqrt(df * tr_ug ^ 2 / tr_ug2)
+  t3 <- unname(chisq * a + b)
+  1 - pchisq(t3, df = df)}
 
 #' Calculate the scaled_f p-value.
 #' @param chisq Chi-square fit value from a lavaan object.
@@ -140,17 +126,12 @@ scaled_f <- function(chisq, eig) {
 eigen_pvalues <- function(chisq, eig) {
   m <- length(eig)
   pfull <- CompQuadForm::imhof(chisq, eig)$Qq
-  psb <- CompQuadForm::imhof(chisq, rep(mean(eig), m))$Qq
-  alpha <- 0.0
-  lambdas_log <- mean(eig) + (1 - alpha) * (mean(log(seq(m))) - log(seq(m)))
-  plog <- CompQuadForm::imhof(chisq, lambdas_log)$Qq
-
+  psb <- as.numeric(1 - pchisq(chisq * m / sum(eig), df = m))
   k <- ceiling(m / 2)
   eig[1:k] <- mean(eig[1:k])
   eig[(k + 1):m] <- mean(eig[(k + 1):m])
-
   phalf <- CompQuadForm::imhof(chisq, eig)$Qq
-  list(pfull = pfull, phalf = phalf, psb = psb, plog = plog)
+  list(pfull = pfull, phalf = phalf, psb = psb)
 }
 
 

@@ -26,7 +26,7 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
               functional(boots)
             },
             error = function(e) {
-              print(paste0("Skipping simulation due to: ", e))
+              message(paste0("Skipping simulation due to: ", e))
               NULL
             }
           )
@@ -41,11 +41,11 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
               functional(boots)
             },
             error = function(e) {
-              print(paste0("Skipping simulation due to: ", e))
+              message(paste0("Skipping simulation due to: ", e))
               NULL
             },
             warning = function(w) {
-              print(paste0("Skipping simulation due to: ", w))
+              message(paste0("Skipping simulation due to: ", w))
               NULL
             }
           )
@@ -54,7 +54,8 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
       }
       result
     },
-    future.seed = TRUE
+    future.seed = TRUE,
+    future.conditions = "message"
   )
 }
 
@@ -63,7 +64,7 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
 #' @keywords internal
 #' @param m0,m1 `lavaan` objects. Data is sample from `m0` and fitted with
 #'  `m0` and `m1`. If `m1` is `NULL`, only `m0` is fitted.
-#' @param data The data used to sample from, e.g. Bollen-Stein transformed
+#' @param data The data used to sample from, e.g. Bollen-Stine transformed
 #'    data.
 #' @return A bootstrapped `lavaan` object.
 bootstrap <- function(m0, m1 = NULL, data) {

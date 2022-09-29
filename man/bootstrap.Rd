@@ -10,7 +10,7 @@ bootstrap(m0, m1 = NULL, data)
 \item{m0, m1}{\code{lavaan} objects. Data is sample from \code{m0} and fitted with
 \code{m0} and \code{m1}. If \code{m1} is \code{NULL}, only \code{m0} is fitted.}
 
-\item{data}{The data used to sample from, e.g. Bollen-Stein transformed
+\item{data}{The data used to sample from, e.g. Bollen-Stine transformed
 data.}
 }
 \value{

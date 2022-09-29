@@ -13,9 +13,7 @@ LazyData: true
 Imports:
   lavaan,
   CompQuadForm,
-  psych,
   MASS,
-  BAMMtools,
   goftest,
   tidyr,
   progressr,
