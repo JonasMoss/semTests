@@ -88,7 +88,8 @@ scaled_and_shifted <- function(chisq, lambdas) {
   a <- sqrt(df / tr_ug2)
   b <- df - sqrt(df * tr_ug ^ 2 / tr_ug2)
   t3 <- unname(chisq * a + b)
-  1 - pchisq(t3, df = df)}
+  1 - pchisq(t3, df = df)
+}
 
 #' Calculate the scaled_f p-value.
 #' @param chisq Chi-square fit value from a lavaan object.
@@ -264,6 +265,5 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
   pi_global <- do.call(rbind, pi)
   # U global version, eq.~(22) in Satorra (2000).
   u_global <- v_global %*% pi_global %*% paapaap %*% t(pi_global) %*% v_global
-
   return(u_global %*% gamma_global)
 }
