@@ -68,7 +68,7 @@ pvalues_two <- function(m0, m1) {
     phalf = eigenps$phalf,
     pfull = eigenps$pfull,
     psf = scaled_f(chisq, lambdas),
-    pss = lavaan::lavTestLRT(m0, m1, method = "satorra.2000", scaled.shifted = TRUE)$`Pr(>Chisq)`[2]
+    pss = scaled_and_shifted(chisq, lambdas)
   )
 }
 
