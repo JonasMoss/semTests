@@ -84,9 +84,9 @@ NULL
 scaled_and_shifted <- function(chisq, lambdas) {
   df <- length(lambdas)
   tr_ug <- sum(lambdas)
-  tr_ug2 <- sum(lambdas ^ 2)
+  tr_ug2 <- sum(lambdas^2)
   a <- sqrt(df / tr_ug2)
-  b <- df - sqrt(df * tr_ug ^ 2 / tr_ug2)
+  b <- df - sqrt(df * tr_ug^2 / tr_ug2)
   t3 <- unname(chisq * a + b)
   1 - pchisq(t3, df = df)
 }
@@ -127,7 +127,7 @@ scaled_f <- function(chisq, eig) {
 eigen_pvalues <- function(chisq, eig) {
   m <- length(eig)
   pfull <- CompQuadForm::imhof(chisq, eig)$Qq
-  psb <- as.numeric(1 - pchisq(chisq * m / sum(eig), df = m))
+  psb <- as.numeric(1 - stats::pchisq(chisq * m / sum(eig), df = m))
   k <- ceiling(m / 2)
   eig[1:k] <- mean(eig[1:k])
   eig[(k + 1):m] <- mean(eig[(k + 1):m])
@@ -141,7 +141,6 @@ eigen_pvalues <- function(chisq, eig) {
 #' @keywords internal
 #' @return Ugamma for non-nested object.
 ugamma_non_nested <- function(object) {
-
   # We presently do not support restrictions
   lavmodel <- object@Model
 
