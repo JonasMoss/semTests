@@ -34,8 +34,8 @@ model <- "A =~ A1+A2+A3+A4+A5;
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
-#>       pstd        psb      pfull      phalf       plog        psf        pss 
-#> 0.01038449 0.03688981 0.06563318 0.05535394 0.07301038 0.06540780 0.06287733
+#>       pstd        psb      phalf      pfull        psf        pss 
+#> 0.01038449 0.03688981 0.05535394 0.06563318 0.06540780 0.06287764
 ```
 
 You can find the best-performing *p*-values:
@@ -45,18 +45,18 @@ library("semselector")
 library("progressr")
 library("future") # for parallel processing
 plan(multisession)
-handlers(global = TRUE) # For progress bar.
+# handlers(global = TRUE) # For progress bar.
 set.seed(313)
 selector <- semselector(object)
 print(selector)
 ```
 
     #>                       distance  type     pvalue
-    #> kolmogorov-smirnov 0.066729676   pss 0.06287733
+    #> kolmogorov-smirnov 0.066729289   pss 0.06287764
     #> anderson-darling   0.008451422 phalf 0.05535394
     #> cramer-von mises   0.001686626 phalf 0.05535394
     #> kullback-leibler   0.061154813 phalf 0.05535394
-    #> 0.05-distance      0.006000000  plog 0.07301038
+    #> 0.05-distance      0.006000000   pss 0.06287764
 
 ***Note:*** The `semselector` function is time-consuming. The example
 takes approximately 2 minutes to run on a 2.5Ghz computer.
@@ -65,7 +65,6 @@ And plot the distribution of the *p*-values:
 
 ``` r
 library("ggplot2")
-#> Warning: package 'ggplot2' was built under R version 4.1.3
 theme_set(theme_minimal())
 plot(selector)
 ```
