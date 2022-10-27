@@ -8,7 +8,9 @@
 scaled_and_shifted(chisq, lambdas)
 }
 \arguments{
-\item{m0}{\code{lavaan} objects.}
+\item{chisq}{Chi-square fit value from a lavaan object.}
+
+\item{lambdas}{Eigenvalues of UG matrix.}
 }
 \value{
 The scaled and shifted p-value or the mean-variance adjusted p-value.
