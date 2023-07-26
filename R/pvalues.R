@@ -138,14 +138,22 @@ eigen_pvalues <- function(chisq, eig) {
 
 #' Calculate non-nested ugamma for multiple groups.
 #' @param object A `lavaan` object.
+#' @param unbiased If `TRUE`, uses the unbiased gamma estimate.
 #' @keywords internal
 #' @return Ugamma for non-nested object.
-ugamma_non_nested <- function(object) {
-  # We presently do not support restrictions
+ugamma_non_nested <- function(object, unbiased = FALSE) {
   lavmodel <- object@Model
 
   if (object@SampleStats@ngroups == 1) {
-    return(lavaan::lavInspect(object, "Ugamma"))
+    if (unbiased) {
+      gamma_adf <- lavaan::lavTech(object, "gamma")[[1]]
+      x <- as.matrix(lavaan::lavTech(object, "data")[[1]])
+      gamma <- gamma_est_unbiased(x, NULL, gamma_adf)
+      u <- lavaan::lavInspect(object, "U")
+      return(u %*% gamma)
+    } else {
+      return(lavaan::lavInspect(object, "Ugamma"))
+    }
   }
 
   # We presently do not support restriction fully.
@@ -203,9 +211,10 @@ ugamma_non_nested <- function(object) {
 #' @param a The `A` matrix. If if `NULL`, gets calculated by
 #'    `lavaan:::lav_test_diff_A` with `method = method`.
 #' @param method Method passed to `lavaan:::lav_test_diff_A`.
+#' @param unbiased If `TRUE`, uses the unbiased gamma estimate.
 #' @keywords internal
 #' @return Ugamma for non-nested object.
-ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
+ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) {
   # extract information from m1 and m2
   t1 <- m1@test[[1]]$stat
   r1 <- m1@test[[1]]$df
@@ -224,7 +233,16 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta") {
     ))
   }
 
-  gamma <- lavaan::lavTech(m1, "gamma") # the same for m1 and m0
+  gamma_adf <- lavaan::lavTech(m1, "gamma") # the same for m1 and m0
+
+  gamma <- if (unbiased) {
+    x <- lavaan::lavTech(m1, "data")
+    gamma_est_unbiased(x[[1]], sigma = NULL, gamma_adf = NULL)
+    gamma_est_adf()
+  } else {
+    gamma_adf
+  }
+
   # check for NULL
   if (is.null(gamma)) {
     stop("lavaan error: Can not compute gamma matrix; perhaps missing \"ml\"?")

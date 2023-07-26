@@ -67,6 +67,13 @@ And plot the distribution of the *p*-values:
 library("ggplot2")
 theme_set(theme_minimal())
 plot(selector)
+#> Warning: The dot-dot notation (`..density..`) was deprecated in ggplot2 3.4.0.
+#> ℹ Please use `after_stat(density)` instead.
+#> ℹ The deprecated feature was likely used in the semselector package.
+#>   Please report the issue to the authors.
+#> This warning is displayed once every 8 hours.
+#> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+#> generated.
 ```
 
 <img src="man/figures/README-plot_eval-1.png" width="750px" />
