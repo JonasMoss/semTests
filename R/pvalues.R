@@ -36,9 +36,12 @@ NULL
 pvalues_one <- function(object) {
   chisq <- lavaan::fitmeasures(object, "chisq")
   ug <- ugamma_non_nested(object)
+  ug_unbiased <- ugamma_non_nested(object, TRUE)
   df <- lavaan::fitmeasures(object, "df")
   lambdas <- Re(eigen(ug)$values)[seq(df)]
   eigenps <- eigen_pvalues(chisq, lambdas)
+  lambdas_unbiased <- Re(eigen(ug_unbiased)$values)[seq(df)]
+  eigenps_unbiased <- eigen_pvalues(chisq, lambdas)
 
   c(
     pstd = unname(lavaan::fitmeasures(object, "pvalue")),
@@ -58,9 +61,12 @@ pvalues_two <- function(m0, m1) {
   }
   chisq <- lavaan::fitmeasures(m0, "chisq") - lavaan::fitmeasures(m1, "chisq")
   ug <- ugamma_nested(m0, m1)
+  ug_unbiased <- ugamma_nested(m0, m1, TRUE)
   df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
   lambdas <- Re(eigen(ug)$values)[seq(df)]
   eigenps <- eigen_pvalues(chisq, lambdas)
+  lambdas_unbiased <- Re(eigen(ug_unbiased)$values)[seq(df)]
+  eigenps_unbiased <- eigen_pvalues(chisq, lambdas)
 
   c(
     pstd = unname(1 - stats::pchisq(chisq, df)),
@@ -143,12 +149,11 @@ eigen_pvalues <- function(chisq, eig) {
 #' @return Ugamma for non-nested object.
 ugamma_non_nested <- function(object, unbiased = FALSE) {
   lavmodel <- object@Model
+  object@Options$gamma.unbiased = unbiased
 
   if (object@SampleStats@ngroups == 1) {
     if (unbiased) {
-      gamma_adf <- lavaan::lavTech(object, "gamma")[[1]]
-      x <- as.matrix(lavaan::lavTech(object, "data")[[1]])
-      gamma <- gamma_est_unbiased(x, NULL, gamma_adf)
+      gamma <- lavaan:::lav_object_gamma(object)[[1]]
       u <- lavaan::lavInspect(object, "U")
       return(u %*% gamma)
     } else {
@@ -187,7 +192,7 @@ ugamma_non_nested <- function(object, unbiased = FALSE) {
   delta <- attr(e, "Delta")
   wls_v <- attr(e, "WLS.V")
 
-  gamma <- lavsamplestats@NACOV
+  gamma <- lavaan:::lav_object_gamma(object)
   if (is.null(gamma[[1]])) {
     gamma <- lapply(lavaan::lavInspect(object, "gamma"), function(x) {
       class(x) <- "matrix"
@@ -215,6 +220,9 @@ ugamma_non_nested <- function(object, unbiased = FALSE) {
 #' @keywords internal
 #' @return Ugamma for non-nested object.
 ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) {
+  m0@Options$gamma.unbiased = unbiased
+  m1@Options$gamma.unbiased = unbiased
+
   # extract information from m1 and m2
   t1 <- m1@test[[1]]$stat
   r1 <- m1@test[[1]]$df
@@ -233,21 +241,12 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) 
     ))
   }
 
-  gamma_adf <- lavaan::lavTech(m1, "gamma") # the same for m1 and m0
-
-  gamma <- if (unbiased) {
-    x <- lavaan::lavTech(m1, "data")
-    gamma_est_unbiased(x[[1]], sigma = NULL, gamma_adf = NULL)
-    gamma_est_adf()
-  } else {
-    gamma_adf
-  }
+  gamma <- lavaan:::lav_object_gamma(m0) # the same for m1 and m0
 
   # check for NULL
   if (is.null(gamma)) {
     stop("lavaan error: Can not compute gamma matrix; perhaps missing \"ml\"?")
   }
-
 
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
