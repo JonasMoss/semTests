@@ -1,6 +1,5 @@
 #' Asymptotically distribution free covariance matrix.
 #' @param x Data.
-#' @param sigma Covariance of the data.
 #' @return Estimate of the ADF covariance matrix.
 #' @keywords Internal.
 gamma_est_adf <- function(x) {
@@ -43,9 +42,9 @@ gamma_est_nt <- function(sigma) {
 #' @keywords internal
 gamma_est_unbiased <- function(x, sigma = NULL, gamma_adf = NULL, gamma_nt = NULL) {
   n <- nrow(x)
-  sigma <- (n - 1) / n * (if(is.null(sigma)) cov(x) else sigma)
-  gamma_adf <- if(is.null(gamma_adf)) gamma_est_adf(x) else gamma_adf
-  gamma_nt <- if(is.null(gamma_nt)) gamma_est_nt(sigma) else gamma_nt
+  sigma <- (n - 1) / n * (if (is.null(sigma)) stats::cov(x) else sigma)
+  gamma_adf <- if (is.null(gamma_adf)) gamma_est_adf(x) else gamma_adf
+  gamma_nt <- if (is.null(gamma_nt)) gamma_est_nt(sigma) else gamma_nt
   gamma_rem <- tcrossprod(vech(sigma))
   mult <- n / ((n - 2) * (n - 3))
   mult * ((n - 1) * gamma_adf - (gamma_nt - 2 / (n - 1) * gamma_rem))
@@ -81,4 +80,3 @@ upper_vec_indices <- function(n = 1L, diagonal = TRUE) {
 #' @param x Matrix to vectorize.
 #' @keywords internal
 vech <- function(x) x[row(x) >= col(x)]
-

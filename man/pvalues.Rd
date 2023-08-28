@@ -4,26 +4,39 @@
 \alias{pvalues}
 \title{Calculate p-values for one or two lavaan objects.}
 \usage{
-pvalues(m0, m1)
+pvalues(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1)
 }
 \arguments{
 \item{m0, m1}{One or two \code{lavaan} objects. If two, the first object should be
 with restrictions and the second without.}
+
+\item{trad}{List of traditional p-values to calculate.}
+
+\item{eba}{List of which \code{eba} p-values to calculate.}
+
+\item{unbiased}{A number between 1 and 3. 1: Calculate using the biased
+gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
+3: Calculate using both gammas.}
 }
 \value{
-A named vector containing the p-values \code{pml}. \code{psb}, \code{pfull},
+A named vector containing the p-values \code{pstd}. \code{psb}, \code{pfull},
 \code{phalf}, \code{pcf}, \code{pss}.
 }
 \description{
 Calculate p-values for a \code{lavaan} object using several methods.
 }
 \details{
+The traditional methods include:
 \itemize{
 \item \code{pstd} the standard \emph{p}-value extracted from lavaan.
 \item \code{psb} Satorra-Bentler \emph{p}-value.
 \item \code{pfull} \emph{p}-value based on all eigenvalues of the gamma matrix.
-\item \code{phalf} \emph{p}-value based on largest half of eigenvalues of the gamma matrix.
 \item \code{pcf} Scaled F \emph{p}-value.
 \item \code{pss} Scaled and shifted \emph{p}-value.
 }
+
+The \code{eba} method partitions the eigenvalues into \code{j} equally sized sets
+(if not possible, the smallest set is incomplete), and takes the mean
+eigenvalue of these sets. Provide a list of integers \code{j} to partition
+with respect to.
 }

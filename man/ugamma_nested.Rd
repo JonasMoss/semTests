@@ -4,7 +4,7 @@
 \alias{ugamma_nested}
 \title{Calculate nested ugamma.}
 \usage{
-ugamma_nested(m0, m1, a = NULL, method = "delta")
+ugamma_nested(m0, m1, a = NULL, method = "delta", unbiased = FALSE)
 }
 \arguments{
 \item{m0, m1}{Two nested \code{lavaan} objects.}
@@ -13,6 +13,8 @@ ugamma_nested(m0, m1, a = NULL, method = "delta")
 \code{lavaan:::lav_test_diff_A} with \code{method = method}.}
 
 \item{method}{Method passed to \code{lavaan:::lav_test_diff_A}.}
+
+\item{unbiased}{If \code{TRUE}, uses the unbiased gamma estimate.}
 }
 \value{
 Ugamma for non-nested object.

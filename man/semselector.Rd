@@ -8,6 +8,9 @@ semselector(
   m0,
   m1 = NULL,
   n_reps = 1000,
+  trad = list("pstd", "psb", "pss"),
+  eba = c(2, 4),
+  unbiased = 1,
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
     "kullback-leibler", "0.05-distance"),
   skip_warning = FALSE
@@ -18,6 +21,10 @@ semselector(
 with restrictions and the second without.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
+
+\item{trad, eba}{The choice of p-values to calculate.}
+
+\item{unbiased}{Use unbiased gamma estimate? 1: No, 2: Yes, 3: Use both.}
 
 \item{distances}{A vector of strings containing the distances to calculate.
 Passed to \code{distance}.}

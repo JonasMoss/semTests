@@ -6,12 +6,16 @@
 \alias{pvalues_two}
 \title{P value function for one and two arguments.}
 \usage{
-pvalues_one(object)
+pvalues_one(object, unbiased = FALSE, trad, eba)
 
-pvalues_two(m0, m1)
+pvalues_two(m0, m1, unbiased = FALSE, trad, eba)
 }
 \arguments{
-\item{object, m0, m1}{\code{lavaan} object.}
+\item{object, m0, m1}{\code{lavaan} objects.}
+
+\item{trad}{List of traditional p-values to calculate.}
+
+\item{eba}{List of which eba p-values to calculate.}
 }
 \value{
 pvalues.

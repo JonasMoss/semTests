@@ -1,0 +1,10 @@
+## Modeller
+
+IG Independent generator
+PL Piece-wise linear
+VM Vale-Morelli
+
+## Ting å gjøre
+1. Velge blokker.
+2. Implementere is semselector slik at vi
+3. semselector

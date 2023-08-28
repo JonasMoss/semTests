@@ -42,6 +42,6 @@ m0 <- lavaan::cfa(hs_model,
                   group = "school", estimator = "MLM", group.equal = "loadings"
 )
 
-ugamma_nested(m0, m1)
-ugamma_nested(m0, m1, unbiased = TRUE)
+ubiased <- ugamma_nested(m0, m1)
+uunbiased <- ugamma_nested(m0, m1, unbiased = TRUE)
 

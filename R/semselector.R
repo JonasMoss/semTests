@@ -5,6 +5,8 @@
 #' @param n_reps Number of bootstrap repetitions.
 #' @param distances A vector of strings containing the distances to calculate.
 #'    Passed to `distance`.
+#' @param trad,eba The choice of p-values to calculate.
+#' @param unbiased Use unbiased gamma estimate? 1: No, 2: Yes, 3: Use both.
 #' @param skip_warning If `TRUE`, ignores bootstrapped estimates with
 #'   warnings.
 #' @export
@@ -19,6 +21,9 @@
 
 semselector <- function(m0, m1 = NULL,
                         n_reps = 1000,
+                        trad = list("pstd", "psb", "pss"),
+                        eba = c(2, 4),
+                        unbiased = 1,
                         distances = c(
                           "kolmogorov-smirnov",
                           "anderson-darling",
@@ -27,25 +32,24 @@ semselector <- function(m0, m1 = NULL,
                           "0.05-distance"
                         ),
                         skip_warning = FALSE) {
-  pvals <- pvalues(m0, m1)
+  pvals <- pvalues(m0, m1, trad = trad, eba = eba, unbiased = unbiased)
 
   samples <- if (!is.null(m1)) {
     bootstrapper(
       m0,
       m1,
-      functional = function(x) pvalues_two(x[[1]], x[[2]]),
+      functional = function(x) pvalues(x[[1]], x[[2]], trad = trad, eba = eba, unbiased = unbiased),
       n_reps = n_reps,
       skip_warning = skip_warning
     )
   } else {
     bootstrapper(
       m0,
-      functional = function(x) pvalues_one(x),
+      functional = function(x) pvalues(x, trad = trad, eba = eba, unbiased = unbiased),
       n_reps = n_reps,
       skip_warning = skip_warning
     )
   }
-
 
   samples <- pmin(pmax(samples, 0), 1)
 
@@ -56,7 +60,6 @@ semselector <- function(m0, m1 = NULL,
     pvals[apply(boot_dists, 2, which.min)]
   )
   colnames(minimals) <- c("distance", "type", "pvalue")
-
 
   class(minimals) <- c("semselector", "data.frame")
   attr(minimals, "boots") <- as.data.frame(t(samples))
@@ -77,10 +80,12 @@ semselector <- function(m0, m1 = NULL,
 #' @export
 plot.semselector <- function(x, y, nrow = 3, binwidth = 0.05, ...) {
   value <- NULL # To avoid CRAN check note.
+
   data <- dplyr::arrange(tidyr::pivot_longer(
     attr(x, "boots"),
     tidyr::everything()
   ), name)
+
   ggplot2::ggplot(data, ggplot2::aes(value)) +
     ggplot2::geom_histogram(ggplot2::aes(y = ..density..),
       binwidth = binwidth,

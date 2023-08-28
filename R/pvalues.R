@@ -2,80 +2,127 @@
 #'
 #' Calculate p-values for a `lavaan` object using several methods.
 #'
+#' The traditional methods include:
 #' * `pstd` the standard *p*-value extracted from lavaan.
 #' * `psb` Satorra-Bentler *p*-value.
 #' * `pfull` *p*-value based on all eigenvalues of the gamma matrix.
-#' * `phalf` *p*-value based on largest half of eigenvalues of the gamma matrix.
 #' * `pcf` Scaled F *p*-value.
 #' * `pss` Scaled and shifted *p*-value.
 #'
+#' The `eba` method partitions the eigenvalues into `j` equally sized sets
+#' (if not possible, the smallest set is incomplete), and takes the mean
+#' eigenvalue of these sets. Provide a list of integers `j` to partition
+#' with respect to.
+#'
 #' @param m0,m1 One or two `lavaan` objects. If two, the first object should be
 #'    with restrictions and the second without.
+#' @param trad List of traditional p-values to calculate.
+#' @param eba List of which `eba` p-values to calculate.
+#' @param unbiased A number between 1 and 3. 1: Calculate using the biased
+#'    gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
+#'    3: Calculate using both gammas.
 #' @export
-#' @return A named vector containing the p-values `pml`. `psb`, `pfull`,
+#' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1) {
-  if (missing(m1)) {
-    pvalues_one(m0)
-  } else if (is.null(m1)) {
-    pvalues_one(m0)
+pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1) {
+  if (missing(m1)) m1 <- NULL
+
+  pval <- if (!is.null(m1)) {
+    \(unbiased, trad, eba) {
+      pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
+    }
   } else {
-    pvalues_two(m0, m1)
+    \(unbiased, trad, eba) {
+      pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba)
+    }
   }
+
+  unbias <- bias <- c()
+
+  if (unbiased == 1 || unbiased == 3) {
+    bias <- pval(unbiased = FALSE, trad = trad, eba = eba)
+  }
+
+  if (unbiased == 2 || unbiased == 3) {
+    if (unbiased == 3) trad <- setdiff(trad, "pstd")
+    unbias <- pval(unbiased = TRUE, trad = trad, eba = eba)
+    names(unbias) <- paste0(names(unbias), "_ub")
+  }
+
+  c(bias, unbias)
 }
 
 #' P value function for one and two arguments.
 #'
 #' @keywords internal
-#' @param object,m0,m1 `lavaan` object.
+#' @param object,m0,m1 `lavaan` objects.
+#' @param trad List of traditional p-values to calculate.
+#' @param eba List of which eba p-values to calculate.
 #' @name pvalue_internal
 #' @return pvalues.
 NULL
 
-#' @rdname pvalue_internal
-pvalues_one <- function(object) {
-  chisq <- lavaan::fitmeasures(object, "chisq")
-  ug <- ugamma_non_nested(object)
-  ug_unbiased <- ugamma_non_nested(object, TRUE)
-  df <- lavaan::fitmeasures(object, "df")
-  lambdas <- Re(eigen(ug)$values)[seq(df)]
-  eigenps <- eigen_pvalues(chisq, lambdas)
-  lambdas_unbiased <- Re(eigen(ug_unbiased)$values)[seq(df)]
-  eigenps_unbiased <- eigen_pvalues(chisq, lambdas)
+#' Calculate traditional pvalues.
+#' @param df,chisq,lambda,type Parameters needed to calculate the p-values.
+#' @returns Traditional p-values.
+#' @keywords internal
+trad_pvalue <- function(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb", "pfull")) {
+  type <- match.arg(type)
+  if (type == "pstd") {
+    return(1 - stats::pchisq(chisq, df))
+  }
 
-  c(
-    pstd = unname(lavaan::fitmeasures(object, "pvalue")),
-    psb = eigenps$psb,
-    phalf = eigenps$phalf,
-    pfull = eigenps$pfull,
-    psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(chisq, lambdas)
-  )
+  if (type == "psf") {
+    return(scaled_f(chisq, lambdas))
+  }
+
+  if (type == "pss") {
+    return(scaled_and_shifted(chisq, lambdas))
+  }
+
+  if (type == "pfull") {
+    return(CompQuadForm::imhof(chisq, lambdas)$Qq)
+  }
+
+  if (type == "psb") {
+    m <- length(lambdas)
+    return(as.numeric(1 - stats::pchisq(chisq * m / sum(lambdas), df = m)))
+  }
 }
 
 #' @rdname pvalue_internal
-pvalues_two <- function(m0, m1) {
+pvalues_one <- function(object, unbiased = FALSE, trad, eba) {
+  chisq <- lavaan::fitmeasures(object, "chisq")
+  ug <- ugamma_non_nested(object, unbiased)
+  df <- lavaan::fitmeasures(object, "df")
+  lambdas <- Re(eigen(ug)$values)[seq(df)]
+
+  peba <- sapply(eba, \(j) eba_pvalue(chisq, lambdas, j))
+  names(peba) <- paste0("peba", eba)
+  ptrad <- sapply(trad, \(x) trad_pvalue(df, chisq, lambdas, x))
+  names(ptrad) <- trad
+
+  c(ptrad, peba)
+}
+
+#' @rdname pvalue_internal
+pvalues_two <- function(m0, m1, unbiased = FALSE, trad, eba) {
   if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML" ||
     m0@Options$se == "standard" || m1@Options$se == "standard") {
     stop("Only the 'ML' estimator has currently tested.")
   }
+
   chisq <- lavaan::fitmeasures(m0, "chisq") - lavaan::fitmeasures(m1, "chisq")
-  ug <- ugamma_nested(m0, m1)
-  ug_unbiased <- ugamma_nested(m0, m1, TRUE)
+  ug <- ugamma_nested(m0, m1, unbiased = unbiased)
   df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
   lambdas <- Re(eigen(ug)$values)[seq(df)]
-  eigenps <- eigen_pvalues(chisq, lambdas)
-  lambdas_unbiased <- Re(eigen(ug_unbiased)$values)[seq(df)]
-  eigenps_unbiased <- eigen_pvalues(chisq, lambdas)
 
-  c(
-    pstd = unname(1 - stats::pchisq(chisq, df)),
-    psb = eigenps$psb,
-    phalf = eigenps$phalf,
-    pfull = eigenps$pfull,
-    psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(chisq, lambdas)
-  )
+  peba <- sapply(eba, \(j) eba_pvalue(chisq, lambdas, j))
+  names(peba) <- paste0("peba", eba)
+  ptrad <- sapply(trad, \(x) trad_pvalue(df, chisq, lambdas, x))
+  names(ptrad) <- trad
+
+  c(ptrad, peba)
 }
 
 #' Calculate the scaled and shifted / the mean-variance adjusted p-value
@@ -94,7 +141,7 @@ scaled_and_shifted <- function(chisq, lambdas) {
   a <- sqrt(df / tr_ug2)
   b <- df - sqrt(df * tr_ug^2 / tr_ug2)
   t3 <- unname(chisq * a + b)
-  1 - pchisq(t3, df = df)
+  1 - stats::pchisq(t3, df = df)
 }
 
 #' Calculate the scaled_f p-value.
@@ -123,24 +170,18 @@ scaled_f <- function(chisq, eig) {
   unname(1 - stats::pf(chisq / cf3, d1f3, d2f3))
 }
 
-#' Get eigenvalue-based p-values.
-#' @param chisq Chi-square fit value from a lavaan object.
-#' @param eig Eigenvalues of the UG matrix.
-#' @return List of eigenvalue-based p-values. `psb` is Satorra--Bentler,
-#'    `pfull` is based on every p-value, while `phalf` is based on the
-#'    half of the (largest) p-values.
+#' Calculate the jth eba pvalue.
 #' @keywords internal
-eigen_pvalues <- function(chisq, eig) {
-  m <- length(eig)
-  pfull <- CompQuadForm::imhof(chisq, eig)$Qq
-  psb <- as.numeric(1 - stats::pchisq(chisq * m / sum(eig), df = m))
-  k <- ceiling(m / 2)
-  eig[1:k] <- mean(eig[1:k])
-  eig[(k + 1):m] <- mean(eig[(k + 1):m])
-  phalf <- CompQuadForm::imhof(chisq, eig)$Qq
-  list(pfull = pfull, phalf = phalf, psb = psb)
+eba_pvalue <- \(chisq, lambdas, j) {
+  m <- length(lambdas)
+  k <- ceiling(m / j)
+  eig <- lambdas
+  eig <- c(eig, rep(NA, k * j - length(eig)))
+  dim(eig) <- c(k, j)
+  eig_means <- colMeans(eig, na.rm = TRUE)
+  repeated <- rep(eig_means, each = k)[seq(m)]
+  CompQuadForm::imhof(chisq, repeated)$Qq
 }
-
 
 #' Calculate non-nested ugamma for multiple groups.
 #' @param object A `lavaan` object.
@@ -149,19 +190,15 @@ eigen_pvalues <- function(chisq, eig) {
 #' @return Ugamma for non-nested object.
 ugamma_non_nested <- function(object, unbiased = FALSE) {
   lavmodel <- object@Model
-  object@Options$gamma.unbiased = unbiased
+  object@Options$gamma.unbiased <- unbiased
 
   if (object@SampleStats@ngroups == 1) {
-    if (unbiased) {
-      gamma <- lavaan:::lav_object_gamma(object)[[1]]
-      u <- lavaan::lavInspect(object, "U")
-      return(u %*% gamma)
-    } else {
-      return(lavaan::lavInspect(object, "Ugamma"))
-    }
+    u <- lavaan::lavInspect(object, "U")
+    gamma <- lavaan:::lav_object_gamma(object)[[1]]
+    return(u %*% gamma)
   }
 
-  # We presently do not support restriction fully.
+  # We do not support restriction fully.
   ceq_idx <- attr(lavmodel@con.jac, "ceq.idx")
   if (length(ceq_idx) > 0L) {
     stop("Testing of models with groups and equality constraints not supported.")
@@ -220,8 +257,8 @@ ugamma_non_nested <- function(object, unbiased = FALSE) {
 #' @keywords internal
 #' @return Ugamma for non-nested object.
 ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) {
-  m0@Options$gamma.unbiased = unbiased
-  m1@Options$gamma.unbiased = unbiased
+  m0@Options$gamma.unbiased <- unbiased
+  m1@Options$gamma.unbiased <- unbiased
 
   # extract information from m1 and m2
   t1 <- m1@test[[1]]$stat
@@ -255,11 +292,8 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) 
     inverted = TRUE
   )
 
-  # compute A matrix
-  # NOTE: order of parameters may change between H1 and H0, so be careful!
   if (is.null(a)) {
     a <- lavaan:::lav_test_diff_A(m1, m0, method = method, reference = "H1")
-    # take into account equality constraints m1
     if (m1@Model@eq.constraints) {
       a <- a %*% t(m1@Model@eq.constraints.K)
     }
@@ -270,7 +304,7 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) 
   # compute scaling factor
   fg <- unlist(m1@SampleStats@nobs) / m1@SampleStats@ntotal
 
-  # We need the global gamma, cf. eq.~(10)
+  # We need the global gamma, cf. eq.~(10) in Satorra (2000).
   gamma_rescaled <- gamma
   for (i in (seq_along(gamma))) {
     gamma_rescaled[[i]] <- fg[i] * gamma_rescaled[[i]]

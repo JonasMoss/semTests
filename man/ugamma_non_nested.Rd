@@ -4,10 +4,12 @@
 \alias{ugamma_non_nested}
 \title{Calculate non-nested ugamma for multiple groups.}
 \usage{
-ugamma_non_nested(object)
+ugamma_non_nested(object, unbiased = FALSE)
 }
 \arguments{
 \item{object}{A \code{lavaan} object.}
+
+\item{unbiased}{If \code{TRUE}, uses the unbiased gamma estimate.}
 }
 \value{
 Ugamma for non-nested object.
