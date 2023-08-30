@@ -27,29 +27,30 @@
 pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1) {
   if (missing(m1)) m1 <- NULL
 
-  pval <- if (!is.null(m1)) {
-    \(unbiased, trad, eba) {
-      pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
+
+  if(!is.null(m1)) {
+    pval <- \(unbiased, trad, eba) {
+        pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
     }
-  } else {
-    \(unbiased, trad, eba) {
-      pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba)
+
+    unbias <- bias <- c()
+
+    if (unbiased == 1 || unbiased == 3) {
+      bias <- pval(unbiased = FALSE, trad = trad, eba = eba)
     }
+
+    if (unbiased == 2 || unbiased == 3) {
+      if (unbiased == 3) trad <- setdiff(trad, "pstd")
+      unbias <- pval(unbiased = TRUE, trad = trad, eba = eba)
+      names(unbias) <- paste0(names(unbias), "_ub")
+    }
+
+    return(c(bias, unbias))
+
   }
 
-  unbias <- bias <- c()
+  pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba)
 
-  if (unbiased == 1 || unbiased == 3) {
-    bias <- pval(unbiased = FALSE, trad = trad, eba = eba)
-  }
-
-  if (unbiased == 2 || unbiased == 3) {
-    if (unbiased == 3) trad <- setdiff(trad, "pstd")
-    unbias <- pval(unbiased = TRUE, trad = trad, eba = eba)
-    names(unbias) <- paste0(names(unbias), "_ub")
-  }
-
-  c(bias, unbias)
 }
 
 #' P value function for one and two arguments.
@@ -91,18 +92,35 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb"
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- function(object, unbiased = FALSE, trad, eba) {
+pvalues_one <- function(object, unbiased, trad, eba) {
   chisq <- lavaan::fitmeasures(object, "chisq")
-  ug <- ugamma_non_nested(object, unbiased)
   df <- lavaan::fitmeasures(object, "df")
-  lambdas <- Re(eigen(ug)$values)[seq(df)]
+  ug_list <- ugamma_no_groups(object, unbiased)
 
-  peba <- sapply(eba, \(j) eba_pvalue(chisq, lambdas, j))
-  names(peba) <- paste0("peba", eba)
-  ptrad <- sapply(trad, \(x) trad_pvalue(df, chisq, lambdas, x))
-  names(ptrad) <- trad
+  result <- unlist(lapply(seq_along(ug_list), \(i) {
+    ug = ug_list[[i]]
 
-  c(ptrad, peba)
+    name = if (names(ug_list)[[i]] == "ug_biased") {
+      ""
+    } else {
+      "_ub"
+    }
+    lambdas <- Re(eigen(ug)$values)[seq(df)]
+    #if ((unbiased == 2 || unbiased == 3) && name == "_ub") trad <- setdiff(trad, "pstd")
+    peba <- sapply(eba, \(j) eba_pvalue(chisq, lambdas, j))
+    names(peba) <- paste0("peba", eba)
+    ptrad <- sapply(trad, \(x) trad_pvalue(df, chisq, lambdas, x))
+    names(ptrad) <- trad
+    out <- pmax(c(ptrad, peba), 0)
+    names(out) <- paste0(names(out), name)
+    out
+  }))
+
+  if("pstd" %in% names(result)) {
+    result[names(result) != "pstd_ub"]
+  } else {
+    c("pstd" = unname(result[names(result) == "pstd_ub"]), result[names(result) != "pstd_ub"])
+  }
 }
 
 #' @rdname pvalue_internal
@@ -183,6 +201,33 @@ eba_pvalue <- \(chisq, lambdas, j) {
   CompQuadForm::imhof(chisq, repeated)$Qq
 }
 
+
+#' Calculate non-nested gamma without mean structure
+
+ugamma_no_groups <- \(object, unbiased = 1) {
+
+  u <- lavaan::lavInspect(object, "U")
+  object@Options$gamma.unbiased <- FALSE
+  gamma <- lavaan:::lav_object_gamma(object)[[1]]
+
+  out = list()
+
+  if(unbiased == 1 || unbiased == 3) {
+    out = list(ug_biased = u %*% gamma)
+  }
+
+  if(unbiased == 2 || unbiased == 3) {
+    gamma_unb <- gamma_unbiased(object, gamma)
+    out = c(out, list(ug_unbiased = u %*% gamma_unb))
+  }
+
+  out
+
+}
+
+
+
+
 #' Calculate non-nested ugamma for multiple groups.
 #' @param object A `lavaan` object.
 #' @param unbiased If `TRUE`, uses the unbiased gamma estimate.
@@ -191,12 +236,6 @@ eba_pvalue <- \(chisq, lambdas, j) {
 ugamma_non_nested <- function(object, unbiased = FALSE) {
   lavmodel <- object@Model
   object@Options$gamma.unbiased <- unbiased
-
-  if (object@SampleStats@ngroups == 1) {
-    u <- lavaan::lavInspect(object, "U")
-    gamma <- lavaan:::lav_object_gamma(object)[[1]]
-    return(u %*% gamma)
-  }
 
   # We do not support restriction fully.
   ceq_idx <- attr(lavmodel@con.jac, "ceq.idx")

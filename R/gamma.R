@@ -40,9 +40,9 @@ gamma_est_nt <- function(sigma) {
 #'    If `NULL`, computes `gamma_nt` from `sigma`.
 #' @return Unbiased asymptotic covariance matrix.
 #' @keywords internal
-gamma_est_unbiased <- function(x, sigma = NULL, gamma_adf = NULL, gamma_nt = NULL) {
-  n <- nrow(x)
-  sigma <- (n - 1) / n * (if (is.null(sigma)) stats::cov(x) else sigma)
+gamma_est_unbiased <- function(x, n = NULL, sigma = NULL, gamma_adf = NULL, gamma_nt = NULL) {
+  if(!missing(x)) n <- nrow(x)
+  sigma <- if (is.null(sigma)) stats::cov(x) * (n - 1) / n else sigma
   gamma_adf <- if (is.null(gamma_adf)) gamma_est_adf(x) else gamma_adf
   gamma_nt <- if (is.null(gamma_nt)) gamma_est_nt(sigma) else gamma_nt
   gamma_rem <- tcrossprod(vech(sigma))
@@ -80,3 +80,15 @@ upper_vec_indices <- function(n = 1L, diagonal = TRUE) {
 #' @param x Matrix to vectorize.
 #' @keywords internal
 vech <- function(x) x[row(x) >= col(x)]
+
+
+#' Calculate unbiased gamma from lavaan object and a gamma matrix.
+#'
+#' WORKS ONLY FOR MODELS WITH NO MEAN STRUCTURE.
+gamma_unbiased <- \(obj, gamma) {
+  gamma_est_unbiased(n = lavaan::lavInspect(obj, "nobs"),
+                     sigma = obj@SampleStats@cov[[1]],
+                     gamma_adf = gamma,
+                     gamma_nt = NULL)
+
+}

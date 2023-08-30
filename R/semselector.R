@@ -28,7 +28,6 @@ semselector <- function(m0, m1 = NULL,
                           "kolmogorov-smirnov",
                           "anderson-darling",
                           "cramer-von mises",
-                          "kullback-leibler",
                           "0.05-distance"
                         ),
                         skip_warning = FALSE) {

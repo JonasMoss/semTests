@@ -4,7 +4,13 @@
 \alias{gamma_est_unbiased}
 \title{Unbiased asymptotic covariance matrix.}
 \usage{
-gamma_est_unbiased(x, sigma = NULL, gamma_adf = NULL, gamma_nt = NULL)
+gamma_est_unbiased(
+  x,
+  n = NULL,
+  sigma = NULL,
+  gamma_adf = NULL,
+  gamma_nt = NULL
+)
 }
 \arguments{
 \item{x}{Data.}

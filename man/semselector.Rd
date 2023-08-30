@@ -12,7 +12,7 @@ semselector(
   eba = c(2, 4),
   unbiased = 1,
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
-    "kullback-leibler", "0.05-distance"),
+    "0.05-distance"),
   skip_warning = FALSE
 )
 }
