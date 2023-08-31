@@ -10,6 +10,7 @@
 #' @keywords internal
 #' @return Bootstrapped objects as calculated by `functional`.
 bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
+                         iter_max = 100,
                          skip_warning = FALSE) {
   progress <- progressr::progressor(n_reps)
 
@@ -22,8 +23,8 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
         while (is.null(result)) {
           result <- tryCatch(
             {
-              boots <- bootstrap(m0, m1, data)
-              functional(boots)
+              boots <- bootstrap(m0, m1, data, iter_max) # lavaan object på bootstrap.
+              functional(boots)                # p-values function på lavaan.
             },
             error = function(e) {
               message(paste0("Skipping simulation due to: ", e))
@@ -67,7 +68,7 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
 #' @param data The data used to sample from, e.g. Bollen-Stine transformed
 #'    data.
 #' @return A bootstrapped `lavaan` object.
-bootstrap <- function(m0, m1 = NULL, data) {
+bootstrap <- function(m0, m1 = NULL, data, iter_max = 100) {
   ns <- m0@Data@nobs
   ids <- lapply(ns, function(n) sample(x = n, size = n, replace = TRUE))
 
@@ -80,7 +81,8 @@ bootstrap <- function(m0, m1 = NULL, data) {
   boot_m0 <- lavaan::lavaan(
     slotOptions = m0@Options,
     slotParTable = m0@ParTable,
-    slotData = boot_sample
+    slotData = boot_sample,
+    control = list(iter.max = iter_max)
   )
 
   # stopifnot(lavaan::inspect(boot_m0, "converged"))
