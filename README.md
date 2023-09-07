@@ -34,8 +34,8 @@ model <- "A =~ A1+A2+A3+A4+A5;
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
-#>       pstd        psb      phalf      pfull        psf        pss 
-#> 0.01038449 0.03688981 0.05535394 0.06563318 0.06540780 0.06287764
+#>       pstd        psb        pss      peba2      peba4 
+#> 0.01038449 0.03688981 0.06287764 0.05535394 0.06184855
 ```
 
 You can find the best-performing *p*-values:
@@ -53,13 +53,18 @@ print(selector)
 
     #>                       distance  type     pvalue
     #> kolmogorov-smirnov 0.066729289   pss 0.06287764
-    #> anderson-darling   0.008451422 phalf 0.05535394
-    #> cramer-von mises   0.001686626 phalf 0.05535394
-    #> kullback-leibler   0.061154813 phalf 0.05535394
-    #> 0.05-distance      0.006000000   pss 0.06287764
+    #> anderson-darling   0.008451422 peba2 0.05535394
+    #> cramer-von mises   0.001686626 peba2 0.05535394
+    #> 0.05-distance      0.004000000 peba4 0.06184855
 
 ***Note:*** The `semselector` function is time-consuming. The example
-takes approximately 2 minutes to run on a 2.5Ghz computer.
+takes approximately 2 minutes to run on a 2.5Ghz computer. You should
+use the following code for parallel processing.
+
+``` r
+library("future") 
+plan(multisession)
+```
 
 And plot the distribution of the *p*-values:
 
@@ -67,13 +72,6 @@ And plot the distribution of the *p*-values:
 library("ggplot2")
 theme_set(theme_minimal())
 plot(selector)
-#> Warning: The dot-dot notation (`..density..`) was deprecated in ggplot2 3.4.0.
-#> ℹ Please use `after_stat(density)` instead.
-#> ℹ The deprecated feature was likely used in the semselector package.
-#>   Please report the issue to the authors.
-#> This warning is displayed once every 8 hours.
-#> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-#> generated.
 ```
 
 <img src="man/figures/README-plot_eval-1.png" width="750px" />
