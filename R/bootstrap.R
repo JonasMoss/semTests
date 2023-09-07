@@ -81,8 +81,7 @@ bootstrap <- function(m0, m1 = NULL, data, iter_max = 100) {
   boot_m0 <- lavaan::lavaan(
     slotOptions = m0@Options,
     slotParTable = m0@ParTable,
-    slotData = boot_sample,
-    control = list(iter.max = iter_max)
+    slotData = boot_sample
   )
 
   # stopifnot(lavaan::inspect(boot_m0, "converged"))
