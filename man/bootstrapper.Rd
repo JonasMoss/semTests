@@ -9,6 +9,7 @@ bootstrapper(
   m1 = NULL,
   functional = identity,
   n_reps = 1000,
+  iter_max = 100,
   skip_warning = FALSE
 )
 }
