@@ -41,7 +41,7 @@ gamma_est_nt <- function(sigma) {
 #' @return Unbiased asymptotic covariance matrix.
 #' @keywords internal
 gamma_est_unbiased <- function(x, n = NULL, sigma = NULL, gamma_adf = NULL, gamma_nt = NULL) {
-  if(!missing(x)) n <- nrow(x)
+  if (!missing(x)) n <- nrow(x)
   sigma <- if (is.null(sigma)) stats::cov(x) * (n - 1) / n else sigma
   gamma_adf <- if (is.null(gamma_adf)) gamma_est_adf(x) else gamma_adf
   gamma_nt <- if (is.null(gamma_nt)) gamma_est_nt(sigma) else gamma_nt
@@ -86,9 +86,10 @@ vech <- function(x) x[row(x) >= col(x)]
 #'
 #' WORKS ONLY FOR MODELS WITH NO MEAN STRUCTURE.
 gamma_unbiased <- \(obj, gamma) {
-  gamma_est_unbiased(n = lavaan::lavInspect(obj, "nobs"),
-                     sigma = obj@SampleStats@cov[[1]],
-                     gamma_adf = gamma,
-                     gamma_nt = NULL)
-
+  gamma_est_unbiased(
+    n = lavaan::lavInspect(obj, "nobs"),
+    sigma = obj@SampleStats@cov[[1]],
+    gamma_adf = gamma,
+    gamma_nt = NULL
+  )
 }

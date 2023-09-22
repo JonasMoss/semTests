@@ -4,7 +4,14 @@
 \alias{pvalues}
 \title{Calculate p-values for one or two lavaan objects.}
 \usage{
-pvalues(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1)
+pvalues(
+  m0,
+  m1,
+  trad = list("pstd", "psb", "pss"),
+  eba = c(2, 4),
+  unbiased = 1,
+  chisq = c("trad", "rls")
+)
 }
 \arguments{
 \item{m0, m1}{One or two \code{lavaan} objects. If two, the first object should be

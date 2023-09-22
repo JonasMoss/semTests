@@ -24,28 +24,33 @@ semselector <- function(m0, m1 = NULL,
                         trad = list("pstd", "psb", "pss"),
                         eba = c(2, 4),
                         unbiased = 1,
+                        chisq = c("trad", "rls"),
+                        bollen_stine = c(1, 2, 3),
                         distances = c(
                           "kolmogorov-smirnov",
                           "anderson-darling",
                           "cramer-von mises",
                           "0.05-distance"
                         ),
+                        bs = TRUE,
+                        do_bs = TRUE,
                         skip_warning = FALSE) {
-  pvals <- pvalues(m0, m1, trad = trad, eba = eba, unbiased = unbiased)
+  pvals <- pvalues(m0, m1, trad = trad, eba = eba, unbiased = unbiased, chisq = chisq)
 
   samples <- if (!is.null(m1)) {
     bootstrapper(
       m0,
       m1,
-      functional = function(x) pvalues(x[[1]], x[[2]], trad = trad, eba = eba, unbiased = unbiased),
+      functional = \(x) pvalues(x[[1]], x[[2]], trad = trad, eba = eba, unbiased = unbiased, chisq = chisq),
       n_reps = n_reps,
       skip_warning = skip_warning
     )
   } else {
     bootstrapper(
       m0,
-      functional = function(x) pvalues(x, trad = trad, eba = eba, unbiased = unbiased),
+      functional = \(x) pvalues(x, trad = trad, eba = eba, unbiased = unbiased, chisq = chisq),
       n_reps = n_reps,
+      bs = bs,
       skip_warning = skip_warning
     )
   }
@@ -53,20 +58,52 @@ semselector <- function(m0, m1 = NULL,
   samples <- pmin(pmax(samples, 0), 1)
 
   boot_dists <- sapply(distances, function(d) apply(samples, 1, distance, d))
-  minimals <- data.frame(
+  output <- data.frame(
     apply(boot_dists, 2, min),
     rownames(boot_dists)[apply(boot_dists, 2, which.min)],
     pvals[apply(boot_dists, 2, which.min)]
   )
-  colnames(minimals) <- c("distance", "type", "pvalue")
+  colnames(output) <- c("distance", "type", "pvalue")
 
-  class(minimals) <- c("semselector", "data.frame")
-  attr(minimals, "boots") <- as.data.frame(t(samples))
-  attr(minimals, "n_reps") <- n_reps
-  attr(minimals, "distances") <- boot_dists
-  bs <- mean(attr(minimals, "boots")$pstd < pvals[1])
-  attr(minimals, "pvalues") <- c(pvals, pbs = bs)
-  minimals
+  class(output) <- c("semselector", "data.frame")
+  attr(output, "boots") <- as.data.frame(t(samples))
+  attr(output, "n_reps") <- n_reps
+  attr(output, "distances") <- boot_dists
+
+  if("trad" %in% chisq) {
+    if(bs) {
+      bs_trad <- mean(attr(output, "boots")$pstd_trad < pvals["pstd_trad"])
+    } else {
+      f <- \(object) {
+        chisq <- lavaan::fitmeasures(object, "chisq")
+        df <- lavaan::fitmeasures(object, "df")
+        1 - stats::pchisq(chisq, df)
+      }
+      bss <- bootstrapper(m0 = m0, m1 = NULL, functional = f, n_reps = n_reps, bs = TRUE,
+                         skip_warning = skip_warning)
+      bs_trad <- mean(bss < pvals["pstd_trad"])
+    }
+    pvals <- c(pvals, pbs_trad = bs_trad)
+  }
+
+  if("rls" %in% chisq) {
+    if(bs) {
+      bs_rls <- mean(attr(output, "boots")$pstd_rls < pvals["pstd_rls"])
+    } else {
+      f <- \(object) {
+        chisq <- rls(object)
+        df <- lavaan::fitmeasures(object, "df")
+        1 - stats::pchisq(chisq, df)
+      }
+      bss <- bootstrapper(m0 = m0, m1 = NULL, functional = f, n_reps = n_reps, bs = TRUE,
+                   skip_warning = skip_warning)
+      bs_rls <- mean(bss < pvals["pstd_rls"])
+    }
+    pvals <- c(pvals, pbs_rls = bs_rls)
+  }
+
+  attr(output, "pvalues") <- pvals
+  output
 }
 
 #' Plotting generic for `semselector` objects.

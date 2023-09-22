@@ -10,11 +10,10 @@
 #' @keywords internal
 #' @return Bootstrapped objects as calculated by `functional`.
 bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
-                         iter_max = 100,
+                         bs = TRUE,
                          skip_warning = FALSE) {
   progress <- progressr::progressor(n_reps)
-
-  data <- bollen_stine_transform(m0)
+  data <- if (bs) bollen_stine_transform(m0) else m0@Data@X
   errors <- 0 # Not in use for the moment.
   future.apply::future_replicate(n_reps,
     {
@@ -23,8 +22,8 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
         while (is.null(result)) {
           result <- tryCatch(
             {
-              boots <- bootstrap(m0, m1, data, iter_max) # lavaan object på bootstrap.
-              functional(boots)                # p-values function på lavaan.
+              boots <- bootstrap(m0, m1, data) # lavaan object på bootstrap.
+              functional(boots) # p-values function på lavaan.
             },
             error = function(e) {
               message(paste0("Skipping simulation due to: ", e))
@@ -68,7 +67,7 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
 #' @param data The data used to sample from, e.g. Bollen-Stine transformed
 #'    data.
 #' @return A bootstrapped `lavaan` object.
-bootstrap <- function(m0, m1 = NULL, data, iter_max = 100) {
+bootstrap <- function(m0, m1 = NULL, data) {
   ns <- m0@Data@nobs
   ids <- lapply(ns, function(n) sample(x = n, size = n, replace = TRUE))
 

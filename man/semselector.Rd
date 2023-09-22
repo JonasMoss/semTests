@@ -11,8 +11,12 @@ semselector(
   trad = list("pstd", "psb", "pss"),
   eba = c(2, 4),
   unbiased = 1,
+  chisq = c("trad", "rls"),
+  bollen_stine = c(1, 2, 3),
   distances = c("kolmogorov-smirnov", "anderson-darling", "cramer-von mises",
     "0.05-distance"),
+  bs = TRUE,
+  do_bs = TRUE,
   skip_warning = FALSE
 )
 }

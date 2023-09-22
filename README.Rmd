@@ -79,7 +79,7 @@ print(selector)
 approximately 2 minutes to run on a 2.5Ghz computer. You should use the following
 code for parallel processing.
 ```{r, eval = FALSE}
-library("future") 
+library("future")
 plan(multisession)
 ```
 And plot the distribution of the *p*-values:

@@ -4,7 +4,7 @@
 \alias{bootstrap}
 \title{Bootstrap \code{lavaan} models.}
 \usage{
-bootstrap(m0, m1 = NULL, data, iter_max = 100)
+bootstrap(m0, m1 = NULL, data)
 }
 \arguments{
 \item{m0, m1}{\code{lavaan} objects. Data is sample from \code{m0} and fitted with

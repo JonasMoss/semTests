@@ -24,13 +24,13 @@
 #' @export
 #' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1) {
+pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1, chisq = c("trad", "rls")) {
   if (missing(m1)) m1 <- NULL
 
 
-  if(!is.null(m1)) {
+  if (!is.null(m1)) {
     pval <- \(unbiased, trad, eba) {
-        pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
+      pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
     }
 
     unbias <- bias <- c()
@@ -45,11 +45,10 @@ pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), un
       names(unbias) <- paste0(names(unbias), "_ub")
     }
 
-    return(c(bias, unbias))
-
+    c(bias, unbias)
+  } else {
+    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, chisq = chisq)
   }
-
-  pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba)
 
 }
 
@@ -91,36 +90,68 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb"
   }
 }
 
+#' Calculate rls
+#' @param object lavaan object.
+#' @returns RLS.
+#' @keywords internal
+rls <- function(object) {
+  s_inv <- chol2inv(chol(lavaan::lavInspect(object, "sigma.hat")))
+  residuals <- lavaan::lavInspect(object, "residuals")
+  mm <- residuals[[1]] %*% s_inv
+  n <- lavaan::lavInspect(object, "nobs")
+  .5 * n * sum(mm * t(mm))
+}
+
+#' @keywords internal
+make_chisqs <- \(chisq, object) {
+  chisqs = c()
+  if("trad" %in% chisq) chisqs["trad"] <- lavaan::fitmeasures(object, "chisq")
+  if("rls" %in% chisq) chisqs["rls"] <- rls(object)
+  chisqs
+}
+
 #' @rdname pvalue_internal
-pvalues_one <- function(object, unbiased, trad, eba) {
-  chisq <- lavaan::fitmeasures(object, "chisq")
+pvalues_one <- function(object, unbiased, trad, eba, chisq = c("trad", "rls")) {
   df <- lavaan::fitmeasures(object, "df")
-  ug_list <- ugamma_no_groups(object, unbiased)
+  chisqs = make_chisqs(chisq, object)
 
-  result <- unlist(lapply(seq_along(ug_list), \(i) {
-    ug = ug_list[[i]]
+  use_trad = setdiff(trad, "pstd")
 
-    name = if (names(ug_list)[[i]] == "ug_biased") {
-      ""
-    } else {
-      "_ub"
+  return_value <- c()
+  for (i in seq_along(chisqs)) {
+    chisq = chisqs[i]
+    ug_list <- ugamma_no_groups(object, unbiased)
+
+    result <- unlist(lapply(seq_along(ug_list), \(j) {
+      ug <- ug_list[[j]]
+      lambdas <- Re(eigen(ug)$values)[seq(df)]
+
+      peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
+      names(peba) <- paste0("peba", eba)
+
+      ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
+      names(ptrad) <- use_trad
+
+      out <- pmax(c(ptrad, peba), 0)
+      name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ub"
+      name <- paste0(name, "_", names(chisqs)[i])
+      names(out) <- paste0(names(out), name)
+
+      out
+    }))
+
+    if("pstd" %in% trad) {
+      pstd <- c(trad_pvalue(df, chisq, NULL, "pstd"))
+      names(pstd) <- paste0("pstd_", names(chisqs)[i])
+      result = c(pstd, result)
     }
-    lambdas <- Re(eigen(ug)$values)[seq(df)]
-    #if ((unbiased == 2 || unbiased == 3) && name == "_ub") trad <- setdiff(trad, "pstd")
-    peba <- sapply(eba, \(j) eba_pvalue(chisq, lambdas, j))
-    names(peba) <- paste0("peba", eba)
-    ptrad <- sapply(trad, \(x) trad_pvalue(df, chisq, lambdas, x))
-    names(ptrad) <- trad
-    out <- pmax(c(ptrad, peba), 0)
-    names(out) <- paste0(names(out), name)
-    out
-  }))
 
-  if("pstd" %in% names(result)) {
-    result[names(result) != "pstd_ub"]
-  } else {
-    c("pstd" = unname(result[names(result) == "pstd_ub"]), result[names(result) != "pstd_ub"])
+    return_value  = c(return_value, result)
+
   }
+
+  return_value
+
 }
 
 #' @rdname pvalue_internal
@@ -205,24 +236,22 @@ eba_pvalue <- \(chisq, lambdas, j) {
 #' Calculate non-nested gamma without mean structure
 
 ugamma_no_groups <- \(object, unbiased = 1) {
-
   u <- lavaan::lavInspect(object, "U")
   object@Options$gamma.unbiased <- FALSE
   gamma <- lavaan:::lav_object_gamma(object)[[1]]
 
-  out = list()
+  out <- list()
 
-  if(unbiased == 1 || unbiased == 3) {
-    out = list(ug_biased = u %*% gamma)
+  if (unbiased == 1 || unbiased == 3) {
+    out <- list(ug_biased = u %*% gamma)
   }
 
-  if(unbiased == 2 || unbiased == 3) {
+  if (unbiased == 2 || unbiased == 3) {
     gamma_unb <- gamma_unbiased(object, gamma)
-    out = c(out, list(ug_unbiased = u %*% gamma_unb))
+    out <- c(out, list(ug_unbiased = u %*% gamma_unb))
   }
 
   out
-
 }
 
 
