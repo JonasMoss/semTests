@@ -24,7 +24,7 @@
 #' @export
 #' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), eba_half = c(2, 3), unbiased = 1, chisq = c("trad", "rls")) {
+pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), eba_half = c(2, 3), unbiased = 1, chisq = c("trad", "rls"), extras = FALSE) {
   if (missing(m1)) m1 <- NULL
 
 
@@ -47,7 +47,7 @@ pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), eb
 
     c(bias, unbias)
   } else {
-    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, eba_half = eba_half, chisq = chisq)
+    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, eba_half = eba_half, chisq = chisq, extras = extras)
   }
 }
 
@@ -110,31 +110,28 @@ make_chisqs <- \(chisq, object) {
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad", "rls")) {
+pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad", "rls"), extras = FALSE) {
   df <- lavaan::fitmeasures(object, "df")
   chisqs <- make_chisqs(chisq, object)
-
   use_trad <- setdiff(trad, "pstd")
-
+  ug_list <- ugamma_no_groups(object, unbiased)
+  lambdas_list <- sapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
   return_value <- c()
   for (i in seq_along(chisqs)) {
     chisq <- chisqs[i]
-    ug_list <- ugamma_no_groups(object, unbiased)
-
     result <- unlist(lapply(seq_along(ug_list), \(j) {
       ug <- ug_list[[j]]
-      lambdas <- Re(eigen(ug)$values)[seq(df)]
-
+      lambdas <- lambdas_list[j]
       peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
       names(peba) <- paste0("peba", eba)
 
       peba_half <- sapply(eba_half, \(k) eba_half_pvalue(chisq, lambdas, k))
-      names(peba) <- paste0("peba_half", eba)
+      names(peba_half) <- paste0("peba_half", eba_half)
 
       ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
 
-      out <- pmax(c(ptrad, peba), 0)
+      out <- pmax(c(ptrad, peba, peba_half), 0)
       name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ub"
       name <- paste0(name, "_", names(chisqs)[i])
       names(out) <- paste0(names(out), name)
@@ -151,7 +148,16 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad",
     return_value <- c(return_value, result)
   }
 
-  return_value
+  if(extras) {
+    n = length(lambdas_list)
+    names(lambdas_list) = rep("lambda", n)
+    if(unbiased == 2) {
+      names(lambdas_list) = c(rep("lambda_biased", n/2), rep("lambda_unbiased", n/2))
+    }
+    c(return_value, chisqs, lambdas_list)
+  } else {
+    return_value
+  }
 }
 
 #' @rdname pvalue_internal
