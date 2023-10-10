@@ -70,8 +70,8 @@ semselector <- function(m0, m1 = NULL,
   attr(output, "n_reps") <- n_reps
   attr(output, "distances") <- boot_dists
 
-  if("trad" %in% chisq) {
-    if(bs) {
+  if ("trad" %in% chisq) {
+    if (bs) {
       bs_trad <- mean(attr(output, "boots")$pstd_trad < pvals["pstd_trad"])
     } else {
       f <- \(object) {
@@ -79,15 +79,17 @@ semselector <- function(m0, m1 = NULL,
         df <- lavaan::fitmeasures(object, "df")
         1 - stats::pchisq(chisq, df)
       }
-      bss <- bootstrapper(m0 = m0, m1 = NULL, functional = f, n_reps = n_reps, bs = TRUE,
-                         skip_warning = skip_warning)
+      bss <- bootstrapper(
+        m0 = m0, m1 = NULL, functional = f, n_reps = n_reps, bs = TRUE,
+        skip_warning = skip_warning
+      )
       bs_trad <- mean(bss < pvals["pstd_trad"])
     }
     pvals <- c(pvals, pbs_trad = bs_trad)
   }
 
-  if("rls" %in% chisq) {
-    if(bs) {
+  if ("rls" %in% chisq) {
+    if (bs) {
       bs_rls <- mean(attr(output, "boots")$pstd_rls < pvals["pstd_rls"])
     } else {
       f <- \(object) {
@@ -95,8 +97,10 @@ semselector <- function(m0, m1 = NULL,
         df <- lavaan::fitmeasures(object, "df")
         1 - stats::pchisq(chisq, df)
       }
-      bss <- bootstrapper(m0 = m0, m1 = NULL, functional = f, n_reps = n_reps, bs = TRUE,
-                   skip_warning = skip_warning)
+      bss <- bootstrapper(
+        m0 = m0, m1 = NULL, functional = f, n_reps = n_reps, bs = TRUE,
+        skip_warning = skip_warning
+      )
       bs_rls <- mean(bss < pvals["pstd_rls"])
     }
     pvals <- c(pvals, pbs_rls = bs_rls)

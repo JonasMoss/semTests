@@ -9,6 +9,7 @@ pvalues(
   m1,
   trad = list("pstd", "psb", "pss"),
   eba = c(2, 4),
+  eba_half = c(2, 3),
   unbiased = 1,
   chisq = c("trad", "rls")
 )

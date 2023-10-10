@@ -22,8 +22,8 @@ bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
         while (is.null(result)) {
           result <- tryCatch(
             {
-              boots <- bootstrap(m0, m1, data) # lavaan object på bootstrap.
-              functional(boots) # p-values function på lavaan.
+              boots <- bootstrap(m0, m1, data) # lavaan object p<U+00E5> bootstrap.
+              functional(boots) # p-values function p<U+00E5> lavaan.
             },
             error = function(e) {
               message(paste0("Skipping simulation due to: ", e))

@@ -24,7 +24,7 @@
 #' @export
 #' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), unbiased = 1, chisq = c("trad", "rls")) {
+pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), eba_half = c(2, 3), unbiased = 1, chisq = c("trad", "rls")) {
   if (missing(m1)) m1 <- NULL
 
 
@@ -47,9 +47,8 @@ pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), un
 
     c(bias, unbias)
   } else {
-    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, chisq = chisq)
+    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, eba_half = eba_half, chisq = chisq)
   }
-
 }
 
 #' P value function for one and two arguments.
@@ -104,22 +103,22 @@ rls <- function(object) {
 
 #' @keywords internal
 make_chisqs <- \(chisq, object) {
-  chisqs = c()
-  if("trad" %in% chisq) chisqs["trad"] <- lavaan::fitmeasures(object, "chisq")
-  if("rls" %in% chisq) chisqs["rls"] <- rls(object)
+  chisqs <- c()
+  if ("trad" %in% chisq) chisqs["trad"] <- lavaan::fitmeasures(object, "chisq")
+  if ("rls" %in% chisq) chisqs["rls"] <- rls(object)
   chisqs
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- function(object, unbiased, trad, eba, chisq = c("trad", "rls")) {
+pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad", "rls")) {
   df <- lavaan::fitmeasures(object, "df")
-  chisqs = make_chisqs(chisq, object)
+  chisqs <- make_chisqs(chisq, object)
 
-  use_trad = setdiff(trad, "pstd")
+  use_trad <- setdiff(trad, "pstd")
 
   return_value <- c()
   for (i in seq_along(chisqs)) {
-    chisq = chisqs[i]
+    chisq <- chisqs[i]
     ug_list <- ugamma_no_groups(object, unbiased)
 
     result <- unlist(lapply(seq_along(ug_list), \(j) {
@@ -128,6 +127,9 @@ pvalues_one <- function(object, unbiased, trad, eba, chisq = c("trad", "rls")) {
 
       peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
       names(peba) <- paste0("peba", eba)
+
+      peba_half <- sapply(eba_half, \(k) eba_half_pvalue(chisq, lambdas, k))
+      names(peba) <- paste0("peba_half", eba)
 
       ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
@@ -140,18 +142,16 @@ pvalues_one <- function(object, unbiased, trad, eba, chisq = c("trad", "rls")) {
       out
     }))
 
-    if("pstd" %in% trad) {
+    if ("pstd" %in% trad) {
       pstd <- c(trad_pvalue(df, chisq, NULL, "pstd"))
       names(pstd) <- paste0("pstd_", names(chisqs)[i])
-      result = c(pstd, result)
+      result <- c(pstd, result)
     }
 
-    return_value  = c(return_value, result)
-
+    return_value <- c(return_value, result)
   }
 
   return_value
-
 }
 
 #' @rdname pvalue_internal
@@ -232,9 +232,22 @@ eba_pvalue <- \(chisq, lambdas, j) {
   CompQuadForm::imhof(chisq, repeated)$Qq
 }
 
+#' Calculate the jth eba pvalue.
+#' @keywords internal
+eba_half_pvalue <- \(chisq, lambdas, j) {
+  m <- length(lambdas)
+  k <- ceiling(m / j)
+  eig <- lambdas
+  eig <- c(eig, rep(NA, k * j - length(eig)))
+  dim(eig) <- c(k, j)
+  eig_means <- colMeans(eig, na.rm = TRUE)
+  eig_mean <- mean(lambdas)
+  repeated <- rep(eig_means, each = k)[seq(m)]
+  CompQuadForm::imhof(chisq, (repeated + eig_mean) / 2)$Qq
+}
+
 
 #' Calculate non-nested gamma without mean structure
-
 ugamma_no_groups <- \(object, unbiased = 1) {
   u <- lavaan::lavInspect(object, "U")
   object@Options$gamma.unbiased <- FALSE
