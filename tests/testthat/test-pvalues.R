@@ -15,6 +15,14 @@ test_that("pvalues_one return p_values in (0, 1)", {
   expect_true(all(pvals > 0))
 })
 
+test_that("pvalues works with NULL", {
+  expect_error(pvalues(object, trad = NULL, eba = NULL, eba_half = NULL))
+  expect_equal(length(pvalues(object, trad = NULL, eba = NULL, eba_half = 1)), 2)
+  expect_equal(length(pvalues(object, trad = NULL, eba = 1, eba_half = NULL)), 2)
+  expect_equal(length(pvalues(object, trad = "pstd", eba = NULL, eba_half = NULL)),2)
+})
+
+
 test_that("pvalues_two and pvalues / pvalues_one and pvalues agree", {
   expect_equal(
     pvalues(object, eba = 2, trad = "psb", eba_half = 2, unbiased = 2),

@@ -27,6 +27,9 @@
 pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), eba_half = c(2, 3), unbiased = 1, chisq = c("trad", "rls"), extras = FALSE) {
   if (missing(m1)) m1 <- NULL
 
+  if(is.null(trad) && is.null(eba) && is.null(eba_half)) {
+    stop("Please provide some p-values to calculate.")
+  }
 
   if (!is.null(m1)) {
     pval <- \(unbiased, trad, eba) {
@@ -122,11 +125,20 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad",
     result <- unlist(lapply(seq_along(ug_list), \(j) {
       ug <- ug_list[[j]]
       lambdas <- lambdas_list[j]
-      peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
-      names(peba) <- paste0("peba", eba)
 
-      peba_half <- sapply(eba_half, \(k) eba_half_pvalue(chisq, lambdas, k))
-      names(peba_half) <- paste0("peba_half", eba_half)
+      if(!is.null(eba)) {
+        peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
+        names(peba) <- paste0("peba", eba)
+      } else {
+        peba <- NULL
+      }
+
+      if(!is.null(eba_half)) {
+        peba_half <- sapply(eba_half, \(k) eba_half_pvalue(chisq, lambdas, k))
+        names(peba_half) <- paste0("peba_half", eba_half)
+      } else {
+        peba_half <- NULL
+      }
 
       ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
@@ -134,8 +146,10 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad",
       out <- pmax(c(ptrad, peba, peba_half), 0)
       name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ub"
       name <- paste0(name, "_", names(chisqs)[i])
-      names(out) <- paste0(names(out), name)
 
+      if(length(out) != 0) {
+        names(out) <- paste0(names(out), name)
+      }
       out
     }))
 
