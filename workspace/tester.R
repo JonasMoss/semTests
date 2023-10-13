@@ -4,4 +4,4 @@ n <- 50
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 
 
-pvalues(object, trad = NULL, eba = NULL, eba_half = 2)
+pvalues(object, trad = NULL, eba = NULL, eba_half = c(2, 3))

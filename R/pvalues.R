@@ -118,13 +118,13 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad",
   chisqs <- make_chisqs(chisq, object)
   use_trad <- setdiff(trad, "pstd")
   ug_list <- ugamma_no_groups(object, unbiased)
-  lambdas_list <- sapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
+  lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
   return_value <- c()
   for (i in seq_along(chisqs)) {
     chisq <- chisqs[i]
     result <- unlist(lapply(seq_along(ug_list), \(j) {
       ug <- ug_list[[j]]
-      lambdas <- lambdas_list[j]
+      lambdas <- lambdas_list[[j]]
 
       if(!is.null(eba)) {
         peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
