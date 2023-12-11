@@ -4,7 +4,7 @@
 # semTests <img src="man/figures/logo.png" align="right" width="210" height="130" />
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semTests)](https://cran.r-project.org/package=semTests)
-[![R-CMD-check](https://github.com/JonasMoss/semTests/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semTests/actions)
+[![R-CMD-check](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml)
 [![Project Status: Active – The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
