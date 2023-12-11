@@ -28,8 +28,6 @@ options(warn = -1)
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semTests)](https://cran.r-project.org/package=semTests)
 [![R-CMD-check](https://github.com/JonasMoss/semTests/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semTests/actions)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![Codecov test coverage](https://codecov.io/gh/JonasMoss/semTests/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semTests?branch=main)
-
 
 An R package for goodness of fit testing of structural equation models. Built on top of `lavaan`.
 ```{r setup, include=FALSE}
