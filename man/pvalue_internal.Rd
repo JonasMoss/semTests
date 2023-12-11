@@ -6,7 +6,15 @@
 \alias{pvalues_two}
 \title{P value function for one and two arguments.}
 \usage{
-pvalues_one(object, unbiased, trad, eba, eba_half, chisq = c("trad", "rls"))
+pvalues_one(
+  object,
+  unbiased,
+  trad,
+  eba,
+  eba_half,
+  chisq = c("trad", "rls"),
+  extras = FALSE
+)
 
 pvalues_two(m0, m1, unbiased = FALSE, trad, eba)
 }

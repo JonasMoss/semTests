@@ -1,4 +1,4 @@
-library("semselector")
+library("semTests")
 
 ## One model, no restrictions
 set.seed(313)

@@ -81,10 +81,12 @@ upper_vec_indices <- function(n = 1L, diagonal = TRUE) {
 #' @keywords internal
 vech <- function(x) x[row(x) >= col(x)]
 
-
 #' Calculate unbiased gamma from lavaan object and a gamma matrix.
 #'
 #' WORKS ONLY FOR MODELS WITH NO MEAN STRUCTURE.
+#' @param obj,gamma Object and gamma matrix.
+#' @return Unbiased gamma.
+#' @keywords internal
 gamma_unbiased <- \(obj, gamma) {
   gamma_est_unbiased(
     n = lavaan::lavInspect(obj, "nobs"),

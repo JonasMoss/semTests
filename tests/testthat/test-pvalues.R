@@ -19,7 +19,7 @@ test_that("pvalues works with NULL", {
   expect_error(pvalues(object, trad = NULL, eba = NULL, eba_half = NULL))
   expect_equal(length(pvalues(object, trad = NULL, eba = NULL, eba_half = 1)), 2)
   expect_equal(length(pvalues(object, trad = NULL, eba = 1, eba_half = NULL)), 2)
-  expect_equal(length(pvalues(object, trad = "pstd", eba = NULL, eba_half = NULL)),2)
+  expect_equal(length(pvalues(object, trad = c("pstd", "psf", "pss", "psb", "pfull"), eba = NULL, eba_half = NULL)),10)
 })
 
 

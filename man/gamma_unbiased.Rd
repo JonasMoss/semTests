@@ -6,6 +6,13 @@
 \usage{
 gamma_unbiased(obj, gamma)
 }
+\arguments{
+\item{obj, gamma}{Object and gamma matrix.}
+}
+\value{
+Unbiased gamma.
+}
 \description{
 WORKS ONLY FOR MODELS WITH NO MEAN STRUCTURE.
 }
+\keyword{internal}

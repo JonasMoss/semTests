@@ -18,13 +18,16 @@
 #'    with restrictions and the second without.
 #' @param trad List of traditional p-values to calculate.
 #' @param eba List of which `eba` p-values to calculate.
+#' @param eba_half List of which `eba_half` p-values to calculate
 #' @param unbiased A number between 1 and 3. 1: Calculate using the biased
 #'    gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
 #'    3: Calculate using both gammas.
+#' @param chisq Which chi-square statistic to base the calculations on.
+#' @param extras Returns extra information if checked.
 #' @export
 #' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1, trad = list("pstd", "psb", "pss"), eba = c(2, 4), eba_half = c(2, 3), unbiased = 1, chisq = c("trad", "rls"), extras = FALSE) {
+pvalues <- function(m0, m1, trad = NULL, eba = NULL, eba_half = c(2, 4), unbiased = 1, chisq = c("rls", "trad"), extras = FALSE) {
   if (missing(m1)) m1 <- NULL
 
   if(is.null(trad) && is.null(eba) && is.null(eba_half)) {
@@ -266,8 +269,8 @@ eba_half_pvalue <- \(chisq, lambdas, j) {
   CompQuadForm::imhof(chisq, (repeated + eig_mean) / 2)$Qq
 }
 
-
 #' Calculate non-nested gamma without mean structure
+#' @keywords internal
 ugamma_no_groups <- \(object, unbiased = 1) {
   u <- lavaan::lavInspect(object, "U")
   object@Options$gamma.unbiased <- FALSE
@@ -286,9 +289,6 @@ ugamma_no_groups <- \(object, unbiased = 1) {
 
   out
 }
-
-
-
 
 #' Calculate non-nested ugamma for multiple groups.
 #' @param object A `lavaan` object.

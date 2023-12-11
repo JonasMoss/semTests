@@ -1,8 +1,7 @@
-Package: semselector
+Package: semTests
 Type: Package
-Title: Goodness of fit testing for structural equation models
-Description: Implements the bootstrap selector method to choose between measures
-   of goodness of fit in structural equation models. Built on top of lavaan.
+Title: Goodness-of-fit testing for structural equation models
+Description: Pragmatic tests for goodness. Supports the s-EBA (shrinkage eigenvalue block averaging) p-values with superior performance.
 Version: 0.1.1
 Authors@R: c(
     person("Jonas", "Moss", , "jonas.gjertsen@gmail.com", role = c("aut", "cre"), 
@@ -15,11 +14,9 @@ Imports:
   CompQuadForm,
   MASS,
   goftest,
-  tidyr,
   progressr,
   ggplot2,
   vsgoftest,
-  dplyr,
   Matrix,
   future.apply
 Suggests: 

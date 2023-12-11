@@ -1,4 +1,4 @@
-library("semselector")
+library("semTests")
 library("future.apply")
 plan(multisession)
 

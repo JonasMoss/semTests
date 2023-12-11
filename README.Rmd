@@ -15,26 +15,25 @@ knitr::opts_chunk$set(
 ```
 
 ```{r, include = FALSE, cache = TRUE}
-library("semselector")
+library("semTests")
 set.seed(313)
 model <- "A =~ A1+A2+A3+A4+A5;
           C =~ C1+C2+C3+C4+C5"
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
-selector <- semselector(object)
 options(warn = -1)
 ```
-# semselector <img src="man/figures/logo.png" align="right" width="210" height="130" />
+# semTests <img src="man/figures/logo.png" align="right" width="210" height="130" />
 
-[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semselector)](https://cran.r-project.org/package=semselector)
-[![R-CMD-check](https://github.com/JonasMoss/semselector/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semselector/actions)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semTests)](https://cran.r-project.org/package=semTests)
+[![R-CMD-check](https://github.com/JonasMoss/semTests/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semTests/actions)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![Codecov test coverage](https://codecov.io/gh/JonasMoss/semselector/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semselector?branch=main)
+[![Codecov test coverage](https://codecov.io/gh/JonasMoss/semTests/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semTests?branch=main)
 
 
-An R package for goodness of fit testing of structural equation models
+An R package for goodness of fit testing of structural equation models. Built on top of `lavaan`.
 ```{r setup, include=FALSE}
-# library("semselector")
+# library("semTests")
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(out.width = "750px", dpi = 200)
 ```
@@ -43,53 +42,21 @@ knitr::opts_chunk$set(out.width = "750px", dpi = 200)
 Use the following command from inside `R`:
 ```{r install, echo = TRUE, eval = FALSE}
 # install.packages("remotes")
-remotes::install_github("JonasMoss/semselector")
+remotes::install_github("JonasMoss/semTests")
 ```
 
 ## Usage
 Call the `library` function, create a `lavaan` model, and run the 
-`semselector` function. 
+`pvalues` function. 
 
 ```{r prepare, echo = TRUE, eval = TRUE}
-library("semselector")
+library("semTests")
 model <- "A =~ A1+A2+A3+A4+A5;
           C =~ C1+C2+C3+C4+C5"
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
 ```
-
-You can find the best-performing *p*-values:
-``` {r plot_echo, echo = TRUE, eval = FALSE}
-library("semselector")
-library("progressr")
-library("future") # for parallel processing
-plan(multisession)
-# handlers(global = TRUE) # For progress bar.
-set.seed(313)
-selector <- semselector(object)
-print(selector)
-```
-
-``` {r print, echo = FALSE, eval = TRUE}
-print(selector)
-```
-
-***Note:*** The `semselector` function is time-consuming. The example takes 
-approximately 2 minutes to run on a 2.5Ghz computer. You should use the following
-code for parallel processing.
-```{r, eval = FALSE}
-library("future")
-plan(multisession)
-```
-And plot the distribution of the *p*-values:
-
-``` {r plot_eval, echo = TRUE, eval = TRUE}
-library("ggplot2")
-theme_set(theme_minimal())
-plot(selector)
-```
-
 ## References
 Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101–114. https://doi.org/10.1080/10705511.2017.1373021
 
@@ -101,4 +68,4 @@ Rosseel, Y. (2012). lavaan: An R package for structural equation modeling.
 Journal of Statistical Software, 48(2), 1–36. https://doi.org/10.18637/jss.v048.i02
 
 ## How to Contribute or Get Help
-If you encounter a bug, have a feature request or need some help, open a [Github issue](https://github.com/JonasMoss/semselector/issues). Create a pull requests to contribute. This project follows a [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).
+If you encounter a bug, have a feature request or need some help, open a [Github issue](https://github.com/JonasMoss/semTests/issues). Create a pull requests to contribute. This project follows a [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).

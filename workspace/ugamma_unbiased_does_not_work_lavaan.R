@@ -44,6 +44,6 @@ lavaan::lavInspect(object, "Ugamma")
 
 
 
-sel <- semselector(object, n_reps = 2, distances = "anderson-darling", unbiased = 3)
+sel <- semTests(object, n_reps = 2, distances = "anderson-darling", unbiased = 3)
 attr(sel, "pvalues")
 pvalues(object, unbiased = 3)

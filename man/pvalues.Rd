@@ -7,11 +7,12 @@
 pvalues(
   m0,
   m1,
-  trad = list("pstd", "psb", "pss"),
-  eba = c(2, 4),
-  eba_half = c(2, 3),
+  trad = NULL,
+  eba = NULL,
+  eba_half = c(2, 4),
   unbiased = 1,
-  chisq = c("trad", "rls")
+  chisq = c("rls", "trad"),
+  extras = FALSE
 )
 }
 \arguments{
@@ -22,9 +23,15 @@ with restrictions and the second without.}
 
 \item{eba}{List of which \code{eba} p-values to calculate.}
 
+\item{eba_half}{List of which \code{eba_half} p-values to calculate}
+
 \item{unbiased}{A number between 1 and 3. 1: Calculate using the biased
 gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
 3: Calculate using both gammas.}
+
+\item{chisq}{Which chi-square statistic to base the calculations on.}
+
+\item{extras}{Returns extra information if checked.}
 }
 \value{
 A named vector containing the p-values \code{pstd}. \code{psb}, \code{pfull},

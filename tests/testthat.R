@@ -1,4 +1,4 @@
 library(testthat)
-library(semselector)
+library(semTests)
 
-test_check("semselector")
+test_check("semTests")

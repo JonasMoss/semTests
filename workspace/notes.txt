@@ -6,5 +6,5 @@ VM Vale-Morelli
 
 ## Ting å gjøre
 1. Velge blokker.
-2. Implementere is semselector slik at vi
-3. semselector
+2. Implementere is semTests slik at vi
+3. semTests

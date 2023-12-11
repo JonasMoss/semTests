@@ -1,17 +1,18 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# semselector <img src="man/figures/logo.png" align="right" width="210" height="130" />
+# semTests <img src="man/figures/logo.png" align="right" width="210" height="130" />
 
-[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semselector)](https://cran.r-project.org/package=semselector)
-[![R-CMD-check](https://github.com/JonasMoss/semselector/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semselector/actions)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semTests)](https://cran.r-project.org/package=semTests)
+[![R-CMD-check](https://github.com/JonasMoss/semTests/workflows/R-CMD-check/badge.svg)](https://github.com/JonasMoss/semTests/actions)
 [![Project Status: Active – The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Codecov test
-coverage](https://codecov.io/gh/JonasMoss/semselector/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semselector?branch=main)
+coverage](https://codecov.io/gh/JonasMoss/semTests/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semTests?branch=main)
 
-An R package for goodness of fit testing of structural equation models
+An R package for goodness of fit testing of structural equation models.
+Built on top of `lavaan`.
 
 ## Installation
 
@@ -19,62 +20,24 @@ Use the following command from inside `R`:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("JonasMoss/semselector")
+remotes::install_github("JonasMoss/semTests")
 ```
 
 ## Usage
 
 Call the `library` function, create a `lavaan` model, and run the
-`semselector` function.
+`pvalues` function.
 
 ``` r
-library("semselector")
+library("semTests")
 model <- "A =~ A1+A2+A3+A4+A5;
           C =~ C1+C2+C3+C4+C5"
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
-#>       pstd        psb        pss      peba2      peba4 
-#> 0.01038449 0.03688981 0.06287764 0.05535394 0.06184855
+#> peba_half2_trad peba_half4_trad  peba_half2_rls  peba_half4_rls 
+#>      0.04182486      0.04370615      0.04235143      0.04424139
 ```
-
-You can find the best-performing *p*-values:
-
-``` r
-library("semselector")
-library("progressr")
-library("future") # for parallel processing
-plan(multisession)
-# handlers(global = TRUE) # For progress bar.
-set.seed(313)
-selector <- semselector(object)
-print(selector)
-```
-
-    #>                       distance  type     pvalue
-    #> kolmogorov-smirnov 0.066729289   pss 0.06287764
-    #> anderson-darling   0.008451422 peba2 0.05535394
-    #> cramer-von mises   0.001686626 peba2 0.05535394
-    #> 0.05-distance      0.004000000 peba4 0.06184855
-
-***Note:*** The `semselector` function is time-consuming. The example
-takes approximately 2 minutes to run on a 2.5Ghz computer. You should
-use the following code for parallel processing.
-
-``` r
-library("future") 
-plan(multisession)
-```
-
-And plot the distribution of the *p*-values:
-
-``` r
-library("ggplot2")
-theme_set(theme_minimal())
-plot(selector)
-```
-
-<img src="man/figures/README-plot_eval-1.png" width="750px" />
 
 ## References
 
@@ -98,7 +61,6 @@ modeling. Journal of Statistical Software, 48(2), 1–36.
 ## How to Contribute or Get Help
 
 If you encounter a bug, have a feature request or need some help, open a
-[Github issue](https://github.com/JonasMoss/semselector/issues). Create
-a pull requests to contribute. This project follows a [Contributor Code
-of
+[Github issue](https://github.com/JonasMoss/semTests/issues). Create a
+pull requests to contribute. This project follows a [Contributor Code of
 Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).

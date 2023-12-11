@@ -9,3 +9,4 @@ ugamma_no_groups(object, unbiased = 1)
 \description{
 Calculate non-nested gamma without mean structure
 }
+\keyword{internal}
