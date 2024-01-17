@@ -12,6 +12,7 @@ pvalues_one(
   trad,
   eba,
   eba_half,
+  pols,
   chisq = c("trad", "rls"),
   extras = FALSE
 )

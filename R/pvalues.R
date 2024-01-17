@@ -17,8 +17,13 @@
 #' @param m0,m1 One or two `lavaan` objects. If two, the first object should be
 #'    with restrictions and the second without.
 #' @param trad List of traditional p-values to calculate.
+#'    Not calculated if `NULL.`
 #' @param eba List of which `eba` p-values to calculate.
-#' @param eba_half List of which `eba_half` p-values to calculate
+#'    Not calculated if `NULL.`
+#' @param eba_half List of which `eba_half` p-values to calculate.
+#'    Not calculated if `NULL.`
+#' @param pols List of penalization parameters to use in the penalized
+#'    OLS p-value. Not calculated if `NULL.`
 #' @param unbiased A number between 1 and 3. 1: Calculate using the biased
 #'    gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
 #'    3: Calculate using both gammas.
@@ -27,14 +32,22 @@
 #' @export
 #' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
 #'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1, trad = NULL, eba = NULL, eba_half = c(2, 4), unbiased = 1, chisq = c("rls", "trad"), extras = FALSE) {
+pvalues <- function(m0, m1, trad = NULL, eba = NULL, eba_half = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "trad"), extras = FALSE) {
   if (missing(m1)) m1 <- NULL
 
-  if(is.null(trad) && is.null(eba) && is.null(eba_half)) {
+  if (is.null(trad) && is.null(eba) && is.null(eba_half) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
 
   if (!is.null(m1)) {
+    if (!is.null(pols)) {
+      warning("pols is not implemented for nested models.")
+    }
+
+    if (!is.null(eba_half)) {
+      warning("eba_half is not implemented for nested models.")
+    }
+
     pval <- \(unbiased, trad, eba) {
       pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
     }
@@ -53,7 +66,7 @@ pvalues <- function(m0, m1, trad = NULL, eba = NULL, eba_half = c(2, 4), unbiase
 
     c(bias, unbias)
   } else {
-    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, eba_half = eba_half, chisq = chisq, extras = extras)
+    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, eba_half = eba_half, pols = pols, chisq = chisq, extras = extras)
   }
 }
 
@@ -116,7 +129,7 @@ make_chisqs <- \(chisq, object) {
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad", "rls"), extras = FALSE) {
+pvalues_one <- function(object, unbiased, trad, eba, eba_half, pols, chisq = c("trad", "rls"), extras = FALSE) {
   df <- lavaan::fitmeasures(object, "df")
   chisqs <- make_chisqs(chisq, object)
   use_trad <- setdiff(trad, "pstd")
@@ -129,28 +142,35 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad",
       ug <- ug_list[[j]]
       lambdas <- lambdas_list[[j]]
 
-      if(!is.null(eba)) {
+      if (!is.null(eba)) {
         peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
         names(peba) <- paste0("peba", eba)
       } else {
         peba <- NULL
       }
 
-      if(!is.null(eba_half)) {
+      if (!is.null(eba_half)) {
         peba_half <- sapply(eba_half, \(k) eba_half_pvalue(chisq, lambdas, k))
         names(peba_half) <- paste0("peba_half", eba_half)
       } else {
         peba_half <- NULL
       }
 
+      if (!is.null(pols)) {
+        ppols <- sapply(pols, \(gamma) pols_pvalue(chisq, lambdas, gamma))
+        names(ppols) <- paste0("pols_", pols)
+      } else {
+        ppols <- NULL
+      }
+
       ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
 
-      out <- pmax(c(ptrad, peba, peba_half), 0)
+      out <- pmax(c(ptrad, peba, peba_half, ppols), 0)
       name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ub"
       name <- paste0(name, "_", names(chisqs)[i])
 
-      if(length(out) != 0) {
+      if (length(out) != 0) {
         names(out) <- paste0(names(out), name)
       }
       out
@@ -165,11 +185,11 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, chisq = c("trad",
     return_value <- c(return_value, result)
   }
 
-  if(extras) {
-    n = length(lambdas_list)
-    names(lambdas_list) = rep("lambda", n)
-    if(unbiased == 2) {
-      names(lambdas_list) = c(rep("lambda_biased", n/2), rep("lambda_unbiased", n/2))
+  if (extras) {
+    n <- length(lambdas_list)
+    names(lambdas_list) <- rep("lambda", n)
+    if (unbiased == 2) {
+      names(lambdas_list) <- c(rep("lambda_biased", n / 2), rep("lambda_unbiased", n / 2))
     }
     c(return_value, chisqs, lambdas_list)
   } else {
@@ -267,6 +287,16 @@ eba_half_pvalue <- \(chisq, lambdas, j) {
   eig_mean <- mean(lambdas)
   repeated <- rep(eig_means, each = k)[seq(m)]
   CompQuadForm::imhof(chisq, (repeated + eig_mean) / 2)$Qq
+}
+
+#' Calculate penalized OLS pvalue.
+#' @keywords internal
+pols_pvalue <- \(chisq, lambdas, gamma) {
+  x <- seq_along(lambdas)
+  beta1_hat <- 1/gamma * stats::cov(x, lambdas) / stats::var(x)
+  beta0_hat <- mean(lambdas) - beta1_hat * mean(x)
+  lambda_hat <- pmax(beta0_hat + beta1_hat * x, 0)
+  CompQuadForm::imhof(chisq, lambda_hat)$Qq
 }
 
 #' Calculate non-nested gamma without mean structure

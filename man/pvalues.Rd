@@ -10,6 +10,7 @@ pvalues(
   trad = NULL,
   eba = NULL,
   eba_half = c(2, 4),
+  pols = 2,
   unbiased = 1,
   chisq = c("rls", "trad"),
   extras = FALSE
@@ -19,11 +20,17 @@ pvalues(
 \item{m0, m1}{One or two \code{lavaan} objects. If two, the first object should be
 with restrictions and the second without.}
 
-\item{trad}{List of traditional p-values to calculate.}
+\item{trad}{List of traditional p-values to calculate.
+Not calculated if \code{NULL.}}
 
-\item{eba}{List of which \code{eba} p-values to calculate.}
+\item{eba}{List of which \code{eba} p-values to calculate.
+Not calculated if \code{NULL.}}
 
-\item{eba_half}{List of which \code{eba_half} p-values to calculate}
+\item{eba_half}{List of which \code{eba_half} p-values to calculate.
+Not calculated if \code{NULL.}}
+
+\item{pols}{List of penalization parameters to use in the penalized
+OLS p-value. Not calculated if \code{NULL.}}
 
 \item{unbiased}{A number between 1 and 3. 1: Calculate using the biased
 gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
