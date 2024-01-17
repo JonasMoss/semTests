@@ -18,3 +18,4 @@ The scaled and shifted p-value or the mean-variance adjusted p-value.
 \description{
 Calculate the scaled and shifted / the mean-variance adjusted p-value
 }
+\keyword{internal}

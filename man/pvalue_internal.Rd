@@ -11,7 +11,7 @@ pvalues_one(
   unbiased,
   trad,
   eba,
-  eba_half,
+  peba,
   pols,
   chisq = c("trad", "rls"),
   extras = FALSE

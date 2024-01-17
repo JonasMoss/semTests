@@ -1,18 +1,42 @@
 #' Calculate p-values for one or two lavaan objects.
 #'
-#' Calculate p-values for a `lavaan` object using several methods.
+#' Calculate p-values for a `lavaan` object using several methods,
+#' including penalized eigenvalue block-averaging and penalized regression
+#' estimators. The choice `peba=4` together with `chisq = "rls"` and `ub`
+#' is recommended. Multiple p-values can be returned simultaneously.
+#'
+#' **Note.** Some functionality for nested models have not been implemented, but
+#'   all goodness of fit tests for one model is implemented.
 #'
 #' The traditional methods include:
-#' * `pstd` the standard *p*-value extracted from lavaan.
-#' * `psb` Satorra-Bentler *p*-value.
-#' * `pfull` *p*-value based on all eigenvalues of the gamma matrix.
-#' * `pcf` Scaled F *p*-value.
-#' * `pss` Scaled and shifted *p*-value.
+#' * `pstd` the standard *p*-value where the choice of `chisq` is approximated by a chi square distribution.
+#' * `psb` Satorra-Bentler *p*-value. The *p*-value proposed by Satorra and Bentler (1994).
+#' * `pss` The scaled and shifted *p*-value proposed by Asparouhov & Muthén (2010).
+#' * `pcf` The Scaled F *p*-value proposed by Wu and Lin (2016).
+#' * `pfull` *p*-value based on all eigenvalues of the asymptotic covariance matrix matrix.
 #'
 #' The `eba` method partitions the eigenvalues into `j` equally sized sets
 #' (if not possible, the smallest set is incomplete), and takes the mean
 #' eigenvalue of these sets. Provide a list of integers `j` to partition
-#' with respect to.
+#' with respect to. The method was proposed by Foldnes & Grønneberg (2018).
+#' `eba` with `j=2` or `j=4` appear to work best.
+#'
+#' The `peba` method is a penalized variant of `eba`, described in
+#' (Foldnes, Moss, Grønneberg, WIP). It typically outperforms `eba`, and
+#' the best choice of `j` is typically `6`.
+#'
+#' `pols` is a penalized regression method with a penalization term from ranging
+#' from 0 to infitity. Foldnes, Moss, Grønneberg (WIP) studied `pols=2`, which
+#' has good performance in a variety of contexts.
+#'
+#' The `unbiased` argument is `TRUE` if the the unbiased estimator of the
+#' fourth order moment matrix (Du, Bentler, 2022) is used. If `FALSE`, the
+#' standard biased matrix is used. There is no simple relationship between
+#' p-value performance and the choice of `unbiased`.
+#'
+#' The `chisq` argument controls which basic test statistic is used. The `trad`
+#' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
+#' The `rls` choice uses the reweighted least squares statistic of Browne (1974).
 #'
 #' @param m0,m1 One or two `lavaan` objects. If two, the first object should be
 #'    with restrictions and the second without.
@@ -20,7 +44,7 @@
 #'    Not calculated if `NULL.`
 #' @param eba List of which `eba` p-values to calculate.
 #'    Not calculated if `NULL.`
-#' @param eba_half List of which `eba_half` p-values to calculate.
+#' @param peba List of which `peba` p-values to calculate.
 #'    Not calculated if `NULL.`
 #' @param pols List of penalization parameters to use in the penalized
 #'    OLS p-value. Not calculated if `NULL.`
@@ -28,45 +52,52 @@
 #'    gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
 #'    3: Calculate using both gammas.
 #' @param chisq Which chi-square statistic to base the calculations on.
-#' @param extras Returns extra information if checked.
+#' @param extras Returns the estimated eigenvalues and basic test statistics
+#'    if checked.
 #' @export
-#' @return A named vector containing the p-values `pstd`. `psb`, `pfull`,
-#'    `phalf`, `pcf`, `pss`.
-pvalues <- function(m0, m1, trad = NULL, eba = NULL, eba_half = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "trad"), extras = FALSE) {
+#' @return A named vector of p-values.
+#'
+#' @references
+#' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
+#'
+#' Asparouhov, & Muthén. (2010). Simple second order chi-square correction. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
+#'
+#' Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the Distribution of Test Statistics in Covariance Structure Analysis. Structural Equation Modeling. https://doi.org/10.1080/10705511.2015.1057733
+#'
+#' Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101–114. https://doi.org/10.1080/10705511.2017.1373021
+#'
+#' Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872–887. https://doi.org/10.1080/10705511.2022.2063870
+#'
+#' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
+#'
+#' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
+pvalues <- \(m0, m1, trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "trad"), extras = FALSE) {
   if (missing(m1)) m1 <- NULL
-
-  if (is.null(trad) && is.null(eba) && is.null(eba_half) && is.null(pols)) {
+  if (is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
-
   if (!is.null(m1)) {
     if (!is.null(pols)) {
       warning("pols is not implemented for nested models.")
     }
-
-    if (!is.null(eba_half)) {
-      warning("eba_half is not implemented for nested models.")
+    if (!is.null(peba)) {
+      warning("peba is not implemented for nested models.")
     }
-
     pval <- \(unbiased, trad, eba) {
       pvalues_two(m0, m1, unbiased = unbiased, trad = trad, eba = eba)
     }
-
     unbias <- bias <- c()
-
     if (unbiased == 1 || unbiased == 3) {
       bias <- pval(unbiased = FALSE, trad = trad, eba = eba)
     }
-
     if (unbiased == 2 || unbiased == 3) {
       if (unbiased == 3) trad <- setdiff(trad, "pstd")
       unbias <- pval(unbiased = TRUE, trad = trad, eba = eba)
       names(unbias) <- paste0(names(unbias), "_ub")
     }
-
     c(bias, unbias)
   } else {
-    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, eba_half = eba_half, pols = pols, chisq = chisq, extras = extras)
+    pvalues_one(m0, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   }
 }
 
@@ -84,24 +115,20 @@ NULL
 #' @param df,chisq,lambda,type Parameters needed to calculate the p-values.
 #' @returns Traditional p-values.
 #' @keywords internal
-trad_pvalue <- function(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb", "pfull")) {
+trad_pvalue <- \(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb", "pfull")) {
   type <- match.arg(type)
   if (type == "pstd") {
     return(1 - stats::pchisq(chisq, df))
   }
-
   if (type == "psf") {
     return(scaled_f(chisq, lambdas))
   }
-
   if (type == "pss") {
     return(scaled_and_shifted(chisq, lambdas))
   }
-
   if (type == "pfull") {
     return(CompQuadForm::imhof(chisq, lambdas)$Qq)
   }
-
   if (type == "psb") {
     m <- length(lambdas)
     return(as.numeric(1 - stats::pchisq(chisq * m / sum(lambdas), df = m)))
@@ -112,7 +139,7 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb"
 #' @param object lavaan object.
 #' @returns RLS.
 #' @keywords internal
-rls <- function(object) {
+rls <- \(object) {
   s_inv <- chol2inv(chol(lavaan::lavInspect(object, "sigma.hat")))
   residuals <- lavaan::lavInspect(object, "residuals")
   mm <- residuals[[1]] %*% s_inv
@@ -129,7 +156,7 @@ make_chisqs <- \(chisq, object) {
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- function(object, unbiased, trad, eba, eba_half, pols, chisq = c("trad", "rls"), extras = FALSE) {
+pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("trad", "rls"), extras = FALSE) {
   df <- lavaan::fitmeasures(object, "df")
   chisqs <- make_chisqs(chisq, object)
   use_trad <- setdiff(trad, "pstd")
@@ -149,11 +176,11 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, pols, chisq = c("
         peba <- NULL
       }
 
-      if (!is.null(eba_half)) {
-        peba_half <- sapply(eba_half, \(k) eba_half_pvalue(chisq, lambdas, k))
-        names(peba_half) <- paste0("peba_half", eba_half)
+      if (!is.null(peba)) {
+        ppeba <- sapply(peba, \(k) peba_pvalue(chisq, lambdas, k))
+        names(ppeba) <- paste0("ppeba", peba)
       } else {
-        peba_half <- NULL
+        ppeba <- NULL
       }
 
       if (!is.null(pols)) {
@@ -166,7 +193,7 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, pols, chisq = c("
       ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
 
-      out <- pmax(c(ptrad, peba, peba_half, ppols), 0)
+      out <- pmax(c(ptrad, peba, ppeba, ppols), 0)
       name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ub"
       name <- paste0(name, "_", names(chisqs)[i])
 
@@ -198,7 +225,7 @@ pvalues_one <- function(object, unbiased, trad, eba, eba_half, pols, chisq = c("
 }
 
 #' @rdname pvalue_internal
-pvalues_two <- function(m0, m1, unbiased = FALSE, trad, eba) {
+pvalues_two <- \(m0, m1, unbiased = FALSE, trad, eba) {
   if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML" ||
     m0@Options$se == "standard" || m1@Options$se == "standard") {
     stop("Only the 'ML' estimator has currently tested.")
@@ -222,11 +249,12 @@ pvalues_two <- function(m0, m1, unbiased = FALSE, trad, eba) {
 #' @param chisq Chi-square fit value from a lavaan object.
 #' @param lambdas Eigenvalues of UG matrix.
 #' @name laavan_tests
+#' @keywords internal
 #' @return The scaled and shifted p-value or the mean-variance adjusted p-value.
 NULL
 
 #' @rdname laavan_tests
-scaled_and_shifted <- function(chisq, lambdas) {
+scaled_and_shifted <- \(chisq, lambdas) {
   df <- length(lambdas)
   tr_ug <- sum(lambdas)
   tr_ug2 <- sum(lambdas^2)
@@ -241,7 +269,7 @@ scaled_and_shifted <- function(chisq, lambdas) {
 #' @param eig eig of UG matrix.
 #' @return scaled f p-value.
 #' @keywords internal
-scaled_f <- function(chisq, eig) {
+scaled_f <- \(chisq, eig) {
   s1 <- sum(eig)
   s2 <- sum(eig^2)
   s3 <- sum(eig^3)
@@ -277,7 +305,7 @@ eba_pvalue <- \(chisq, lambdas, j) {
 
 #' Calculate the jth eba pvalue.
 #' @keywords internal
-eba_half_pvalue <- \(chisq, lambdas, j) {
+peba_pvalue <- \(chisq, lambdas, j) {
   m <- length(lambdas)
   k <- ceiling(m / j)
   eig <- lambdas
@@ -293,7 +321,7 @@ eba_half_pvalue <- \(chisq, lambdas, j) {
 #' @keywords internal
 pols_pvalue <- \(chisq, lambdas, gamma) {
   x <- seq_along(lambdas)
-  beta1_hat <- 1/gamma * stats::cov(x, lambdas) / stats::var(x)
+  beta1_hat <- 1 / gamma * stats::cov(x, lambdas) / stats::var(x)
   beta0_hat <- mean(lambdas) - beta1_hat * mean(x)
   lambda_hat <- pmax(beta0_hat + beta1_hat * x, 0)
   CompQuadForm::imhof(chisq, lambda_hat)$Qq
@@ -304,7 +332,7 @@ pols_pvalue <- \(chisq, lambdas, gamma) {
 ugamma_no_groups <- \(object, unbiased = 1) {
   u <- lavaan::lavInspect(object, "U")
   object@Options$gamma.unbiased <- FALSE
-  gamma <- lavaan:::lav_object_gamma(object)[[1]]
+  gamma <- lavaan::lavInspect(object, "gamma")
 
   out <- list()
 
@@ -325,7 +353,7 @@ ugamma_no_groups <- \(object, unbiased = 1) {
 #' @param unbiased If `TRUE`, uses the unbiased gamma estimate.
 #' @keywords internal
 #' @return Ugamma for non-nested object.
-ugamma_non_nested <- function(object, unbiased = FALSE) {
+ugamma_non_nested <- \(object, unbiased = FALSE) {
   lavmodel <- object@Model
   object@Options$gamma.unbiased <- unbiased
 
@@ -362,7 +390,7 @@ ugamma_non_nested <- function(object, unbiased = FALSE) {
 
   gamma <- lavaan:::lav_object_gamma(object)
   if (is.null(gamma[[1]])) {
-    gamma <- lapply(lavaan::lavInspect(object, "gamma"), function(x) {
+    gamma <- lapply(lavaan::lavInspect(object, "gamma"), \(x) {
       class(x) <- "matrix"
       x
     })
@@ -386,8 +414,8 @@ ugamma_non_nested <- function(object, unbiased = FALSE) {
 #' @param method Method passed to `lavaan:::lav_test_diff_A`.
 #' @param unbiased If `TRUE`, uses the unbiased gamma estimate.
 #' @keywords internal
-#' @return Ugamma for non-nested object.
-ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) {
+#' @return Ugamma for nested object.
+ugamma_nested <- \(m0, m1, a = NULL, method = "delta", unbiased = FALSE) {
   m0@Options$gamma.unbiased <- unbiased
   m1@Options$gamma.unbiased <- unbiased
 
@@ -418,10 +446,12 @@ ugamma_nested <- function(m0, m1, a = NULL, method = "delta", unbiased = FALSE) 
 
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
-  p_inv <- lavaan:::lav_model_information_augment_invert(m1@Model,
-    information = lavaan::lavTech(m1, "information"),
-    inverted = TRUE
-  )
+  # p_inv <- lavaan:::lav_model_information_augment_invert(m1@Model,
+  #   information = lavaan::lavTech(m1, "information"),
+  #   inverted = TRUE
+  # )
+
+  p_inv <- lavaan::lavInspect(m1, what = "inverted.information")
 
   if (is.null(a)) {
     a <- lavaan:::lav_test_diff_A(m1, m0, method = method, reference = "H1")

@@ -17,7 +17,7 @@ ugamma_nested(m0, m1, a = NULL, method = "delta", unbiased = FALSE)
 \item{unbiased}{If \code{TRUE}, uses the unbiased gamma estimate.}
 }
 \value{
-Ugamma for non-nested object.
+Ugamma for nested object.
 }
 \description{
 This can also be used with restrictions.

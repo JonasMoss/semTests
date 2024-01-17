@@ -1,11 +1,28 @@
 Package: semTests
 Type: Package
 Title: Goodness-of-fit testing for structural equation models
-Description: Pragmatic tests for goodness. Supports the s-EBA (shrinkage eigenvalue block averaging) p-values with superior performance.
-Version: 0.1.1
+Description: Supports eigenvalue block-averaging p-values (Foldnes, Grønneberg, 2018) <doi:10.1080/10705511.2017.1373021>,
+    penalized eigenvalue block-averagning p-values (Foldnes, Moss, Grønneberg, WIP), penalized
+    regression p-values (Foldnes, Moss, Grønneberg, WIP), as well as traditional p-values such as Satorra-Bentler. All p-values can
+    be calculated using unbiased or biased gamma estimates (Du, Bentler, 2022) <doi:10.1080/10705511.2022.2063870> 
+    and two choices of chisquare statistics <doi:10.1111/j.2044-8317.1984.tb00789.x>.
+Version: 0.9.0
 Authors@R: c(
-    person("Jonas", "Moss", , "jonas.gjertsen@gmail.com", role = c("aut", "cre"), 
-      comment = c(ORCID = "0000-0002-6876-6964")))
+    person(given="Jonas", 
+           family="Moss",
+           email="jonas.moss.statistics@gmail.com", 
+           role=c("aut", "cre"), 
+           comment = c(ORCID = "0000-0002-6876-6964")), 
+    person(given="Njål", 
+           family="Foldnes", 
+           role = "ctb",
+           email="njalfoldnes@gmail.com",
+           comment = c(ORCID=0000-0001-6889-6067)),
+    person(given="Steffen",
+           family="Grønneberg", 
+           email="steffeng@gmail.com",
+           role = "ctb", 
+           comment = c(ORCID="0000-0003-2785-6530")))
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -17,9 +34,9 @@ Imports:
   Matrix,
   future.apply
 Suggests: 
-    covr,
-    testthat (>= 3.0.0),
-    psych
+  covr,
+  testthat (>= 3.0.0),
+  psych
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.0

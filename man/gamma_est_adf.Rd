@@ -15,4 +15,4 @@ Estimate of the ADF covariance matrix.
 \description{
 Asymptotically distribution free covariance matrix.
 }
-\keyword{Internal.}
+\keyword{internal}
