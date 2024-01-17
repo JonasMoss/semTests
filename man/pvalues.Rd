@@ -5,8 +5,7 @@
 \title{Calculate p-values for one or two lavaan objects.}
 \usage{
 pvalues(
-  m0,
-  m1,
+  object,
   trad = NULL,
   eba = NULL,
   peba = c(2, 4),
@@ -17,8 +16,7 @@ pvalues(
 )
 }
 \arguments{
-\item{m0, m1}{One or two \code{lavaan} objects. If two, the first object should be
-with restrictions and the second without.}
+\item{object}{A \code{lavaan} object.}
 
 \item{trad}{List of traditional p-values to calculate.
 Not calculated if \code{NULL.}}
@@ -51,9 +49,6 @@ estimators. The choice \code{peba=4} together with \code{chisq = "rls"} and \cod
 is recommended. Multiple p-values can be returned simultaneously.
 }
 \details{
-\strong{Note.} Some functionality for nested models have not been implemented, but
-all goodness of fit tests for one model is implemented.
-
 The traditional methods include:
 \itemize{
 \item \code{pstd} the standard \emph{p}-value where the choice of \code{chisq} is approximated by a chi square distribution.

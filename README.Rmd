@@ -66,4 +66,4 @@ Rosseel, Y. (2012). lavaan: An R package for structural equation modeling.
 Journal of Statistical Software, 48(2), 1–36. https://doi.org/10.18637/jss.v048.i02
 
 ## How to Contribute or Get Help
-If you encounter a bug, have a feature request or need some help, open a [Github issue](https://github.com/JonasMoss/semTests/issues). Create a pull requests to contribute. This project follows a [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).
+If you encounter a bug, have a feature request or need some help, open a [Github issue](https://github.com/JonasMoss/semTests/issues). Create a pull requests to contribute.

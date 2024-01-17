@@ -3,7 +3,6 @@
 \name{pvalue_internal}
 \alias{pvalue_internal}
 \alias{pvalues_one}
-\alias{pvalues_two}
 \title{P value function for one and two arguments.}
 \usage{
 pvalues_one(
@@ -16,8 +15,6 @@ pvalues_one(
   chisq = c("trad", "rls"),
   extras = FALSE
 )
-
-pvalues_two(m0, m1, unbiased = FALSE, trad, eba)
 }
 \arguments{
 \item{object, m0, m1}{\code{lavaan} objects.}

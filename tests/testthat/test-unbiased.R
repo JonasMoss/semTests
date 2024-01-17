@@ -4,22 +4,7 @@ n <- 50
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 
 test_that("unbiased and biased not the same for object", {
-  ugamma_1 <- ugamma_non_nested(object, unbiased = TRUE)
-  ugamma_2 <- ugamma_non_nested(object, unbiased = FALSE)
-  expect_true(sum(abs(ugamma_1 - ugamma_2)) > 1)
-
-  ugamma_1 <- ugamma_non_nested(m1, unbiased = TRUE)
-  ugamma_2 <- ugamma_non_nested(m1, unbiased = FALSE)
-  expect_true(sum(abs(ugamma_1 - ugamma_2)) > 1)
-})
-
-
-test_that("unbiased and biased not the same for m0 m1", {
-  ugamma_1 <- ugamma_nested(m0, m1, unbiased = TRUE)
-  ugamma_2 <- ugamma_nested(m0, m1, unbiased = FALSE)
-  expect_true(sum(abs(ugamma_1 - ugamma_2)) > 1)
-
-  ugamma_1 <- ugamma_non_nested(m1, unbiased = TRUE)
-  ugamma_2 <- ugamma_non_nested(m1, unbiased = FALSE)
+  ugamma_1 <- ugamma_no_groups(object, unbiased = 1)$ug_biased
+  ugamma_2 <- ugamma_no_groups(object, unbiased = 2)$ug_unbiased
   expect_true(sum(abs(ugamma_1 - ugamma_2)) > 1)
 })
