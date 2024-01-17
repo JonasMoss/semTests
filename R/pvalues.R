@@ -169,18 +169,18 @@ pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("trad", "rls
       ug <- ug_list[[j]]
       lambdas <- lambdas_list[[j]]
 
-      if (!is.null(eba)) {
-        peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
-        names(peba) <- paste0("peba", eba)
-      } else {
-        peba <- NULL
-      }
-
       if (!is.null(peba)) {
         ppeba <- sapply(peba, \(k) peba_pvalue(chisq, lambdas, k))
         names(ppeba) <- paste0("ppeba", peba)
       } else {
         ppeba <- NULL
+      }
+
+      if (!is.null(eba)) {
+        peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
+        names(peba) <- paste0("peba", eba)
+      } else {
+        peba <- NULL
       }
 
       if (!is.null(pols)) {

@@ -10,27 +10,27 @@ test_that("estimators other than ml do not work.", {
 })
 
 test_that("pvalues_one return p_values in (0, 1)", {
-  pvals <- pvalues_one(object, eba = 2, eba_half = 2, unbiased = 2, trad = "psb", pols = 2)
+  pvals <- pvalues_one(object, eba = 2, peba = 2, unbiased = 2, trad = "psb", pols = 2)
   expect_true(all(pvals < 1))
   expect_true(all(pvals > 0))
 })
 
 test_that("pvalues works with NULL", {
-  expect_error(pvalues(object, trad = NULL, eba = NULL, eba_half = NULL, pols = NULL))
-  expect_equal(length(pvalues(object, trad = NULL, eba = NULL, eba_half = 1, pols = NULL)), 2)
-  expect_equal(length(pvalues(object, trad = NULL, eba = 1, eba_half = NULL, pols = 2)), 4)
-  expect_equal(length(pvalues(object, trad = c("pstd", "psf", "pss", "psb", "pfull"), eba = NULL, eba_half = NULL, pols = NULL)), 10)
+  expect_error(pvalues(object, trad = NULL, eba = NULL, peba = NULL, pols = NULL))
+  expect_equal(length(pvalues(object, trad = NULL, eba = NULL, peba = 1, pols = NULL)), 2)
+  expect_equal(length(pvalues(object, trad = NULL, eba = 1, peba = NULL, pols = 2)), 4)
+  expect_equal(length(pvalues(object, trad = c("pstd", "psf", "pss", "psb", "pfull"), eba = NULL, peba = NULL, pols = NULL)), 10)
 })
 
 
 test_that("pvalues_two and pvalues / pvalues_one and pvalues agree", {
   expect_equal(
-    pvalues(object, eba = 2, trad = "psb", eba_half = 2, pols = 2, unbiased = 2),
-    pvalues_one(object, eba = 2, trad = "psb", eba_half = 2, pols = 2, unbiased = 2)
+    pvalues(object, eba = 2, trad = "psb", peba = 2, pols = 2, unbiased = 2),
+    pvalues_one(object, eba = 2, trad = "psb", peba = 2, pols = 2, unbiased = 2)
   )
   expect_equal(
     pvalues_two(m0, m1, eba = 2, trad = "psb", unbiased = FALSE),
-    pvalues(m0, m1, eba = 2, trad = "psb", unbiased = 1, eba_half = NULL, pols = NULL)
+    pvalues(m0, m1, eba = 2, trad = "psb", unbiased = 1, peba = NULL, pols = NULL)
   )
 })
 
