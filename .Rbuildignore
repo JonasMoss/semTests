@@ -7,3 +7,5 @@ man-roxygen
 workspace
 README_cache
 ^codecov\.yml$
+^CRAN-SUBMISSION$
+^cran-comments\.md$
