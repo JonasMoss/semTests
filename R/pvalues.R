@@ -77,15 +77,12 @@ pvalues <- \(object, trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased
 #' P value function for one and two arguments.
 #'
 #' @keywords internal
-#' @param object,m0,m1 `lavaan` objects.
-#' @param trad List of traditional p-values to calculate.
-#' @param eba List of which eba p-values to calculate.
 #' @name pvalue_internal
 #' @return pvalues.
 NULL
 
 #' Calculate traditional pvalues.
-#' @param df,chisq,lambda,type Parameters needed to calculate the p-values.
+#' @param df,chisq,lambdas,type Parameters needed to calculate the p-values.
 #' @returns Traditional p-values.
 #' @keywords internal
 trad_pvalue <- \(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb", "pfull")) {

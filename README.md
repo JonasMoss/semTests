@@ -33,8 +33,8 @@ model <- "A =~ A1+A2+A3+A4+A5;
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
-#> peba_half2_trad peba_half4_trad  peba_half2_rls  peba_half4_rls 
-#>      0.04182486      0.04370615      0.04235143      0.04424139
+#> ppeba2_trad ppeba4_trad pols_2_trad  ppeba2_rls  ppeba4_rls  pols_2_rls 
+#>  0.04182486  0.04370615  0.04397064  0.04235143  0.04424139  0.04450873
 ```
 
 ## References
@@ -60,5 +60,4 @@ modeling. Journal of Statistical Software, 48(2), 1–36.
 
 If you encounter a bug, have a feature request or need some help, open a
 [Github issue](https://github.com/JonasMoss/semTests/issues). Create a
-pull requests to contribute. This project follows a [Contributor Code of
-Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.md).
+pull requests to contribute.

@@ -16,13 +16,6 @@ pvalues_one(
   extras = FALSE
 )
 }
-\arguments{
-\item{object, m0, m1}{\code{lavaan} objects.}
-
-\item{trad}{List of traditional p-values to calculate.}
-
-\item{eba}{List of which eba p-values to calculate.}
-}
 \value{
 pvalues.
 }

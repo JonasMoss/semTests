@@ -14,16 +14,18 @@ bootstrapper(
 )
 }
 \arguments{
+\item{m0, m1}{Several \code{lavaan} objects.}
+
 \item{functional}{The functional to calculate. Takes a list of \code{lavaan}
 objects as its argument. Defaults to \code{identity}, but that's not
 a good idea to use, as it consumes a lot of memory.}
 
 \item{n_reps}{Number of bootstrap repetitions.}
 
+\item{bs}{If \code{TRUE} then Bollen-Stine, else no transform.}
+
 \item{skip_warning}{If \code{TRUE}, ignores bootstrapped estimates with
 warnings.}
-
-\item{...}{Several \code{lavaan} objects.}
 }
 \value{
 Bootstrapped objects as calculated by \code{functional}.

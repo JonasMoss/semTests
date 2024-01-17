@@ -7,7 +7,7 @@
 trad_pvalue(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb", "pfull"))
 }
 \arguments{
-\item{df, chisq, lambda, type}{Parameters needed to calculate the p-values.}
+\item{df, chisq, lambdas, type}{Parameters needed to calculate the p-values.}
 }
 \value{
 Traditional p-values.
