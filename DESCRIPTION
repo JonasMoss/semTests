@@ -5,7 +5,7 @@ Description: Supports eigenvalue block-averaging p-values (Foldnes, Grønneberg,
     penalized eigenvalue block-averaging p-values (Foldnes, Moss, Grønneberg, WIP), penalized
     regression p-values (Foldnes, Moss, Grønneberg, WIP), as well as traditional p-values such as Satorra-Bentler. All p-values can
     be calculated using unbiased or biased gamma estimates (Du, Bentler, 2022) <doi:10.1080/10705511.2022.2063870> 
-    and two choices of chi square statistics <doi:10.1111/j.2044-8317.1984.tb00789.x>.
+    and two choices of chi square statistics.
 Version: 0.5.0
 Authors@R: c(
     person(given="Jonas", 

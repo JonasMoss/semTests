@@ -4,4 +4,4 @@
 
 Tested on macos (release), windows (release), and ubuntu (devel, release, oldrel).
 
-* This is a new release.
+* Removed superfluous citation without DOI.
