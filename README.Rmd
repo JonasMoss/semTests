@@ -36,8 +36,12 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(out.width = "750px", dpi = 200)
 ```
 
-## Installation
-Use the following command from inside `R`:
+## Installation¨
+Either install from `CRAN`,
+```{r, eval = FALSE}
+install.packages("semTests")
+```
+Or install the development version using the following command inside `R`:
 ```{r install, echo = TRUE, eval = FALSE}
 # install.packages("remotes")
 remotes::install_github("JonasMoss/semTests")

@@ -11,8 +11,8 @@
 #' @keywords internal
 #' @return Bootstrapped objects as calculated by `functional`.
 bootstrapper <- \(m0, m1 = NULL, functional = identity, n_reps = 1000,
-                         bs = TRUE,
-                         skip_warning = FALSE) {
+  bs = TRUE,
+  skip_warning = FALSE) {
   progress <- progressr::progressor(n_reps)
   data <- if (bs) bollen_stine_transform(m0) else m0@Data@X
   errors <- 0 # Not in use for the moment.

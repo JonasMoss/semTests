@@ -4,4 +4,8 @@
 
 Tested on macos (release), windows (release), and ubuntu (devel, release, oldrel).
 
-* Removed superfluous citation without DOI.
+* Added the argument `tests` to `pvalues` to make it easier to use.
+* Modified recommendations in the docs.
+* Modified the names of the output of `pvalues` to be consistent with Foldnes, Moss, Grønneberg (WIP).
+
+

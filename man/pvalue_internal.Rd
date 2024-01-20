@@ -12,7 +12,7 @@ pvalues_one(
   eba,
   peba,
   pols,
-  chisq = c("trad", "rls"),
+  chisq = c("ml", "rls"),
   extras = FALSE
 )
 }

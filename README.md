@@ -12,9 +12,16 @@ developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.re
 An R package for goodness of fit testing of structural equation models.
 Built on top of `lavaan`.
 
-## Installation
+## Installation¨
 
-Use the following command from inside `R`:
+Either install from `CRAN`,
+
+``` r
+install.packages("semTests")
+```
+
+Or install the development version using the following command inside
+`R`:
 
 ``` r
 # install.packages("remotes")
@@ -33,8 +40,8 @@ model <- "A =~ A1+A2+A3+A4+A5;
 n <- 200
 object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
-#> ppeba2_trad ppeba4_trad pols_2_trad  ppeba2_rls  ppeba4_rls  pols_2_rls 
-#>  0.04182486  0.04370615  0.04397064  0.04235143  0.04424139  0.04450873
+#>    sb_ug_rls peba2_ug_rls    peba4_rls    peba6_rls    pols2_rls 
+#>   0.04396777   0.04930207   0.04424139   0.04488057   0.04450873
 ```
 
 ## References

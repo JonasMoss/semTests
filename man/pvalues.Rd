@@ -6,17 +6,22 @@
 \usage{
 pvalues(
   object,
+  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
   trad = NULL,
   eba = NULL,
   peba = c(2, 4),
   pols = 2,
   unbiased = 1,
-  chisq = c("rls", "trad"),
+  chisq = c("rls", "ml"),
   extras = FALSE
 )
 }
 \arguments{
 \item{object}{A \code{lavaan} object.}
+
+\item{tests}{A list of tests to evaluate on the
+form "test(parameter)\emph{(ug?)}(rls?)"; see the default argument.
+The remainder of the arguments are ignored if \code{test} is not \code{NULL}.}
 
 \item{trad}{List of traditional p-values to calculate.
 Not calculated if \code{NULL.}}
@@ -45,28 +50,27 @@ A named vector of p-values.
 \description{
 Calculate p-values for a \code{lavaan} object using several methods,
 including penalized eigenvalue block-averaging and penalized regression
-estimators. The choice \code{peba=4} together with \code{chisq = "rls"} and \code{ub}
-is recommended. Multiple p-values can be returned simultaneously.
+estimators. The recommended choices of \emph{p}-values are included as default
+values. Multiple p-values can be returned simultaneously.
 }
 \details{
 The traditional methods include:
 \itemize{
-\item \code{pstd} the standard \emph{p}-value where the choice of \code{chisq} is approximated by a chi square distribution.
-\item \code{psb} Satorra-Bentler \emph{p}-value. The \emph{p}-value proposed by Satorra and Bentler (1994).
-\item \code{pss} The scaled and shifted \emph{p}-value proposed by Asparouhov & Muthén (2010).
-\item \code{pcf} The Scaled F \emph{p}-value proposed by Wu and Lin (2016).
-\item \code{pfull} \emph{p}-value based on all eigenvalues of the asymptotic covariance matrix matrix.
+\item \code{std} the standard \emph{p}-value where the choice of \code{chisq} is approximated by a chi square distribution.
+\item \code{sb} Satorra-Bentler \emph{p}-value. The \emph{p}-value proposed by Satorra and Bentler (1994).
+\item \code{ss} The scaled and shifted \emph{p}-value proposed by Asparouhov & Muthén (2010).
+\item \code{sf} The scaled \emph{F} \emph{p}-value proposed by Wu and Lin (2016).
 }
 
 The \code{eba} method partitions the eigenvalues into \code{j} equally sized sets
 (if not possible, the smallest set is incomplete), and takes the mean
 eigenvalue of these sets. Provide a list of integers \code{j} to partition
 with respect to. The method was proposed by Foldnes & Grønneberg (2018).
-\code{eba} with \code{j=2} or \code{j=4} appear to work best.
+\code{eba} with \code{j=2} -- \code{j=4} appear to work best.
 
 The \code{peba} method is a penalized variant of \code{eba}, described in
 (Foldnes, Moss, Grønneberg, WIP). It typically outperforms \code{eba}, and
-the best choice of \code{j} is typically \code{6}.
+the best choice of \code{j} are typically about \code{2}--\code{6}.
 
 \code{pols} is a penalized regression method with a penalization term from ranging
 from 0 to infitity. Foldnes, Moss, Grønneberg (WIP) studied \code{pols=2}, which
@@ -77,7 +81,7 @@ fourth order moment matrix (Du, Bentler, 2022) is used. If \code{FALSE}, the
 standard biased matrix is used. There is no simple relationship between
 p-value performance and the choice of \code{unbiased}.
 
-The \code{chisq} argument controls which basic test statistic is used. The \code{trad}
+The \code{chisq} argument controls which basic test statistic is used. The \code{ml}
 choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 The \code{rls} choice uses the reweighted least squares statistic of Browne (1974).
 }

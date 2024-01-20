@@ -2,25 +2,24 @@
 #'
 #' Calculate p-values for a `lavaan` object using several methods,
 #' including penalized eigenvalue block-averaging and penalized regression
-#' estimators. The choice `peba=4` together with `chisq = "rls"` and `ub`
-#' is recommended. Multiple p-values can be returned simultaneously.
+#' estimators. The recommended choices of *p*-values are included as default
+#' values. Multiple p-values can be returned simultaneously.
 #'
 #' The traditional methods include:
-#' * `pstd` the standard *p*-value where the choice of `chisq` is approximated by a chi square distribution.
-#' * `psb` Satorra-Bentler *p*-value. The *p*-value proposed by Satorra and Bentler (1994).
-#' * `pss` The scaled and shifted *p*-value proposed by Asparouhov & Muthén (2010).
-#' * `pcf` The Scaled F *p*-value proposed by Wu and Lin (2016).
-#' * `pfull` *p*-value based on all eigenvalues of the asymptotic covariance matrix matrix.
+#' * `std` the standard *p*-value where the choice of `chisq` is approximated by a chi square distribution.
+#' * `sb` Satorra-Bentler *p*-value. The *p*-value proposed by Satorra and Bentler (1994).
+#' * `ss` The scaled and shifted *p*-value proposed by Asparouhov & Muthén (2010).
+#' * `sf` The scaled *F* *p*-value proposed by Wu and Lin (2016).
 #'
 #' The `eba` method partitions the eigenvalues into `j` equally sized sets
 #' (if not possible, the smallest set is incomplete), and takes the mean
 #' eigenvalue of these sets. Provide a list of integers `j` to partition
 #' with respect to. The method was proposed by Foldnes & Grønneberg (2018).
-#' `eba` with `j=2` or `j=4` appear to work best.
+#' `eba` with `j=2` -- `j=4` appear to work best.
 #'
 #' The `peba` method is a penalized variant of `eba`, described in
 #' (Foldnes, Moss, Grønneberg, WIP). It typically outperforms `eba`, and
-#' the best choice of `j` is typically `6`.
+#' the best choice of `j` are typically about `2`--`6`.
 #'
 #' `pols` is a penalized regression method with a penalization term from ranging
 #' from 0 to infitity. Foldnes, Moss, Grønneberg (WIP) studied `pols=2`, which
@@ -31,11 +30,14 @@
 #' standard biased matrix is used. There is no simple relationship between
 #' p-value performance and the choice of `unbiased`.
 #'
-#' The `chisq` argument controls which basic test statistic is used. The `trad`
+#' The `chisq` argument controls which basic test statistic is used. The `ml`
 #' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 #' The `rls` choice uses the reweighted least squares statistic of Browne (1974).
 #'
 #' @param object A `lavaan` object.
+#' @param tests A list of tests to evaluate on the
+#'    form "test(parameter)_(ug?)_(rls?)"; see the default argument.
+#'    The remainder of the arguments are ignored if `test` is not `NULL`.
 #' @param trad List of traditional p-values to calculate.
 #'    Not calculated if `NULL.`
 #' @param eba List of which `eba` p-values to calculate.
@@ -67,11 +69,17 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- \(object, trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "trad"), extras = FALSE) {
-  if (is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
+pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
+  if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
-  pvalues_one(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
+
+  if(is.null(tests)) {
+    pvalues_one(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
+  } else {
+    options <- lapply(tests, \(test) split_input(test))
+    sapply(options, \(option) do.call(pvalues_one, c(object,option)))
+  }
 }
 
 #' P value function for one and two arguments.
@@ -85,21 +93,18 @@ NULL
 #' @param df,chisq,lambdas,type Parameters needed to calculate the p-values.
 #' @returns Traditional p-values.
 #' @keywords internal
-trad_pvalue <- \(df, chisq, lambdas, type = c("pstd", "psf", "pss", "psb", "pfull")) {
+trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb")) {
   type <- match.arg(type)
-  if (type == "pstd") {
+  if (type == "std") {
     return(1 - stats::pchisq(chisq, df))
   }
-  if (type == "psf") {
+  if (type == "sf") {
     return(scaled_f(chisq, lambdas))
   }
-  if (type == "pss") {
+  if (type == "ss") {
     return(scaled_and_shifted(chisq, lambdas))
   }
-  if (type == "pfull") {
-    return(CompQuadForm::imhof(chisq, lambdas)$Qq)
-  }
-  if (type == "psb") {
+  if (type == "sb") {
     m <- length(lambdas)
     return(as.numeric(1 - stats::pchisq(chisq * m / sum(lambdas), df = m)))
   }
@@ -120,16 +125,16 @@ rls <- \(object) {
 #' @keywords internal
 make_chisqs <- \(chisq, object) {
   chisqs <- c()
-  if ("trad" %in% chisq) chisqs["trad"] <- lavaan::fitmeasures(object, "chisq")
+  if ("ml" %in% chisq) chisqs["ml"] <- lavaan::fitmeasures(object, "chisq")
   if ("rls" %in% chisq) chisqs["rls"] <- rls(object)
   chisqs
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("trad", "rls"), extras = FALSE) {
+pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE) {
   df <- lavaan::fitmeasures(object, "df")
   chisqs <- make_chisqs(chisq, object)
-  use_trad <- setdiff(trad, "pstd")
+  use_trad <- setdiff(trad, "std")
   ug_list <- ugamma_no_groups(object, unbiased)
   lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
   return_value <- c()
@@ -141,21 +146,21 @@ pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("trad", "rls
 
       if (!is.null(peba)) {
         ppeba <- sapply(peba, \(k) peba_pvalue(chisq, lambdas, k))
-        names(ppeba) <- paste0("ppeba", peba)
+        names(ppeba) <- paste0("peba", peba)
       } else {
         ppeba <- NULL
       }
 
       if (!is.null(eba)) {
         peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
-        names(peba) <- paste0("peba", eba)
+        names(peba) <- paste0("eba", eba)
       } else {
         peba <- NULL
       }
 
       if (!is.null(pols)) {
         ppols <- sapply(pols, \(gamma) pols_pvalue(chisq, lambdas, gamma))
-        names(ppols) <- paste0("pols_", pols)
+        names(ppols) <- paste0("pols", pols)
       } else {
         ppols <- NULL
       }
@@ -164,8 +169,10 @@ pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("trad", "rls
       names(ptrad) <- use_trad
 
       out <- pmax(c(ptrad, peba, ppeba, ppols), 0)
-      name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ub"
-      name <- paste0(name, "_", names(chisqs)[i])
+      name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ug"
+      if (names(chisqs)[i] == "rls") {
+        name <- paste0(name, "_", names(chisqs)[i])
+      }
 
       if (length(out) != 0) {
         names(out) <- paste0(names(out), name)
@@ -173,10 +180,10 @@ pvalues_one <- \(object, unbiased, trad, eba, peba, pols, chisq = c("trad", "rls
       out
     }))
 
-    if ("pstd" %in% trad) {
-      pstd <- c(trad_pvalue(df, chisq, NULL, "pstd"))
-      names(pstd) <- paste0("pstd_", names(chisqs)[i])
-      result <- c(pstd, result)
+    if ("std" %in% trad) {
+      std <- c(trad_pvalue(df, chisq, NULL, "std"))
+      names(std) <- paste0("std_", names(chisqs)[i])
+      result <- c(std, result)
     }
 
     return_value <- c(return_value, result)
@@ -223,7 +230,6 @@ scaled_f <- \(chisq, eig) {
   s1 <- sum(eig)
   s2 <- sum(eig^2)
   s3 <- sum(eig^3)
-
   denom <- 2 * s1 * s2^2 - s1^2 * s3 + 2 * s2 * s3
   if (denom > 0) {
     d1f3 <- s1 * (s1^2 * s2 - 2 * s2^2 + 4 * s1 * s3) / denom
@@ -236,7 +242,6 @@ scaled_f <- \(chisq, eig) {
     d2f3 <- s1^2 / s2 + 4
     cf3 <- s1 * (s1^2 + 2 * s2) / (s1^2 + 4 * s2)
   }
-
   unname(1 - stats::pf(chisq / cf3, d1f3, d2f3))
 }
 
@@ -297,4 +302,3 @@ ugamma_no_groups <- \(object, unbiased = 1) {
 
   out
 }
-
