@@ -22,7 +22,9 @@ m0 <- lavaan::cfa(hs_model,
 pvalues_nested(m0, m1, tests = "SB_UG")
 pvalues_nested(m0, m1, tests = "SB_UG_RLS")
 pvalues_nested(m0, m1, tests = "SB_RLS")
-pvalues_nested(m0, m1, tests = "SB")
+pvalues_nested(m0, m1, tests = "SB", extras = TRUE)
+
+pvalues(m0, tests = "SB", extras = TRUE)
 
 sum(abs(ugamma_nested(m0, m1, "2000", 2)[[1]] - ugamma_nested(m0, m1, "2000", 1)[[1]]))
 

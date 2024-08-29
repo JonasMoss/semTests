@@ -77,7 +77,7 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
     pvalues_one(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   } else {
     options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_one, c(object, option)))
+    sapply(options, \(option) do.call(pvalues_one, c(object, option, extras = extras)))
   }
 }
 
@@ -89,7 +89,7 @@ pvalues_nested <- \(m0, m1, method = "2002", tests = c("SB_UG_RLS", "pEBA2_UG_RL
     pvalues_one(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
   } else {
     options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_one, c(m0, m1, option)))
+    sapply(options, \(option) do.call(pvalues_one, c(m0, m1, option, extras = extras)))
   }
 }
 
