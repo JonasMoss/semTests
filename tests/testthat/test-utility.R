@@ -7,62 +7,77 @@ test_that("split_input looks reasonable", {
 })
 
 options <- lapply(tests, \(test) split_input(test))
-result <- sapply(options, \(option) do.call(pvalues_one, c(object,option)))
+result <- sapply(options, \(option) do.call(pvalues_one, c(object, option)))
 test_that("split_input applied to p_values gives correct names", {
   expect_equal(names(result), tolower(tests))
 })
 
 test_that("using 'tests' in pvalues yield the correct results.", {
-  expect_equal(pvalues(object, tests[1]),
-               pvalues(object,
-                       tests = NULL,
-                       trad = "sb",
-                       peba = NULL,
-                       eba = NULL,
-                       pols = NULL,
-                       unbiased = 2,
-                       chisq = "rls"))
+  expect_equal(
+    pvalues(object, tests[1]),
+    pvalues(object,
+      tests = NULL,
+      trad = "sb",
+      peba = NULL,
+      eba = NULL,
+      pols = NULL,
+      unbiased = 2,
+      chisq = "rls"
+    )
+  )
 
 
-  expect_equal(pvalues(object, tests[2]),
-               pvalues(object,
-                       tests = NULL,
-                       trad = NULL,
-                       peba = 2,
-                       eba = NULL,
-                       pols = NULL,
-                       unbiased = 2,
-                       chisq = "rls"))
+  expect_equal(
+    pvalues(object, tests[2]),
+    pvalues(object,
+      tests = NULL,
+      trad = NULL,
+      peba = 2,
+      eba = NULL,
+      pols = NULL,
+      unbiased = 2,
+      chisq = "rls"
+    )
+  )
 
 
-  expect_equal(pvalues(object, tests[3]),
-               pvalues(object,
-                       tests = NULL,
-                       trad = NULL,
-                       peba = NULL,
-                       eba = 4,
-                       pols = NULL,
-                       unbiased = 1,
-                       chisq = "rls"))
+  expect_equal(
+    pvalues(object, tests[3]),
+    pvalues(object,
+      tests = NULL,
+      trad = NULL,
+      peba = NULL,
+      eba = 4,
+      pols = NULL,
+      unbiased = 1,
+      chisq = "rls"
+    )
+  )
 
 
-  expect_equal(pvalues(object, tests[4]),
-               pvalues(object,
-                       tests = NULL,
-                       trad = NULL,
-                       peba = 6,
-                       eba = NULL,
-                       pols = NULL,
-                       unbiased = 1,
-                       chisq = "rls"))
+  expect_equal(
+    pvalues(object, tests[4]),
+    pvalues(object,
+      tests = NULL,
+      trad = NULL,
+      peba = 6,
+      eba = NULL,
+      pols = NULL,
+      unbiased = 1,
+      chisq = "rls"
+    )
+  )
 
-  expect_equal(pvalues(object, tests[5]),
-               pvalues(object,
-                       tests = NULL,
-                       trad = NULL,
-                       peba = NULL,
-                       eba = NULL,
-                       pols = 2,
-                       unbiased = 2,
-                       chisq = "ml"))
+  expect_equal(
+    pvalues(object, tests[5]),
+    pvalues(object,
+      tests = NULL,
+      trad = NULL,
+      peba = NULL,
+      eba = NULL,
+      pols = 2,
+      unbiased = 2,
+      chisq = "ml"
+    )
+  )
 })

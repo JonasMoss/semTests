@@ -56,7 +56,7 @@ split_input <- \(string) {
   chisq <- "ml"
   type <- nanull(splitted[1])
 
-  if(length(splitted) == 3) {
+  if (length(splitted) == 3) {
     unbiased <- if (splitted[2] == "ug") 2 else 1
     chisq <- splitted[3]
   } else if (length(splitted) == 2) {
@@ -77,10 +77,12 @@ split_input <- \(string) {
     trad <- type
   }
 
-  list(trad = trad,
-       eba = eba,
-       peba = peba,
-       pols = pols,
-       unbiased = unbiased,
-       chisq = chisq)
+  list(
+    trad = trad,
+    eba = eba,
+    peba = peba,
+    pols = pols,
+    unbiased = unbiased,
+    chisq = chisq
+  )
 }
