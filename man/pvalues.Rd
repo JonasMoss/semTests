@@ -2,6 +2,7 @@
 % Please edit documentation in R/pvalues.R
 \name{pvalues}
 \alias{pvalues}
+\alias{pvalues_nested}
 \title{Calculate p-values for one or two lavaan objects.}
 \usage{
 pvalues(
@@ -15,9 +16,23 @@ pvalues(
   chisq = c("rls", "ml"),
   extras = FALSE
 )
+
+pvalues_nested(
+  m0,
+  m1,
+  method = "2002",
+  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
+  trad = NULL,
+  eba = NULL,
+  peba = c(2, 4),
+  pols = 2,
+  unbiased = 1,
+  chisq = c("rls", "ml"),
+  extras = FALSE
+)
 }
 \arguments{
-\item{object}{A \code{lavaan} object.}
+\item{object, m0, m1}{One or two \code{lavaan} objects.}
 
 \item{tests}{A list of tests to evaluate on the
 form "test(parameter)\emph{(ug?)}(rls?)"; see the default argument.
@@ -58,22 +73,22 @@ The traditional methods include:
 \itemize{
 \item \code{std} the standard \emph{p}-value where the choice of \code{chisq} is approximated by a chi square distribution.
 \item \code{sb} Satorra-Bentler \emph{p}-value. The \emph{p}-value proposed by Satorra and Bentler (1994).
-\item \code{ss} The scaled and shifted \emph{p}-value proposed by Asparouhov & Muthén (2010).
+\item \code{ss} The scaled and shifted \emph{p}-value proposed by Asparouhov & Muth<U+00E9>n (2010).
 \item \code{sf} The scaled \emph{F} \emph{p}-value proposed by Wu and Lin (2016).
 }
 
 The \code{eba} method partitions the eigenvalues into \code{j} equally sized sets
 (if not possible, the smallest set is incomplete), and takes the mean
 eigenvalue of these sets. Provide a list of integers \code{j} to partition
-with respect to. The method was proposed by Foldnes & Grønneberg (2018).
+with respect to. The method was proposed by Foldnes & Gr<U+00F8>nneberg (2018).
 \code{eba} with \code{j=2} -- \code{j=4} appear to work best.
 
 The \code{peba} method is a penalized variant of \code{eba}, described in
-(Foldnes, Moss, Grønneberg, WIP). It typically outperforms \code{eba}, and
+(Foldnes, Moss, Gr<U+00F8>nneberg, WIP). It typically outperforms \code{eba}, and
 the best choice of \code{j} are typically about \code{2}--\code{6}.
 
 \code{pols} is a penalized regression method with a penalization term from ranging
-from 0 to infitity. Foldnes, Moss, Grønneberg (WIP) studied \code{pols=2}, which
+from 0 to infitity. Foldnes, Moss, Gr<U+00F8>nneberg (WIP) studied \code{pols=2}, which
 has good performance in a variety of contexts.
 
 The \code{unbiased} argument is \code{TRUE} if the the unbiased estimator of the
@@ -88,11 +103,11 @@ The \code{rls} choice uses the reweighted least squares statistic of Browne (197
 \references{
 Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
 
-Asparouhov, & Muthén. (2010). Simple second order chi-square correction. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
+Asparouhov, & Muth<U+00E9>n. (2010). Simple second order chi-square correction. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
 
 Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the Distribution of Test Statistics in Covariance Structure Analysis. Structural Equation Modeling. https://doi.org/10.1080/10705511.2015.1057733
 
-Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101-114. https://doi.org/10.1080/10705511.2017.1373021
+Foldnes, N., & Gr<U+00F8>nneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101-114. https://doi.org/10.1080/10705511.2017.1373021
 
 Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872-887. https://doi.org/10.1080/10705511.2022.2063870
 

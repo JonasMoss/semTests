@@ -1,5 +1,5 @@
-x1 <- lav_ugamma_nested_2000(m0, m1)
-x2 <- lav_ugamma_nested_2001(m0, m1)
+#x1 <- lav_ugamma_nested_2000(m0, m1)
+#x2 <- lav_ugamma_nested_2001(m0, m1)
 
 x = sort(Re(eigen(x1)$values))
 y = sort(Re(eigen(x2)$values))
@@ -22,7 +22,7 @@ m0 <- lavaan::cfa(hs_model,
 pvalues_nested(m0, m1, tests = "SB_UG")
 pvalues_nested(m0, m1, tests = "SB_UG_RLS")
 pvalues_nested(m0, m1, tests = "SB_RLS")
-pvalues_nested(m0, m1, tests = "SB", extras = TRUE)
+pvalues_nested(m0, m1, tests = "SB")
 
 pvalues(m0, tests = "SB", extras = TRUE)
 

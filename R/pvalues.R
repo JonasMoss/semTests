@@ -34,7 +34,7 @@
 #' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 #' The `rls` choice uses the reweighted least squares statistic of Browne (1974).
 #'
-#' @param object A `lavaan` object.
+#' @param object,m0,m1 One or two `lavaan` objects.
 #' @param tests A list of tests to evaluate on the
 #'    form "test(parameter)_(ug?)_(rls?)"; see the default argument.
 #'    The remainder of the arguments are ignored if `test` is not `NULL`.
@@ -52,6 +52,7 @@
 #' @param chisq Which chi-square statistic to base the calculations on.
 #' @param extras Returns the estimated eigenvalues and basic test statistics
 #'    if checked.
+#' @name pvalues
 #' @export
 #' @return A named vector of p-values.
 #'
@@ -81,6 +82,8 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
   }
 }
 
+#' @rdname pvalues
+#' @export
 pvalues_nested <- \(m0, m1, method = "2002", tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")

@@ -3,18 +3,23 @@
 \name{pvalue_internal}
 \alias{pvalue_internal}
 \alias{pvalues_one}
+\alias{pvalues_two}
 \title{P value function for one and two arguments.}
 \usage{
 pvalues_one(
-  object,
+  m0,
+  m1,
   unbiased,
   trad,
   eba,
   peba,
   pols,
   chisq = c("ml", "rls"),
-  extras = FALSE
+  extras = FALSE,
+  method = "2001"
 )
+
+pvalues_two(m0, m1)
 }
 \value{
 pvalues.

@@ -4,7 +4,14 @@
 \alias{lav_ugamma_nested_2000}
 \title{Calculate nested ugamma.}
 \usage{
-lav_ugamma_nested_2000(m0, m1, a = NULL, method = "delta", unbiased = FALSE)
+lav_ugamma_nested_2000(
+  m0,
+  m1,
+  gamma,
+  a = NULL,
+  method = "delta",
+  unbiased = FALSE
+)
 }
 \arguments{
 \item{m0, m1}{Two nested \code{lavaan} objects.}
