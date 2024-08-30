@@ -84,7 +84,7 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- \(m0, m1, method = "2002", tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
+pvalues_nested <- \(m0, m1, method = "2001", tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
@@ -92,7 +92,7 @@ pvalues_nested <- \(m0, m1, method = "2002", tests = c("SB_UG_RLS", "pEBA2_UG_RL
     pvalues_one(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
   } else {
     options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_one, c(m0, m1, option, extras = extras)))
+    sapply(options, \(option) do.call(pvalues_one, c(m0, m1, option, extras = extras, method = method)))
   }
 }
 
@@ -137,11 +137,10 @@ make_chisqs <- \(chisq, m0, m1) {
 }
 
 #' @rdname pvalue_internal
-pvalues_one <- \(m0,m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method = "2001") {
-
+pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
   use_trad <- setdiff(trad, "std")
 
-  if(missing(m1)) {
+  if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
     ug_list <- ugamma_no_groups(m0, unbiased)
@@ -353,23 +352,25 @@ ugamma_no_groups <- \(object, unbiased = 1) {
 #' @keywords internal
 ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
   method <- match.arg(method)
-
-  f <- \(m0, m1, unbiased, method) if (method == "2001") {
-    u0 <- lavaan::lavInspect(m0, "U")
-    u1 <- lavaan::lavInspect(m1, "U")
-    (u0 - u1) %*% get_gamma(m1, unbiased)
-  } else {
-    gamma <- get_gamma(m1, unbiased, collapse = FALSE)
-    lav_ugamma_nested_2000(m0, m1, gamma)
+  f <- \(m0, m1, unbiased, method) {
+    if (method == "2001") {
+      u0 <- lavaan::lavInspect(m0, "U")
+      u1 <- lavaan::lavInspect(m1, "U")
+      (u0 - u1) %*% get_gamma(m1, unbiased)
+    } else {
+      gamma <- get_gamma(m1, unbiased, collapse = FALSE)
+      lav_ugamma_nested_2000(m0, m1, gamma)
+    }
   }
+
   out <- list()
 
   if (unbiased == 1 || unbiased == 3) {
-    out <- list(ug_biased = f(m0,m1, unbiased = FALSE, method))
+    out <- list(ug_biased = f(m0, m1, unbiased = FALSE, method))
   }
 
   if (unbiased == 2 || unbiased == 3) {
-    out <- c(out, list(ug_unbiased = f(m0,m1, unbiased = TRUE, method)))
+    out <- c(out, list(ug_unbiased = f(m0, m1, unbiased = TRUE, method)))
   }
 
   out

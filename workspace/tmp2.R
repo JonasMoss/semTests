@@ -24,6 +24,16 @@ pvalues_nested(m0, m1, tests = "SB_UG_RLS", method = "2000")
 pvalues_nested(m0, m1, tests = "SB_RLS", method = "2000")
 pvalues_nested(m0, m1, tests = "SB", method = "2000")
 
+
+pvalues_nested(m0, m1, tests = "SB_UG", method = "2001")
+pvalues_nested(m0, m1, tests = "SB_UG_RLS", method = "2001")
+pvalues_nested(m0, m1, tests = "SB_RLS", method = "2001")
+pvalues_nested(m0, m1, tests = "SB", method = "2001")
+
+pvalues_nested(m0, m1, tests = "SB_UG_RLS", method = "2001")
+pvalues_nested(m0, m1, tests = "SB_UG_RLS", method = "2000")
+
+
 pvalues(m0, tests = "SB", extras = TRUE)
 
 sum(abs(ugamma_nested(m0, m1, "2000", 2)[[1]] - ugamma_nested(m0, m1, "2000", 1)[[1]]))
