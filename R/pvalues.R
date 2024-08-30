@@ -354,10 +354,10 @@ ugamma_no_groups <- \(object, unbiased = 1) {
 ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
   method <- match.arg(method)
 
-  f <- \(m0, m1, unbiased) if (method == "2001") {
+  f <- \(m0, m1, unbiased, method) if (method == "2001") {
     u0 <- lavaan::lavInspect(m0, "U")
     u1 <- lavaan::lavInspect(m1, "U")
-    (u0 - u0) %*% get_gamma(m1, unbiased)
+    (u0 - u1) %*% get_gamma(m1, unbiased)
   } else {
     gamma <- get_gamma(m1, unbiased, collapse = FALSE)
     lav_ugamma_nested_2000(m0, m1, gamma)
@@ -365,11 +365,11 @@ ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
   out <- list()
 
   if (unbiased == 1 || unbiased == 3) {
-    out <- list(ug_biased = f(m0,m1, unbiased = FALSE))
+    out <- list(ug_biased = f(m0,m1, unbiased = FALSE, method))
   }
 
   if (unbiased == 2 || unbiased == 3) {
-    out <- c(out, list(ug_unbiased = f(m0,m1, unbiased = TRUE)))
+    out <- c(out, list(ug_unbiased = f(m0,m1, unbiased = TRUE, method)))
   }
 
   out

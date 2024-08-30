@@ -19,10 +19,10 @@ m0 <- lavaan::cfa(hs_model,
                   group = "school", estimator = "MLM", group.equal = "loadings"
 )
 
-pvalues_nested(m0, m1, tests = "SB_UG")
-pvalues_nested(m0, m1, tests = "SB_UG_RLS")
-pvalues_nested(m0, m1, tests = "SB_RLS")
-pvalues_nested(m0, m1, tests = "SB")
+pvalues_nested(m0, m1, tests = "SB_UG", method = "2000")
+pvalues_nested(m0, m1, tests = "SB_UG_RLS", method = "2000")
+pvalues_nested(m0, m1, tests = "SB_RLS", method = "2000")
+pvalues_nested(m0, m1, tests = "SB", method = "2000")
 
 pvalues(m0, tests = "SB", extras = TRUE)
 
