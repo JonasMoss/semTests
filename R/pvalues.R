@@ -84,7 +84,7 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- \(m0, m1, method = "2001", tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
+pvalues_nested <- \(m0, m1, method = "2000", tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
