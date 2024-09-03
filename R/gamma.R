@@ -96,15 +96,6 @@ gamma_unbiased <- \(obj, gamma) {
   )
 }
 
-
-lav_ugamma_nested <- \(m0, m1, method = c("2000", "2001")) {
-  method <- match.arg(method)
-  if (method == "2000") {
-    lav_ugamma_nested_2000(m0,m1)
-  }
-  lav_ugamma_nested_2001(m0,m1)
-}
-
 #' Calculate nested ugamma.
 #'
 #' This can also be used with restrictions.
@@ -175,11 +166,13 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta", unbiased 
 }
 
 get_gamma <- \(object, unbiased = FALSE, collapse = TRUE) {
+  stopifnot(is.logical(unbiased))
   lavoptions = lavaan::lavInspect(object, "options")
   lavdata = object@Data
   lavoptions$gamma.unbiased <- unbiased
   gamma_list <- lavaan:::lav_samplestats_from_data(lavdata, lavoptions)@NACOV
   if (collapse) {
+    #as.matrix(Matrix::bdiag(gamma_list))
     lavaan:::lav_matrix_bdiag(gamma_list)
   } else {
     gamma_list

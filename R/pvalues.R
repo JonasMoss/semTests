@@ -127,7 +127,7 @@ trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb")) {
 
 #' @keywords internal
 make_chisqs <- \(chisq, m0, m1) {
-  ml <- \(object) lavaan::fitmeasures(object, "chisq")
+  ml <- \(object) lavaan::lavTest(object, test = "standard")$stat
   rls <- \(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
   wrap <- \(f, object) if (missing(object)) 0 else f(object)
   chisqs <- c()
@@ -348,7 +348,7 @@ ugamma_no_groups <- \(object, unbiased = 1) {
   out
 }
 
-#' Calculate non-nested gamma without mean structure
+#' Calculate nested gamma without mean structure
 #' @keywords internal
 ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
   method <- match.arg(method)
