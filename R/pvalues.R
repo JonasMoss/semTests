@@ -151,7 +151,7 @@ make_chisqs <- \(chisq, m0, m1) {
 #' @rdname pvalue_internal
 pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
   use_trad <- setdiff(trad, "std")
-
+  bad_2001 <- FALSE
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
@@ -226,7 +226,10 @@ pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls")
     return_value <- c(return_value, result)
   }
 
-  attr(return_value, "bad_2001") = if(missing(bad_2001)) FALSE else TRUE
+  if(!missing(m1)) {
+    attr(return_value, "bad_2001") = bad_2001
+    attr(return_value, method) = method
+  }
 
   if (extras) {
     n <- length(lambdas_list)
