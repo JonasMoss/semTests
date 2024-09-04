@@ -2,11 +2,11 @@
 % Please edit documentation in R/pvalues.R
 \name{ugamma_nested}
 \alias{ugamma_nested}
-\title{Calculate non-nested gamma without mean structure}
+\title{Calculate nested gamma without mean structure}
 \usage{
 ugamma_nested(m0, m1, method = c("2000", "2001"), unbiased = 1)
 }
 \description{
-Calculate non-nested gamma without mean structure
+Calculate nested gamma without mean structure
 }
 \keyword{internal}

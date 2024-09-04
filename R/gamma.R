@@ -108,27 +108,6 @@ gamma_unbiased <- \(obj, gamma) {
 #' @keywords internal
 #' @return Ugamma for nested object.
 lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta", unbiased = FALSE) {
-  m0@Options$gamma.unbiased <- unbiased
-  m1@Options$gamma.unbiased <- unbiased
-
-  t1 <- m1@test[[1]]$stat
-  r1 <- m1@test[[1]]$df
-  t0 <- m0@test[[1]]$stat
-  r0 <- m0@test[[1]]$df
-  m <- r0 - r1
-
-  # Check for identical df setting
-  if (m == 0L) {
-    return(list(
-      T.delta = (t0 - t1), scaling.factor = as.numeric(NA),
-      df.delta = m, a = as.numeric(NA), b = as.numeric(NA)
-    ))
-  }
-
-  if (is.null(gamma)) {
-    stop("lavaan error: Can not compute gamma matrix; perhaps missing \"ml\"?")
-  }
-
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
 
@@ -147,12 +126,17 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta", unbiased 
   fg <- unlist(m1@SampleStats@nobs) / m1@SampleStats@ntotal
 
   # We need the global gamma, cf. eq.~(10) in Satorra (2000).
-  gamma_rescaled <- gamma
+  # And the global V.
+  # Note that the calculation is not the same as in lavaan(2000), as we
+  # need more than the trace to be correct. (The simplications used in lavaan
+  # do not hold for the whole ugamma.)
+
   for (i in (seq_along(gamma))) {
-    gamma_rescaled[[i]] <- fg[i] * gamma_rescaled[[i]]
+    gamma[[i]] <- 1/fg[i] * gamma[[i]]
+    wls_v[[i]] <- fg[i] * wls_v[[i]]
   }
-  gamma_global <- as.matrix(Matrix::bdiag(gamma_rescaled))
-  # Also the global V:
+
+  gamma_global <- as.matrix(Matrix::bdiag(gamma))
   v_global <- as.matrix(Matrix::bdiag(wls_v))
   pi_global <- if (is.list(pi)) {
     do.call(rbind, pi)
@@ -165,15 +149,36 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta", unbiased 
   return(u_global %*% gamma_global)
 }
 
-get_gamma <- \(object, unbiased = FALSE, collapse = TRUE) {
+get_gamma <- \(m1, unbiased = FALSE, collapse = TRUE, m0 = NULL) {
   stopifnot(is.logical(unbiased))
-  lavoptions = lavaan::lavInspect(object, "options")
-  lavdata = object@Data
-  lavoptions$gamma.unbiased <- unbiased
-  gamma_list <- lavaan:::lav_samplestats_from_data(lavdata, lavoptions)@NACOV
+
+  get_subgamma <- \(object) {
+    lavoptions = lavaan::lavInspect(object, "options")
+    lavdata = object@Data
+    lavoptions$gamma.unbiased <- unbiased
+    lavaan:::lav_samplestats_from_data(lavdata, lavoptions)@NACOV
+  }
+
+  gamma_list <- get_subgamma(m1)
+  if(is.null(unlist(gamma_list))) {
+    if (!is.null(m0)) {
+      gamma_list <- get_subgamma(m0)
+      if (is.null(unlist(gamma_list))) {
+        stop("Could not calculate the gamma matrix from `m0` or `m1`. Use either `estimator = \"MLM\"' or `test=\"satorra.bentler\"' when fitting your lavaan model.")
+      }
+    } else {
+        stop("Could not calculate the gamma matrix from the lavaan object. Use either `estimator = \"MLM\"' or `test=\"satorra.bentler\"' when fitting your lavaan model.")
+    }
+  }
+
+
   if (collapse) {
-    #as.matrix(Matrix::bdiag(gamma_list))
-    lavaan:::lav_matrix_bdiag(gamma_list)
+    fg <- unlist(m1@SampleStats@nobs) / m1@SampleStats@ntotal
+    gamma_rescaled <- gamma_list
+    for (i in (seq_along(gamma_list))) {
+      gamma_rescaled[[i]] <- 1 / fg[i] * gamma_rescaled[[i]]
+    }
+    lavaan:::lav_matrix_bdiag(gamma_rescaled)
   } else {
     gamma_list
   }

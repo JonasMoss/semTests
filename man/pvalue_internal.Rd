@@ -16,7 +16,7 @@ pvalues_one(
   pols,
   chisq = c("ml", "rls"),
   extras = FALSE,
-  method = "2001"
+  method
 )
 
 pvalues_two(m0, m1)

@@ -88,6 +88,18 @@ pvalues_nested <- \(m0, m1, method = "2000", tests = c("SB_UG_RLS", "pEBA2_UG_RL
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
+
+  m <- m0@test[[1]]$df - m1@test[[1]]$df
+
+  # Check for identical df setting
+  if (m == 0L) {
+    stop("Cannot test models with the same degree of freedom.")
+  } else if (m < 0) {
+    m = m1
+    m1 = m0
+    m0 = m
+  }
+
   if (is.null(tests)) {
     pvalues_one(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
   } else {
@@ -356,9 +368,10 @@ ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
     if (method == "2001") {
       u0 <- lavaan::lavInspect(m0, "U")
       u1 <- lavaan::lavInspect(m1, "U")
+
       (u0 - u1) %*% get_gamma(m1, unbiased)
     } else {
-      gamma <- get_gamma(m1, unbiased, collapse = FALSE)
+      gamma <- get_gamma(m1, unbiased, collapse = FALSE, m0)
       lav_ugamma_nested_2000(m0, m1, gamma)
     }
   }

@@ -20,7 +20,7 @@ pvalues(
 pvalues_nested(
   m0,
   m1,
-  method = "2002",
+  method = "2000",
   tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
   trad = NULL,
   eba = NULL,
