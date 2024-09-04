@@ -162,9 +162,15 @@ pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls")
       stop("Only the 'ML' estimator has currently tested.")
     }
     chisqs <- make_chisqs(chisq, m0, m1)
-    ug_list <- ugamma_nested(m0, m1, method, unbiased)
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
+    ug_list <- ugamma_nested(m0, m1, method, unbiased)
     lambdas_list <- lapply(ug_list, \(ug) sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)])
+    if(min(unlist(lambdas_list)) < 0) {
+      warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
+      ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
+      lambdas_list <- lapply(ug_list, \(ug) sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)])
+      bad_2001 <- TRUE
+    }
   }
 
 
@@ -219,6 +225,8 @@ pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls")
 
     return_value <- c(return_value, result)
   }
+
+  attr(return_value, "bad_2001") = if(missing(bad_2001)) FALSE else TRUE
 
   if (extras) {
     n <- length(lambdas_list)
