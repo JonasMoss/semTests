@@ -152,7 +152,7 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta") {
     wls_v[[i]] <- fg[i] * wls_v[[i]]
   }
 
-  v_global <- as.matrix(Matrix::bdiag(wls_v))
+  v_global <- lavaan:::lav_matrix_bdiag(wls_v)
   pi_global <- if (is.list(pi)) {
     do.call(rbind, pi)
   } else {
