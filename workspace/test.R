@@ -8,6 +8,9 @@ object <- lavaan::sem(model, psych::bfi[1:n, 1:10],
 pvalues(object, "SB_RLS")
 pvalues(object, "SB")
 
+pvalues(object, "SS_RLS")
+
+pvalues(object, "SS")
 
 
 pvalues(object, c("SB_RLS", "SB"))

@@ -1,5 +1,5 @@
-hs_model <- " visual  =~ x1 + a*x2 + x3
-              textual =~ x4 + x5 + a*x6
+hs_model <- " visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
               speed   =~ x7 + x8 + x9 "
 
 ## Estimation that IS allowed.
