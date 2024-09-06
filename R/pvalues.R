@@ -38,6 +38,7 @@
 #' @param tests A list of tests to evaluate on the
 #'    form "test(parameter)_(ug?)_(rls?)"; see the default argument.
 #'    The remainder of the arguments are ignored if `test` is not `NULL`.
+#' @param method For nested models, choose between `2000` and `2001`. Note: `2001` and Satorra-Bentler will not correspond with the variant in the paper.
 #' @param trad List of traditional p-values to calculate.
 #'    Not calculated if `NULL.`
 #' @param eba List of which `eba` p-values to calculate.
@@ -70,7 +71,7 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
+pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
@@ -155,7 +156,18 @@ pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls")
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
-    ug_list <- ugamma_no_groups(m0, unbiased)
+
+    u0 <- lavaan::lavInspect(m0, "U")
+    ug_list <- NULL
+
+    if (unbiased == 1 || unbiased == 3) {
+      ug_list <- list(ug_biased = u0 %*% get_gamma(m0, FALSE))
+    }
+
+    if (unbiased == 2 || unbiased == 3) {
+      ug_list <- c(ug_list, list(ug_unbiased = u0 %*% get_gamma(m0, TRUE)))
+    }
+
     lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
   } else {
     if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
@@ -164,7 +176,9 @@ pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls")
     chisqs <- make_chisqs(chisq, m0, m1)
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     ug_list <- ugamma_nested(m0, m1, method, unbiased)
+
     lambdas_list <- lapply(ug_list, \(ug) sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)])
+
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
       ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
