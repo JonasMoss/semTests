@@ -15,8 +15,6 @@ lav_ugamma_nested_2000(m0, m1, gamma, a = NULL, method = "delta")
 \code{lavaan:::lav_test_diff_A} with \code{method = method}.}
 
 \item{method}{Method passed to \code{lavaan:::lav_test_diff_A}.}
-
-\item{unbiased}{If \code{TRUE}, uses the unbiased gamma estimate.}
 }
 \value{
 Ugamma for nested object.
