@@ -1,30 +1,13 @@
-#' Split vector `x` into `n` chunks of equal size.
-#' @param x Input vector.
-#' @param n Desired output length.
-#' @return List of `n` vectors.
-#' @keywords internal
-chunk <- \(x, n) split(x, cut(seq_along(x), n, labels = FALSE))
 
-#' Calculate a saturated model.
 #' @keywords internal
-#' @param object A `lavaan` object.
-#' @return A fitted saturated model.
-get_saturated <- \(object) {
-  data <- lavaan::lavInspect(object, "data", drop.list.single.group = T)
-  data_g <- lapply(seq_along(data), \(x) {
-    data_g <- data.frame(data[[x]])
-    data_g$g <- x
-    data_g
-  })
-  data <- do.call(rbind, data_g)
-  vars <- lavaan::lavNames(object)
-  model <- NULL
-  for (i in 1:(length(vars) - 1)) {
-    ind <- vars[(i + 1):length(vars)]
-    model <- paste(model, ";", paste(vars[i], "~~", paste(ind, collapse = "+")))
-  }
-  estimator <- lavaan::lavInspect(object, "options")$estimator
-  lavaan::lavaan(model, data, group = "g", estimator = estimator)
+make_chisqs <- \(chisq, m0, m1) {
+  ml <- \(object) lavaan::lavTest(object, test = "standard")$stat
+  rls <- \(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
+  wrap <- \(f, object) if (missing(object)) 0 else f(object)
+  chisqs <- c()
+  if ("ml" %in% chisq) chisqs["ml"] <- ml(m0) - wrap(ml, m1)
+  if ("rls" %in% chisq) chisqs["rls"] <- rls(m0) - wrap(rls, m1)
+  chisqs
 }
 
 #' Returns if not NA; else converts NA to NULL.

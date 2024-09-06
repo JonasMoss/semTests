@@ -31,3 +31,19 @@ m0_ <- lavaan::cfa(hs_model,
   data = lavaan::HolzingerSwineford1939,
   group = "school", estimator = "GLS", group.equal = "loadings"
 )
+
+
+
+## Nested without groups
+
+hs_model_no_groups <- " visual  =~ x1 + a*x2 + x3
+              textual =~ x4 + a*x5 + a*x6
+              speed   =~ x7 + a*x8 + x9 "
+
+m1_no_groups <- lavaan::cfa(hs_model,
+                  data = lavaan::HolzingerSwineford1939, estimator = "MLM"
+)
+
+m0_no_groups <- lavaan::cfa(hs_model_no_groups,
+                  data = lavaan::HolzingerSwineford1939, estimator = "MLM"
+)

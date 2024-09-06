@@ -76,10 +76,10 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
     stop("Please provide some p-values to calculate.")
   }
   if (is.null(tests)) {
-    pvalues_one(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
+    pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   } else {
     options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_one, c(object, option, extras = extras)))
+    sapply(options, \(option) do.call(pvalues_, c(object, option, extras = extras)))
   }
 }
 
@@ -102,10 +102,10 @@ pvalues_nested <- \(m0, m1, method = "2000", tests = c("SB_UG_RLS", "pEBA2_UG_RL
   }
 
   if (is.null(tests)) {
-    pvalues_one(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
+    pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
   } else {
     options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_one, c(m0, m1, option, extras = extras, method = method)))
+    sapply(options, \(option) do.call(pvalues_, c(m0, m1, option, extras = extras, method = method)))
   }
 }
 
@@ -137,46 +137,22 @@ trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb")) {
   }
 }
 
-
-#' @keywords internal
-make_chisqs <- \(chisq, m0, m1) {
-  ml <- \(object) lavaan::lavTest(object, test = "standard")$stat
-  rls <- \(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
-  wrap <- \(f, object) if (missing(object)) 0 else f(object)
-  chisqs <- c()
-  if ("ml" %in% chisq) chisqs["ml"] <- ml(m0) - wrap(ml, m1)
-  if ("rls" %in% chisq) chisqs["rls"] <- rls(m0) - wrap(rls, m1)
-  chisqs
-}
-
 #' @rdname pvalue_internal
-pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
+pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
   use_trad <- setdiff(trad, "std")
   bad_2001 <- FALSE
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
-
-    u0 <- lavaan::lavInspect(m0, "U")
-    ug_list <- NULL
-
-    if (unbiased == 1 || unbiased == 3) {
-      ug_list <- list(ug_biased = u0 %*% get_gamma(m0, FALSE))
-    }
-
-    if (unbiased == 2 || unbiased == 3) {
-      ug_list <- c(ug_list, list(ug_unbiased = u0 %*% get_gamma(m0, TRUE)))
-    }
-
+    ug_list <- ugamma(m0, unbiased)
     lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
   } else {
     if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
-      stop("Only the 'ML' estimator has currently tested.")
+      stop("Only the 'ML' estimator supported.")
     }
-    chisqs <- make_chisqs(chisq, m0, m1)
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
+    chisqs <- make_chisqs(chisq, m0, m1)
     ug_list <- ugamma_nested(m0, m1, method, unbiased)
-
     lambdas_list <- lapply(ug_list, \(ug) sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)])
 
     if(min(unlist(lambdas_list)) < 0) {
@@ -255,161 +231,4 @@ pvalues_one <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls")
   } else {
     return_value
   }
-}
-
-#' @rdname pvalue_internal
-pvalues_two <- function(m0, m1) {
-  if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
-    stop("Only the 'ML' estimator has currently tested.")
-  }
-
-  aov <- lavaan::anova(m1, m0)
-  chisq <- lavaan::fitmeasures(m0, "chisq") - lavaan::fitmeasures(m1, "chisq")
-
-  ug <- ugamma_nested(m0, m1)
-  df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
-  lambdas <- sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)]
-  eigenps <- eigen_pvalues(chisq, lambdas)
-
-  c(
-    pstd = aov$`Pr(>Chisq)`[[2]],
-    psb = eigenps$psb,
-    pfull = eigenps$pfull,
-    phalf = eigenps$phalf,
-    plog = eigenps$plog,
-    psf = scaled_f(chisq, lambdas),
-    pss = scaled_and_shifted(m0, m1),
-    pmv = mean_var_adjusted(m0, m1)
-  )
-}
-
-
-#' Calculate the scaled and shifted / the mean-variance adjusted p-value
-#'
-#' @param chisq Chi-square fit value from a lavaan object.
-#' @param lambdas Eigenvalues of UG matrix.
-#' @name laavan_tests
-#' @keywords internal
-#' @return The scaled and shifted p-value or the mean-variance adjusted p-value.
-NULL
-
-#' @rdname laavan_tests
-scaled_and_shifted <- \(chisq, lambdas) {
-  df <- length(lambdas)
-  tr_ug <- sum(lambdas)
-  tr_ug2 <- sum(lambdas^2)
-  a <- sqrt(df / tr_ug2)
-  b <- df - sqrt(df * tr_ug^2 / tr_ug2)
-  t3 <- unname(chisq * a + b)
-  1 - stats::pchisq(t3, df = df)
-}
-
-#' Calculate the scaled_f p-value.
-#' @param chisq Chi-square fit value from a lavaan object.
-#' @param eig eig of UG matrix.
-#' @return scaled f p-value.
-#' @keywords internal
-scaled_f <- \(chisq, eig) {
-  s1 <- sum(eig)
-  s2 <- sum(eig^2)
-  s3 <- sum(eig^3)
-  denom <- 2 * s1 * s2^2 - s1^2 * s3 + 2 * s2 * s3
-  if (denom > 0) {
-    d1f3 <- s1 * (s1^2 * s2 - 2 * s2^2 + 4 * s1 * s3) / denom
-    d2f3 <- (s1^2 * s2 + 2 * s2^2) / (s3 * s1 - s2^2) + 6
-    if (d2f3 < 6) d2f3 <- Inf
-    cf3 <- s1 * (s1^2 * s2 - 2 * s2^2 + 4 * s1 * s3) /
-      (s1^2 * s2 - 4 * s2^2 + 6 * s1 * s3)
-  } else {
-    d1f3 <- Inf
-    d2f3 <- s1^2 / s2 + 4
-    cf3 <- s1 * (s1^2 + 2 * s2) / (s1^2 + 4 * s2)
-  }
-  unname(1 - stats::pf(chisq / cf3, d1f3, d2f3))
-}
-
-#' Calculate the jth eba pvalue.
-#' @keywords internal
-eba_pvalue <- \(chisq, lambdas, j) {
-  m <- length(lambdas)
-  k <- ceiling(m / j)
-  eig <- lambdas
-  eig <- c(eig, rep(NA, k * j - length(eig)))
-  dim(eig) <- c(k, j)
-  eig_means <- colMeans(eig, na.rm = TRUE)
-  repeated <- rep(eig_means, each = k)[seq(m)]
-  CompQuadForm::imhof(chisq, repeated)$Qq
-}
-
-#' Calculate the jth eba pvalue.
-#' @keywords internal
-peba_pvalue <- \(chisq, lambdas, j) {
-  m <- length(lambdas)
-  k <- ceiling(m / j)
-  eig <- lambdas
-  eig <- c(eig, rep(NA, k * j - length(eig)))
-  dim(eig) <- c(k, j)
-  eig_means <- colMeans(eig, na.rm = TRUE)
-  eig_mean <- mean(lambdas)
-  repeated <- rep(eig_means, each = k)[seq(m)]
-  CompQuadForm::imhof(chisq, (repeated + eig_mean) / 2)$Qq
-}
-
-#' Calculate penalized OLS pvalue.
-#' @keywords internal
-pols_pvalue <- \(chisq, lambdas, gamma) {
-  x <- seq_along(lambdas)
-  beta1_hat <- 1 / gamma * stats::cov(x, lambdas) / stats::var(x)
-  beta0_hat <- mean(lambdas) - beta1_hat * mean(x)
-  lambda_hat <- pmax(beta0_hat + beta1_hat * x, 0)
-  CompQuadForm::imhof(chisq, lambda_hat)$Qq
-}
-
-#' Calculate non-nested gamma without mean structure
-#' @keywords internal
-ugamma_no_groups <- \(object, unbiased = 1) {
-  u <- lavaan::lavInspect(object, "U")
-  gamma <- lavaan::lavInspect(object, "gamma")
-
-  out <- list()
-
-  if (unbiased == 1 || unbiased == 3) {
-    out <- list(ug_biased = u %*% gamma)
-  }
-
-  if (unbiased == 2 || unbiased == 3) {
-    gamma_unb <- get_gamma(object, TRUE)
-    out <- c(out, list(ug_unbiased = u %*% gamma_unb))
-  }
-
-  out
-}
-
-#' Calculate nested gamma without mean structure
-#' @keywords internal
-ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
-  method <- match.arg(method)
-  f <- \(m0, m1, unbiased, method) {
-    if (method == "2001") {
-      u0 <- lavaan::lavInspect(m0, "U")
-      u1 <- lavaan::lavInspect(m1, "U")
-
-      (u0 - u1) %*% get_gamma(m1, unbiased)
-    } else {
-      gamma <- get_gamma(m1, unbiased, collapse = FALSE, m0)
-      lav_ugamma_nested_2000(m0, m1, gamma)
-    }
-  }
-
-  out <- list()
-
-  if (unbiased == 1 || unbiased == 3) {
-    out <- list(ug_biased = f(m0, m1, unbiased = FALSE, method))
-  }
-
-  if (unbiased == 2 || unbiased == 3) {
-    out <- c(out, list(ug_unbiased = f(m0, m1, unbiased = TRUE, method)))
-  }
-
-  out
 }

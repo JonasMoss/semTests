@@ -2,11 +2,10 @@
 % Please edit documentation in R/pvalues.R
 \name{pvalue_internal}
 \alias{pvalue_internal}
-\alias{pvalues_one}
-\alias{pvalues_two}
+\alias{pvalues_}
 \title{P value function for one and two arguments.}
 \usage{
-pvalues_one(
+pvalues_(
   m0,
   m1,
   unbiased,
@@ -18,8 +17,6 @@ pvalues_one(
   extras = FALSE,
   method
 )
-
-pvalues_two(m0, m1)
 }
 \value{
 pvalues.

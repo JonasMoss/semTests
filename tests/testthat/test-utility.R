@@ -7,7 +7,7 @@ test_that("split_input looks reasonable", {
 })
 
 options <- lapply(tests, \(test) split_input(test))
-result <- sapply(options, \(option) do.call(pvalues_one, c(object, option)))
+result <- sapply(options, \(option) do.call(pvalues_, c(object, option)))
 test_that("split_input applied to p_values gives correct names", {
   expect_equal(names(result), tolower(tests))
 })

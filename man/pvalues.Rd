@@ -10,10 +10,10 @@ pvalues(
   tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
   trad = NULL,
   eba = NULL,
-  peba = c(2, 4),
-  pols = 2,
+  peba = NULL,
+  pols = NULL,
   unbiased = 1,
-  chisq = c("rls", "ml"),
+  chisq = c("ml"),
   extras = FALSE
 )
 
@@ -58,6 +58,8 @@ gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
 
 \item{extras}{Returns the estimated eigenvalues and basic test statistics
 if checked.}
+
+\item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
 }
 \value{
 A named vector of p-values.
