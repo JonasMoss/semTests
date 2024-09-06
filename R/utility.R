@@ -73,8 +73,10 @@ split_input <- \(string) {
     eba <- default(substring(type, 4))
   } else if (startsWith(type, "pols")) {
     pols <- default(substring(type, 5))
-  } else if (type %in% c("std", "sb", "sf", "sb")) {
+  } else if (type %in% c("std", "sb", "sf", "ss")) {
     trad <- type
+  } else {
+    stop("Invalid input string in `test`.")
   }
 
   list(
