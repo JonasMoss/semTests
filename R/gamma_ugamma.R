@@ -33,7 +33,7 @@ gamma_rescale <- \(gamma_list, m1) {
     for (i in (seq_along(gamma_list))) {
       gamma_list[[i]] <- 1 / fg[i] * gamma_list[[i]]
     }
-    lavaan:::lav_matrix_bdiag(gamma_list)
+    lavaan::lav_matrix_bdiag(gamma_list)
   }
 }
 
@@ -43,7 +43,7 @@ gamma_from_lavaan <- \(m1, m0 = NULL) {
 
   if(is.null(gamma_biased)) {
     if (!is.null(m0)) {
-      gamma_biased <- lavInspect(m0, "gamma")
+      gamma_biased <- lavaan::lavInspect(m0, "gamma")
       if (is.null(gamma_biased)) {
         stop("Could not calculate the gamma matrix from `m0` or `m1`. Use either `estimator = \"MLM\"' or `test=\"satorra.bentler\"' when fitting your lavaan model.")
       }
@@ -81,13 +81,11 @@ gamma_to_gamma_unbiased <- \(gammas, object) {
 
   gamma_list = list()
   for(g in seq(object@Data@ngroups)) {
-    #Gamma <- gammas[[g]]
     N <- lavaan::lavInspect(object, what = "nobs")[[g]]
     Gamma <- gammas[[g]]
-    #COV <- lavInspect(object, what = "samplestats")[[g]]$cov
     COV <- access(lavaan::lavInspect(object, what = "samplestats"), g)$cov
-    cov.vech <- lavaan:::lav_matrix_vech(COV)
-    GammaNT.cov <- 2 * lavaan:::lav_matrix_duplication_ginv_pre_post(COV %x% COV)
+    cov.vech <- lavaan::lav_matrix_vech(COV)
+    GammaNT.cov <- 2 * lavaan::lav_matrix_duplication_ginv_pre_post(COV %x% COV)
     Gamma.cov <- Gamma
     if (meanstructure) {
       Gamma.cov <- Gamma[-(1:p), -(1:p), drop = FALSE]
@@ -100,7 +98,7 @@ gamma_to_gamma_unbiased <- \(gammas, object) {
                   N / (N - 2) / (N - 3) * (GammaNT.cov -
                                              2 / (N - 1) * tcrossprod(cov.vech)))
     if (meanstructure) {
-      Gamma <- lavaan:::lav_matrix_bdiag(COV, Gamma.u)
+      Gamma <- lavaan::lav_matrix_bdiag(COV, Gamma.u)
       Gamma[1:p, (p + 1):ncol(Gamma)] <- Gamma.mean.cov * N / (N - 2)
       Gamma[(p + 1):ncol(Gamma), 1:p] <- t(Gamma.mean.cov * N / (N - 2))
     } else {
@@ -121,7 +119,6 @@ gamma_to_gamma_unbiased <- \(gammas, object) {
 #' @param a The `A` matrix. If if `NULL`, gets calculated by
 #'    `lavaan:::lav_test_diff_A` with `method = method`.
 #' @param method Method passed to `lavaan:::lav_test_diff_A`.
-#' @param unbiased If `TRUE`, uses the unbiased gamma estimate.
 #' @keywords internal
 #' @return Ugamma for nested object.
 lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta") {
@@ -152,7 +149,7 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta") {
     wls_v[[i]] <- fg[i] * wls_v[[i]]
   }
 
-  v_global <- lavaan:::lav_matrix_bdiag(wls_v)
+  v_global <- lavaan::lav_matrix_bdiag(wls_v)
   pi_global <- if (is.list(pi)) {
     do.call(rbind, pi)
   } else {
