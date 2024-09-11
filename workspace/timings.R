@@ -1,7 +1,7 @@
 # the slowness of pvalues()
 library("lavaan")
 rm(list=ls())
-model <- paste0("F=~", paste0("x",1:60, collapse="+"))
+model <- paste0("F=~", paste0("x",1:40, collapse="+"))
 set.seed(1)
 data <- lavaan::simulateData(model)
 fit <- lavaan::cfa(model, data, estimator="MLM", sample.nobs=1000)
@@ -16,12 +16,33 @@ system.time(ebas <- semTests::pvalues(fit))#24 why so slow?
 
 
 system.time(semTests::pvalues(fit, tests=c("SB")))#8.3!!
-system.time(semTests::pvalues(fit, tests=c("SB_UG")))#8.3!!
+system.time(semTests::pvalues(fit, tests=c("SB_UG", "SB")))#8.3!!
+
+system.time(pvalues(fit, tests=c("SB")))#8.3!!
+system.time(pvalues(fit, tests=c("SB_UG", "SB")))#8.3!!
+
+
+system.time(semTests::pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = NULL, pols = NULL, unbiased = 1, chis = c("ml")))#8.3!!
+system.time(semTests::pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = NULL, pols = NULL, unbiased = 2, chis = c("ml")))#8.3!!
+system.time(semTests::pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = NULL, pols = NULL, unbiased = 3, chis = c("ml")))#8.3!!
+
+system.time(pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = NULL, pols = NULL, unbiased = 1, chis = c("ml")))#8.3!!
+system.time(pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = NULL, pols = NULL, unbiased = 2, chis = c("ml")))#8.3!!
+system.time(pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = NULL, pols = NULL, unbiased = 3, chis = c("ml")))#8.3!!
+
+
 system.time(semTests::pvalues(fit, tests=c("SB_RLS")))#8.3!!
+
+
+
+
 system.time(semTests::pvalues(fit, tests=c("SB_RLS_UG")))#8.3!!
 system.time(semTests::pvalues(fit, tests=c("SB_UG","SB_RLS_UG")))#8.3!!
 
 system.time(semTests::pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = c(2, 4, 6), pols = 2, unbiased = 3, chis = c("ml", "rls")))#8.3!!
+system.time(pvalues(fit, tests = NULL, trad = c("sb", "ss"), peba = c(2, 4, 6), pols = 2, unbiased = 3, chis = c("ml", "rls")))#8.3!!
+
+
 
 #imhof is not the culprit
 #speed and imhof 740 eigenvalues

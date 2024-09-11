@@ -145,7 +145,7 @@ pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), e
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
     ug_list <- ugamma(m0, unbiased)
-    lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug)$values)[seq(df)])
+    lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
   } else {
     if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
       stop("Only the 'ML' estimator supported.")
@@ -153,12 +153,12 @@ pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), e
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     chisqs <- make_chisqs(chisq, m0, m1)
     ug_list <- ugamma_nested(m0, m1, method, unbiased)
-    lambdas_list <- lapply(ug_list, \(ug) sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)])
+    lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR")$values))
 
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
       ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
-      lambdas_list <- lapply(ug_list, \(ug) sort(Re(eigen(ug)$values), decreasing = TRUE)[seq(df)])
+      lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR")$values))
       bad_2001 <- TRUE
     }
   }
