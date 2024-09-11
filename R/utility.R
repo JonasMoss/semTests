@@ -26,6 +26,14 @@ default <- \(x) {
   if (x != "") as.numeric(x) else 2
 }
 
+#' Create sparse matrix
+#' @param mat Matrix input.
+#' @param lim Elements with absolute value less than `lim` get set to `0`.
+#' @return Object of `dgCMatrix`.
+sparsify <- \(mat, lim = 1e-9) {
+  mat[abs(mat) < lim] = 0
+  Matrix::Matrix(mat, sparse = TRUE)
+}
 
 #' Split string into options.
 #' @param string Input string

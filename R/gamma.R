@@ -128,7 +128,7 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta") {
   p_inv <- lavaan::lavInspect(m1, what = "inverted.information")
 
   if (is.null(a)) {
-    a <- lavaan:::lav_test_diff_A(m1, m0, method = method, reference = "H1")
+    a <- do.call(lavaan:::lav_test_diff_A, list(m1, m0, method = "delta", reference = "H1"))
     if (m1@Model@eq.constraints) {
       a <- a %*% t(m1@Model@eq.constraints.K)
     }

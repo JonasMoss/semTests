@@ -153,12 +153,13 @@ pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), e
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     chisqs <- make_chisqs(chisq, m0, m1)
     ug_list <- ugamma_nested(m0, m1, method, unbiased)
-    lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR")$values))
+    ug_list <- lapply(ug_list, sparsify)
+    lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
 
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
       ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
-      lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR")$values))
+      lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
       bad_2001 <- TRUE
     }
   }

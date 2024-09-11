@@ -33,7 +33,9 @@ Imports:
   CompQuadForm,
   progressr,
   future.apply,
-  RSpectra
+  RSpectra,
+  MASS,
+  Matrix
 Suggests: 
   covr,
   testthat (>= 3.0.0),
