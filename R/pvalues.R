@@ -120,7 +120,7 @@ NULL
 #' @param df,chisq,lambdas,type Parameters needed to calculate the p-values.
 #' @returns Traditional p-values.
 #' @keywords internal
-trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb")) {
+trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall")) {
   type <- match.arg(type)
   if (type == "std") {
     return(1 - stats::pchisq(chisq, df))
@@ -135,6 +135,11 @@ trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb")) {
     m <- length(lambdas)
     return(as.numeric(1 - stats::pchisq(chisq * m / sum(lambdas), df = m)))
   }
+
+  if (type == "pall") {
+    return(as.numeric(pall(chisq, lambdas)))
+  }
+
 }
 
 #' @rdname pvalue_internal

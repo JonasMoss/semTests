@@ -55,6 +55,12 @@ eba_pvalue <- \(chisq, lambdas, j) {
   CompQuadForm::imhof(chisq, repeated)$Qq
 }
 
+#' Calculate the jth pall pvalue.
+#' @keywords internal
+pall <- \(chisq, lambdas) {
+  CompQuadForm::imhof(chisq, lambdas)$Qq
+}
+
 #' Calculate the jth eba pvalue.
 #' @keywords internal
 peba_pvalue <- \(chisq, lambdas, j) {
