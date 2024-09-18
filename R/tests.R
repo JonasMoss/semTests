@@ -72,9 +72,14 @@ peba_pvalue <- \(chisq, lambdas, j) {
 #' Calculate penalized OLS pvalue.
 #' @keywords internal
 pols_pvalue <- \(chisq, lambdas, gamma) {
-  x <- seq_along(lambdas)
-  beta1_hat <- 1 / gamma * stats::cov(x, lambdas) / stats::var(x)
-  beta0_hat <- mean(lambdas) - beta1_hat * mean(x)
-  lambda_hat <- pmax(beta0_hat + beta1_hat * x, 0)
+
+  lambda_hat <- if(length(lambdas) == 1) {
+    lambdas
+  } else {
+    x <- seq_along(lambdas)
+    beta1_hat <- 1 / gamma * stats::cov(x, lambdas) / stats::var(x)
+    beta0_hat <- mean(lambdas) - beta1_hat * mean(x)
+    lambda_hat <- pmax(beta0_hat + beta1_hat * x, 0)
+  }
   CompQuadForm::imhof(chisq, lambda_hat)$Qq
 }
