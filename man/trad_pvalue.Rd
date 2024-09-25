@@ -4,7 +4,12 @@
 \alias{trad_pvalue}
 \title{Calculate traditional pvalues.}
 \usage{
-trad_pvalue(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall"))
+trad_pvalue(
+  df,
+  chisq,
+  lambdas,
+  type = c("std", "sf", "ss", "sb", "pall", "all")
+)
 }
 \arguments{
 \item{df, chisq, lambdas, type}{Parameters needed to calculate the p-values.}

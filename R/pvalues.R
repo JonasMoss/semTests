@@ -85,7 +85,9 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- \(m0, m1, method = "2000", tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = c(2, 4), pols = 2, unbiased = 1, chisq = c("rls", "ml"), extras = FALSE) {
+pvalues_nested <- \(m0, m1, method = c("2000", "2001"), tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+  method <- match.arg(method)
+
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
@@ -120,7 +122,7 @@ NULL
 #' @param df,chisq,lambdas,type Parameters needed to calculate the p-values.
 #' @returns Traditional p-values.
 #' @keywords internal
-trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall")) {
+trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall", "all")) {
   type <- match.arg(type)
   if (type == "std") {
     return(1 - stats::pchisq(chisq, df))
@@ -134,6 +136,10 @@ trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall")) 
   if (type == "sb") {
     m <- length(lambdas)
     return(as.numeric(1 - stats::pchisq(chisq * m / sum(lambdas), df = m)))
+  }
+
+  if (type == "all") {
+    return(as.numeric(pvalue_all(chisq, lambdas)))
   }
 
   if (type == "pall") {

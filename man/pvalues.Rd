@@ -20,14 +20,14 @@ pvalues(
 pvalues_nested(
   m0,
   m1,
-  method = "2000",
+  method = c("2000", "2001"),
   tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
   trad = NULL,
   eba = NULL,
-  peba = c(2, 4),
-  pols = 2,
+  peba = NULL,
+  pols = NULL,
   unbiased = 1,
-  chisq = c("rls", "ml"),
+  chisq = "ml",
   extras = FALSE
 )
 }
