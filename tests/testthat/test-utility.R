@@ -1,4 +1,4 @@
-tests <- c("SB_UG_RLS", "pEBA2_UG_RLS", "EBA4_RLS", "pEBA6_RLS", "pOLS2_UG")
+tests <- c("SB_UG_RLS", "pEBA2_UG_RLS", "EBA4_RLS", "pEBA6_RLS", "pOLS2_UG_ML")
 options <- sapply(tests, \(test) split_input(test))
 
 test_that("split_input looks reasonable", {
@@ -15,7 +15,7 @@ test_that("split_input applied to p_values gives correct names", {
 test_that("using 'tests' in pvalues yield the correct results.", {
   expect_equal(
     pvalues(object, tests[1]),
-    pvalues(object,
+    pvalues_internal(object,
       tests = NULL,
       trad = "sb",
       peba = NULL,
@@ -29,7 +29,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
 
   expect_equal(
     pvalues(object, tests[2]),
-    pvalues(object,
+    pvalues_internal(object,
       tests = NULL,
       trad = NULL,
       peba = 2,
@@ -43,7 +43,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
 
   expect_equal(
     pvalues(object, tests[3]),
-    pvalues(object,
+    pvalues_internal(object,
       tests = NULL,
       trad = NULL,
       peba = NULL,
@@ -57,7 +57,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
 
   expect_equal(
     pvalues(object, tests[4]),
-    pvalues(object,
+    pvalues_internal(object,
       tests = NULL,
       trad = NULL,
       peba = 6,
@@ -70,7 +70,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
 
   expect_equal(
     pvalues(object, tests[5]),
-    pvalues(object,
+    pvalues_internal(object,
       tests = NULL,
       trad = NULL,
       peba = NULL,

@@ -7,28 +7,14 @@
 \usage{
 pvalues(
   object,
-  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
-  trad = NULL,
-  eba = NULL,
-  peba = NULL,
-  pols = NULL,
-  unbiased = 1,
-  chisq = c("ml"),
-  extras = FALSE
+  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")
 )
 
 pvalues_nested(
   m0,
   m1,
   method = c("2000", "2001"),
-  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"),
-  trad = NULL,
-  eba = NULL,
-  peba = NULL,
-  pols = NULL,
-  unbiased = 1,
-  chisq = "ml",
-  extras = FALSE
+  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")
 )
 }
 \arguments{
@@ -37,27 +23,6 @@ pvalues_nested(
 \item{tests}{A list of tests to evaluate on the
 form "test(parameter)\emph{(ug?)}(rls?)"; see the default argument.
 The remainder of the arguments are ignored if \code{test} is not \code{NULL}.}
-
-\item{trad}{List of traditional p-values to calculate.
-Not calculated if \code{NULL.}}
-
-\item{eba}{List of which \code{eba} p-values to calculate.
-Not calculated if \code{NULL.}}
-
-\item{peba}{List of which \code{peba} p-values to calculate.
-Not calculated if \code{NULL.}}
-
-\item{pols}{List of penalization parameters to use in the penalized
-OLS p-value. Not calculated if \code{NULL.}}
-
-\item{unbiased}{A number between 1 and 3. 1: Calculate using the biased
-gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
-3: Calculate using both gammas.}
-
-\item{chisq}{Which chi-square statistic to base the calculations on.}
-
-\item{extras}{Returns the estimated eigenvalues and basic test statistics
-if checked.}
 
 \item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
 }

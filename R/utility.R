@@ -40,11 +40,12 @@ sparsify <- \(mat, lim = 1e-9) {
 #' @keywords internal
 
 split_input <- \(string) {
+
   string <- tolower(string)
   splitted <- strsplit(string, "_")[[1]]
   trad <- peba <- eba <- pols <- NULL
   unbiased <- 1
-  chisq <- "ml"
+  chisq <- "rls"
   type <- nanull(splitted[1])
 
   if (length(splitted) == 3) {
@@ -64,7 +65,7 @@ split_input <- \(string) {
     eba <- default(substring(type, 4))
   } else if (startsWith(type, "pols")) {
     pols <- default(substring(type, 5))
-  } else if (type %in% c("std", "sb", "sf", "ss")) {
+  } else if (type %in% c("std", "sb", "sf", "ss", "all", "pall")) {
     trad <- type
   } else {
     stop("Invalid input string in `test`.")

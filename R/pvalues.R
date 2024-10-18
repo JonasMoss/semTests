@@ -39,20 +39,6 @@
 #'    form "test(parameter)_(ug?)_(rls?)"; see the default argument.
 #'    The remainder of the arguments are ignored if `test` is not `NULL`.
 #' @param method For nested models, choose between `2000` and `2001`. Note: `2001` and Satorra-Bentler will not correspond with the variant in the paper.
-#' @param trad List of traditional p-values to calculate.
-#'    Not calculated if `NULL.`
-#' @param eba List of which `eba` p-values to calculate.
-#'    Not calculated if `NULL.`
-#' @param peba List of which `peba` p-values to calculate.
-#'    Not calculated if `NULL.`
-#' @param pols List of penalization parameters to use in the penalized
-#'    OLS p-value. Not calculated if `NULL.`
-#' @param unbiased A number between 1 and 3. 1: Calculate using the biased
-#'    gamma matrix (default). 2: Calculate using the unbiased gamma matrix.
-#'    3: Calculate using both gammas.
-#' @param chisq Which chi-square statistic to base the calculations on.
-#' @param extras Returns the estimated eigenvalues and basic test statistics
-#'    if checked.
 #' @name pvalues
 #' @export
 #' @return A named vector of p-values.
@@ -71,7 +57,12 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
+pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")) {
+  pvalues_internal(object, tests)
+}
+
+#' @keywords internal
+pvalues_internal <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
@@ -85,7 +76,12 @@ pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- \(m0, m1, method = c("2000", "2001"), tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+pvalues_nested <- \(m0, m1, method = c("2000", "2001"), tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")) {
+  pvalues_nested_internal(m0, m1, method = method, tests = tests)
+}
+
+#' @keywords internal
+pvalues_nested_internal <- \(m0, m1, method = c("2000", "2001"), tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
   method <- match.arg(method)
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
@@ -209,9 +205,7 @@ pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), e
 
       out <- pmax(c(ptrad, peba, ppeba, ppols), 0)
       name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ug"
-      if (names(chisqs)[i] == "rls") {
-        name <- paste0(name, "_", names(chisqs)[i])
-      }
+      name <- paste0(name, "_", names(chisqs)[i])
 
       if (length(out) != 0) {
         names(out) <- paste0(names(out), name)
