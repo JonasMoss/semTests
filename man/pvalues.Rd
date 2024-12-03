@@ -82,10 +82,11 @@ The \code{rls} choice uses the reweighted least squares statistic of Browne (197
 }
 \examples{
 library("semTests")
+library("lavaan")
 model <- "A =~ A1+A2+A3+A4+A5;
           C =~ C1+C2+C3+C4+C5"
 n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+object <- sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
 
 # For the pEBA6 method with biased gamma and ML chisq statistic:
