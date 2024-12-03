@@ -5,24 +5,16 @@
 \alias{pvalues_nested}
 \title{Calculate \emph{p}-values for one or two \code{lavaan} objects.}
 \usage{
-pvalues(
-  object,
-  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")
-)
+pvalues(object, tests = c("pEBA4_RLS"))
 
-pvalues_nested(
-  m0,
-  m1,
-  method = c("2000", "2001"),
-  tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")
-)
+pvalues_nested(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML"))
 }
 \arguments{
 \item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does goodness-of-fit testing on one object,
 \code{pvalues_nested} does hypothesis testing on two nested models.}
 
 \item{tests}{A list of tests to evaluate on the
-form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below..}
+form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below. The defaults are the recommended options.}
 
 \item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
 }
@@ -62,6 +54,9 @@ the best choice of \code{j} are typically about \code{2}--\code{6}.
 \code{pols} is a penalized regression method with a penalization term from ranging
 from 0 to infinity. Foldnes, Moss, Grønneberg (2024) studied \code{pols=2}, which
 has good performance in a variety of contexts.
+
+\code{pall} uses all eigenvalues in ugamma, but penalizes them.
+This is the recommended option for nested models. \code{all} uses all eigenvalues.
 
 In addition, you may specify a
 \itemize{

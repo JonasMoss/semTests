@@ -31,6 +31,9 @@
 #' from 0 to infinity. Foldnes, Moss, Grønneberg (2024) studied `pols=2`, which
 #' has good performance in a variety of contexts.
 #'
+#' `pall` uses all eigenvalues in ugamma, but penalizes them.
+#' This is the recommended option for nested models. `all` uses all eigenvalues.
+#'
 #' In addition, you may specify a
 #' * `std` the standard *p*-value where the choice of `chisq` is approximated by a chi square distribution.
 #' * `sb` Satorra-Bentler *p*-value. The *p*-value proposed by Satorra and Bentler (1994).
@@ -49,7 +52,7 @@
 #' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does goodness-of-fit testing on one object,
 #'    `pvalues_nested` does hypothesis testing on two nested models.
 #' @param tests A list of tests to evaluate on the
-#'    form `"(test)_(ug?)_(rls?)"`; see the default arguments and details below..
+#'    form `"(test)_(ug?)_(rls?)"`; see the default arguments and details below. The defaults are the recommended options.
 #' @param method For nested models, choose between `2000` and `2001`. Note: `2001` and Satorra-Bentler will not correspond with the variant in the paper.
 #' @name pvalues
 #' @export
@@ -84,7 +87,7 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")) {
+pvalues <- \(object, tests = c("pEBA4_RLS")) {
   pvalues_internal(object, tests)
 }
 
@@ -103,12 +106,12 @@ pvalues_internal <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS"
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- \(m0, m1, method = c("2000", "2001"), tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS")) {
+pvalues_nested <- \(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML")) {
   pvalues_nested_internal(m0, m1, method = method, tests = tests)
 }
 
 #' @keywords internal
-pvalues_nested_internal <- \(m0, m1, method = c("2000", "2001"), tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+pvalues_nested_internal <- \(m0, m1, method = c("2000", "2001"), tests = c("P_ALL_UG"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
   method <- match.arg(method)
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
