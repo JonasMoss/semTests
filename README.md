@@ -10,7 +10,8 @@ state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 An R package for goodness of fit testing of structural equation models.
-Built on top of `lavaan`.
+Built on top of `lavaan`. Implements the *p*-values of (Foldnes, Moss,
+Grønneberg, 2024).
 
 ## Installation¨
 
@@ -45,6 +46,11 @@ pvalues(object)
 ```
 
 ## References
+
+Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit
+procedures for structural equation models. Structural Equation Modeling:
+A Multidisciplinary Journal, 1–13.
+<https://doi.org/10.1080/10705511.2024.2372028>
 
 Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics
 Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1),

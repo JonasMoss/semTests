@@ -29,7 +29,8 @@ options(warn = -1)
 [![R-CMD-check](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-An R package for goodness of fit testing of structural equation models. Built on top of `lavaan`.
+An R package for goodness of fit testing of structural equation models. Built on top of `lavaan`. Implements the *p*-values of (Foldnes, Moss, Grønneberg, 2024).
+
 ```{r setup, include=FALSE}
 # library("semTests")
 knitr::opts_chunk$set(echo = TRUE)
@@ -60,6 +61,9 @@ object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
 pvalues(object)
 ```
 ## References
+
+Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1–13. https://doi.org/10.1080/10705511.2024.2372028
+
 Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101–114. https://doi.org/10.1080/10705511.2017.1373021
 
 Grønneberg, S., & Foldnes, N. (2019). Testing Model Fit by Bootstrap Selection. Structural Equation Modeling, 26(2), 182–190. https://doi.org/10.1080/10705511.2018.1503543
