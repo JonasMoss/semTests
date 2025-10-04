@@ -87,31 +87,31 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- \(object, tests = c("pEBA4_RLS")) {
+pvalues <- function(object, tests = c("pEBA4_RLS")) {
   pvalues_internal(object, tests)
 }
 
 #' @keywords internal
-pvalues_internal <- \(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
+pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
   if (is.null(tests)) {
     pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   } else {
-    options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_, c(object, option, extras = extras)))
+    options <- lapply(tests, function(test) split_input(test))
+    sapply(options, function(option) do.call(pvalues_, c(object, option, extras = extras)))
   }
 }
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- \(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML")) {
+pvalues_nested <- function(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML")) {
   pvalues_nested_internal(m0, m1, method = method, tests = tests)
 }
 
 #' @keywords internal
-pvalues_nested_internal <- \(m0, m1, method = c("2000", "2001"), tests = c("P_ALL_UG"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = c("P_ALL_UG"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
   method <- match.arg(method)
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
@@ -132,8 +132,8 @@ pvalues_nested_internal <- \(m0, m1, method = c("2000", "2001"), tests = c("P_AL
   if (is.null(tests)) {
     pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
   } else {
-    options <- lapply(tests, \(test) split_input(test))
-    sapply(options, \(option) do.call(pvalues_, c(m0, m1, option, extras = extras, method = method)))
+    options <- lapply(tests, function(test) split_input(test))
+    sapply(options, function(option) do.call(pvalues_, c(m0, m1, option, extras = extras, method = method)))
   }
 }
 
@@ -148,7 +148,7 @@ NULL
 #' @param df,chisq,lambdas,type Parameters needed to calculate the p-values.
 #' @returns Traditional p-values.
 #' @keywords internal
-trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall", "all")) {
+trad_pvalue <- function(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall", "all")) {
   type <- match.arg(type)
   if (type == "std") {
     return(1 - stats::pchisq(chisq, df))
@@ -175,14 +175,14 @@ trad_pvalue <- \(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "pall", "
 }
 
 #' @rdname pvalue_internal
-pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
+pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
   use_trad <- setdiff(trad, "std")
   bad_2001 <- FALSE
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
     ug_list <- ugamma(m0, unbiased)
-    lambdas_list <- lapply(ug_list, \(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
+    lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
   } else {
     if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
       stop("Only the 'ML' estimator supported.")
@@ -191,12 +191,12 @@ pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), e
     chisqs <- make_chisqs(chisq, m0, m1)
     ug_list <- ugamma_nested(m0, m1, method, unbiased)
     ug_list <- lapply(ug_list, sparsify)
-    lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
+    lambdas_list <- lapply(ug_list, function(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
 
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
       ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
-      lambdas_list <- lapply(ug_list, \(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
+      lambdas_list <- lapply(ug_list, function(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
       bad_2001 <- TRUE
     }
   }
@@ -205,32 +205,32 @@ pvalues_ <- \(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), e
   return_value <- c()
   for (i in seq_along(chisqs)) {
     chisq <- chisqs[i]
-    result <- unlist(lapply(seq_along(ug_list), \(j) {
+    result <- unlist(lapply(seq_along(ug_list), function(j) {
       ug <- ug_list[[j]]
       lambdas <- lambdas_list[[j]]
 
       if (!is.null(peba)) {
-        ppeba <- sapply(peba, \(k) peba_pvalue(chisq, lambdas, k))
+        ppeba <- sapply(peba, function(k) peba_pvalue(chisq, lambdas, k))
         names(ppeba) <- paste0("peba", peba)
       } else {
         ppeba <- NULL
       }
 
       if (!is.null(eba)) {
-        peba <- sapply(eba, \(k) eba_pvalue(chisq, lambdas, k))
+        peba <- sapply(eba, function(k) eba_pvalue(chisq, lambdas, k))
         names(peba) <- paste0("eba", eba)
       } else {
         peba <- NULL
       }
 
       if (!is.null(pols)) {
-        ppols <- sapply(pols, \(gamma) pols_pvalue(chisq, lambdas, gamma))
+        ppols <- sapply(pols, function(gamma) pols_pvalue(chisq, lambdas, gamma))
         names(ppols) <- paste0("pols", pols)
       } else {
         ppols <- NULL
       }
 
-      ptrad <- sapply(use_trad, \(x) trad_pvalue(df, chisq, lambdas, x))
+      ptrad <- sapply(use_trad, function(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
 
       out <- pmax(c(ptrad, peba, ppeba, ppols), 0)

@@ -5,7 +5,7 @@
 #' @return List of (un)biased gammas.
 #' @keywords internal
 
-gamma <- \(m1, unbiased = 1, m0 = NULL) {
+gamma <- function(m1, unbiased = 1, m0 = NULL) {
 
   stopifnot(unbiased %in% c(1,2,3))
   gamma_biased <- gamma_from_lavaan(m1, m0)
@@ -27,7 +27,7 @@ gamma <- \(m1, unbiased = 1, m0 = NULL) {
 }
 
 #' @keywords internal
-gamma_rescale <- \(gamma_list, m1) {
+gamma_rescale <- function(gamma_list, m1) {
   if (length(gamma_list) > 0) {
     fg <- unlist(m1@SampleStats@nobs) / m1@SampleStats@ntotal
     for (i in (seq_along(gamma_list))) {
@@ -38,7 +38,7 @@ gamma_rescale <- \(gamma_list, m1) {
 }
 
 #' @keywords internal
-gamma_from_lavaan <- \(m1, m0 = NULL) {
+gamma_from_lavaan <- function(m1, m0 = NULL) {
   gamma_biased <- lavaan::lavInspect(m1, "gamma")
 
   if(is.null(gamma_biased)) {
@@ -64,14 +64,14 @@ gamma_from_lavaan <- \(m1, m0 = NULL) {
 #' @param object `lavaan` object that corresponds to gamma.
 #' @return List of unbiased gammas.
 #' @keywords internal
-gamma_to_gamma_unbiased <- \(gammas, object) {
+gamma_to_gamma_unbiased <- function(gammas, object) {
 
   p <- length(object@Data@ov$name)
   meanstructure <- object@Options$meanstructure
 
 
   groups <- (object@Data@ngroups > 1)
-  access <- \(x, g) {
+  access <- function(x, g) {
     if(groups) {
       x[[g]]
     } else {
@@ -121,14 +121,14 @@ gamma_to_gamma_unbiased <- \(gammas, object) {
 #' @param method Method passed to `lavaan:::lav_test_diff_A`.
 #' @keywords internal
 #' @return Ugamma for nested object.
-lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta") {
+lav_ugamma_nested_2000 <- function(m0, m1, gamma, a = NULL, method = "delta") {
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
 
   p_inv <- lavaan::lavInspect(m1, what = "inverted.information")
 
   if (is.null(a)) {
-    a <- do.call(lavaan:::lav_test_diff_A, list(m1, m0, method = "delta", reference = "H1"))
+    a <- do.call(get_a_matrix, list(m1, m0))
     if (m1@Model@eq.constraints) {
       a <- a %*% t(m1@Model@eq.constraints.K)
     }
@@ -164,18 +164,18 @@ lav_ugamma_nested_2000 <- \(m0, m1, gamma, a = NULL, method = "delta") {
 
 #' Calculate non-nested gamma
 #' @keywords internal
-ugamma <- \(object, unbiased = 1) {
+ugamma <- function(object, unbiased = 1) {
   u0 <- lavaan::lavInspect(object, "U")
   gamma_list <- gamma(object, unbiased)
-  lapply(gamma_list, \(gamma) u0 %*% gamma)
+  lapply(gamma_list, function(gamma) u0 %*% gamma)
 }
 
 #' Calculate nested gamma
 #' @keywords internal
-ugamma_nested <- \(m0, m1, method = c("2000", "2001"), unbiased = 1) {
+ugamma_nested <- function(m0, m1, method = c("2000", "2001"), unbiased = 1) {
   method <- match.arg(method)
   gamma_list <- gamma(m1, unbiased, m0)
-  f <- \(gamma) {
+  f <- function(gamma) {
     if (method == "2001") {
       u0 <- lavaan::lavInspect(m0, "U")
       u1 <- lavaan::lavInspect(m1, "U")

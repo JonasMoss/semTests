@@ -8,7 +8,7 @@
 NULL
 
 #' @rdname laavan_tests
-scaled_and_shifted <- \(chisq, lambdas) {
+scaled_and_shifted <- function(chisq, lambdas) {
   df <- length(lambdas)
   tr_ug <- sum(lambdas)
   tr_ug2 <- sum(lambdas^2)
@@ -23,7 +23,7 @@ scaled_and_shifted <- \(chisq, lambdas) {
 #' @param eig eig of UG matrix.
 #' @return scaled f p-value.
 #' @keywords internal
-scaled_f <- \(chisq, eig) {
+scaled_f <- function(chisq, eig) {
   s1 <- sum(eig)
   s2 <- sum(eig^2)
   s3 <- sum(eig^3)
@@ -44,7 +44,7 @@ scaled_f <- \(chisq, eig) {
 
 #' Calculate the jth eba pvalue.
 #' @keywords internal
-eba_pvalue <- \(chisq, lambdas, j) {
+eba_pvalue <- function(chisq, lambdas, j) {
   m <- length(lambdas)
   k <- ceiling(m / j)
   eig <- lambdas
@@ -57,19 +57,19 @@ eba_pvalue <- \(chisq, lambdas, j) {
 
 #' Calculate the jth all pvalue.
 #' @keywords internal
-pvalue_all <- \(chisq, lambdas) {
+pvalue_all <- function(chisq, lambdas) {
   CompQuadForm::imhof(chisq, lambdas)$Qq
 }
 
 #' Calculate the jth pall pvalue.
 #' @keywords internal
-pall <- \(chisq, lambdas) {
+pall <- function(chisq, lambdas) {
   CompQuadForm::imhof(chisq, lambdas/2 + mean(lambdas)/2)$Qq
 }
 
 #' Calculate the jth eba pvalue.
 #' @keywords internal
-peba_pvalue <- \(chisq, lambdas, j) {
+peba_pvalue <- function(chisq, lambdas, j) {
   m <- length(lambdas)
   k <- ceiling(m / j)
   eig <- lambdas
@@ -83,7 +83,7 @@ peba_pvalue <- \(chisq, lambdas, j) {
 
 #' Calculate penalized OLS pvalue.
 #' @keywords internal
-pols_pvalue <- \(chisq, lambdas, gamma) {
+pols_pvalue <- function(chisq, lambdas, gamma) {
 
   lambda_hat <- if(length(lambdas) == 1) {
     lambdas

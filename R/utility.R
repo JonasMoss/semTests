@@ -1,9 +1,9 @@
 
 #' @keywords internal
-make_chisqs <- \(chisq, m0, m1) {
-  ml <- \(object) lavaan::lavTest(object, test = "standard")$stat
-  rls <- \(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
-  wrap <- \(f, object) if (missing(object)) 0 else f(object)
+make_chisqs <- function(chisq, m0, m1) {
+  ml <- function(object) lavaan::lavTest(object, test = "standard")$stat
+  rls <- function(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
+  wrap <- function(f, object) if (missing(object)) 0 else f(object)
   chisqs <- c()
   if ("ml" %in% chisq) chisqs["ml"] <- ml(m0) - wrap(ml, m1)
   if ("rls" %in% chisq) chisqs["rls"] <- rls(m0) - wrap(rls, m1)
@@ -12,7 +12,7 @@ make_chisqs <- \(chisq, m0, m1) {
 
 #' Returns if not NA; else converts NA to NULL.
 #' @keywords internal
-nanull <- \(x) {
+nanull <- function(x) {
   if (is.na(x)) {
     NULL
   } else {
@@ -22,7 +22,7 @@ nanull <- \(x) {
 
 #' Common default value of 2.
 #' @keywords internal
-default <- \(x) {
+default <- function(x) {
   if (x != "") as.numeric(x) else 2
 }
 
@@ -30,7 +30,7 @@ default <- \(x) {
 #' @param mat Matrix input.
 #' @param lim Elements with absolute value less than `lim` get set to `0`.
 #' @return Object of `dgCMatrix`.
-sparsify <- \(mat, lim = 1e-9) {
+sparsify <- function(mat, lim = 1e-9) {
   mat[abs(mat) < lim] = 0
   Matrix::Matrix(mat, sparse = TRUE)
 }
@@ -39,7 +39,7 @@ sparsify <- \(mat, lim = 1e-9) {
 #' @param string Input string
 #' @keywords internal
 
-split_input <- \(string) {
+split_input <- function(string) {
 
   string <- tolower(string)
   splitted <- strsplit(string, "_")[[1]]

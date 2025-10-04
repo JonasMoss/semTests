@@ -10,7 +10,7 @@
 #'   warnings.
 #' @keywords internal
 #' @return Bootstrapped objects as calculated by `functional`.
-bootstrapper <- \(m0, m1 = NULL, functional = identity, n_reps = 1000,
+bootstrapper <- function(m0, m1 = NULL, functional = identity, n_reps = 1000,
   bs = TRUE,
   skip_warning = FALSE) {
   progress <- progressr::progressor(n_reps)
@@ -26,7 +26,7 @@ bootstrapper <- \(m0, m1 = NULL, functional = identity, n_reps = 1000,
               boots <- bootstrap(m0, m1, data) # lavaan object p<U+00E5> bootstrap.
               functional(boots) # p-values function p<U+00E5> lavaan.
             },
-            error = \(e) {
+            error = function(e) {
               message(paste0("Skipping simulation due to: ", e))
               NULL
             }
@@ -41,11 +41,11 @@ bootstrapper <- \(m0, m1 = NULL, functional = identity, n_reps = 1000,
               boots <- bootstrap(m0, m1, data)
               functional(boots)
             },
-            error = \(e) {
+            error = function(e) {
               message(paste0("Skipping simulation due to: ", e))
               NULL
             },
-            warning = \(w) {
+            warning = function(w) {
               message(paste0("Skipping simulation due to: ", w))
               NULL
             }
@@ -68,13 +68,13 @@ bootstrapper <- \(m0, m1 = NULL, functional = identity, n_reps = 1000,
 #' @param data The data used to sample from, e.g. Bollen-Stine transformed
 #'    data.
 #' @return A bootstrapped `lavaan` object.
-bootstrap <- \(m0, m1 = NULL, data) {
+bootstrap <- function(m0, m1 = NULL, data) {
   ns <- m0@Data@nobs
-  ids <- lapply(ns, \(n) sample(x = n, size = n, replace = TRUE))
+  ids <- lapply(ns, function(n) sample(x = n, size = n, replace = TRUE))
 
   boot_sample <- lavaan::lav_data_update(
     lavdata = m0@Data,
-    newX = lapply(seq_along(ns), \(i) data[[i]][ids[[i]], ]),
+    newX = lapply(seq_along(ns), function(i) data[[i]][ids[[i]], ]),
     lavoptions = lavaan::lavInspect(m0, "options")
   )
 
@@ -104,10 +104,10 @@ bootstrap <- \(m0, m1 = NULL, data) {
 #' @keywords internal
 #' @param object A `lavaan` object.
 #' @return A list of Bollen-Stine transformed data.
-bollen_stine_transform <- \(object) {
+bollen_stine_transform <- function(object) {
   s <- s_and_s_inv(object)
 
-  lapply(seq(object@SampleStats@ngroups), \(i) {
+  lapply(seq(object@SampleStats@ngroups), function(i) {
     data <- object@Data@X[[i]]
     s_sqrt <- s[[i]]$s_sqrt
     s_inv_sqrt <- s[[i]]$s_inv_sqrt
@@ -122,8 +122,8 @@ bollen_stine_transform <- \(object) {
 #' @param object A `lavaan` object.
 #' @keywords internal
 #' @return A list containing s and s_inv for all subgroups of a `lavaan` object.
-s_and_s_inv <- \(object) {
-  lapply(seq(object@SampleStats@ngroups), \(i) {
+s_and_s_inv <- function(object) {
+  lapply(seq(object@SampleStats@ngroups), function(i) {
     s_hat <- lavaan::lav_model_implied(object@Model)$cov[[i]]
     s_inv_hat <- object@SampleStats@icov[[i]]
     list(
