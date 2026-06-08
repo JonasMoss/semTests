@@ -16,7 +16,7 @@ get_a_matrix <- function(m1, m0) {
     delta
   }
 
-  t(get_orthogonal_complement(MASS::ginv(delta(m1)) %*% delta(m0)))
+  t(get_orthogonal_complement(generalized_inverse(delta(m1)) %*% delta(m0)))
 }
 
 computeDelta <- function(lavmodel = NULL, GLIST. = NULL,

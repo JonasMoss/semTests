@@ -36,13 +36,13 @@ Call the `library` function, create a `lavaan` model, and run the
 
 ``` r
 library("semTests")
-model <- "A =~ A1+A2+A3+A4+A5;
-          C =~ C1+C2+C3+C4+C5"
-n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+model <- "visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9"
+object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
-#>    sb_ug_rls peba2_ug_rls    peba4_rls    peba6_rls    pols2_rls 
-#>   0.04396777   0.04930207   0.04424139   0.04488057   0.04450873
+#>    peba4_rls 
+#> 5.306504e-07
 ```
 
 ## References

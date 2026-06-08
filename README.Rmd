@@ -17,10 +17,10 @@ knitr::opts_chunk$set(
 ```{r, include = FALSE, cache = TRUE}
 library("semTests")
 set.seed(313)
-model <- "A =~ A1+A2+A3+A4+A5;
-          C =~ C1+C2+C3+C4+C5"
-n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+model <- "visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9"
+object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 options(warn = -1)
 ```
 # semTests <img src="man/figures/logo.png" align="right" width="210" height="130" />
@@ -54,10 +54,10 @@ Call the `library` function, create a `lavaan` model, and run the
 
 ```{r prepare, echo = TRUE, eval = TRUE}
 library("semTests")
-model <- "A =~ A1+A2+A3+A4+A5;
-          C =~ C1+C2+C3+C4+C5"
-n <- 200
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+model <- "visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9"
+object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
 ```
 ## References

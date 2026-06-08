@@ -59,7 +59,7 @@ gamma_from_lavaan <- function(m1, m0 = NULL) {
   }
 }
 
-#' Calculate unbiase gamma from gamma and object.
+#' Calculate unbiased gamma from gamma and object.
 #' @param gammas List of gammas for each group.
 #' @param object `lavaan` object that corresponds to gamma.
 #' @return List of unbiased gammas.
@@ -134,7 +134,7 @@ lav_ugamma_nested_2000 <- function(m0, m1, gamma, a = NULL, method = "delta") {
     }
   }
 
-  paapaap <- p_inv %*% t(a) %*% MASS::ginv(a %*% p_inv %*% t(a)) %*% a %*% p_inv
+  paapaap <- p_inv %*% t(a) %*% generalized_inverse(a %*% p_inv %*% t(a)) %*% a %*% p_inv
 
   # Compute scaling factor
   fg <- unlist(m1@SampleStats@nobs) / m1@SampleStats@ntotal
@@ -187,4 +187,3 @@ ugamma_nested <- function(m0, m1, method = c("2000", "2001"), unbiased = 1) {
 
   lapply(gamma_list, f)
 }
-

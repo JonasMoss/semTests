@@ -36,27 +36,31 @@ The test argument is a list of character strings on the form
 fourth order moment matrix (Du, Bentler, 2022) is used. If not, the
 standard biased matrix is used. There is no simple relationship between
 \emph{p}-value performance and the choice of \code{unbiased}.
-\item The final part of specifies the chi square statistic. The \code{ML}
+\item The final part specifies the chi square statistic. The \code{ML}
 choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 The \code{RLS} choice (default) uses the reweighted least squares statistic of Browne (1974).
 }
 
-The \code{eba} method partitions the eigenvalues into \code{j} equally sized sets
-(if not possible, the smallest set is incomplete), and takes the mean
-eigenvalue of these sets. Provide a list of integers \code{j} to partition
-with respect to. The method was proposed by Foldnes & Grønneberg (2018).
-\code{eba} with \code{j=2} -- \code{j=4} appear to work best.
+The \code{peba} method is the recommended default. It partitions the eigenvalues
+into \code{j} equally sized sets (if not possible, the smallest set is incomplete),
+shrinks them towards their common mean, and averages within each set. Provide
+a list of integers \code{j} to partition with respect to; the best choices are
+typically about \code{2}--\code{6}. It was introduced by Foldnes, Moss, & Grønneberg
+(2024).
 
-The \code{peba} method is a penalized variant of \code{eba}, described in
-(Foldnes, Moss, Grønneberg, 2024). It typically outperforms \code{eba}, and
-the best choice of \code{j} are typically about \code{2}--\code{6}.
+\code{pols} is a penalized regression method with a penalization term ranging from
+0 to infinity. Foldnes, Moss, & Grønneberg (2024) studied \code{pols=2}, which has
+good performance in a variety of contexts.
 
-\code{pols} is a penalized regression method with a penalization term from ranging
-from 0 to infinity. Foldnes, Moss, Grønneberg (2024) studied \code{pols=2}, which
-has good performance in a variety of contexts.
+\code{pall} penalizes all eigenvalues in ugamma, while \code{all} uses all eigenvalues
+without penalization. \code{pall} is the recommended option for nested models, for
+which the penalized methods were extended and evaluated by Foldnes,
+Grønneberg, & Moss (2026).
 
-\code{pall} uses all eigenvalues in ugamma, but penalizes them.
-This is the recommended option for nested models. \code{all} uses all eigenvalues.
+The \code{eba} method is the unpenalized predecessor of \code{peba} (Foldnes &
+Grønneberg, 2018): it averages within the eigenvalue blocks without shrinkage.
+It is generally outperformed by \code{peba} and is kept mainly for comparison;
+\code{eba} with \code{j=2} -- \code{j=4} tends to work best.
 
 In addition, you may specify a
 \itemize{
@@ -66,7 +70,7 @@ In addition, you may specify a
 \item \code{sf} The scaled \emph{F} \emph{p}-value proposed by Wu and Lin (2016).
 }
 
-The \code{unbiased} argument is \code{TRUE} if the the unbiased estimator of the
+The \code{unbiased} argument is \code{TRUE} if the unbiased estimator of the
 fourth order moment matrix (Du, Bentler, 2022) is used. If \code{FALSE}, the
 standard biased matrix is used. There is no simple relationship between
 p-value performance and the choice of \code{unbiased}.
@@ -78,18 +82,28 @@ The \code{rls} choice uses the reweighted least squares statistic of Browne (197
 \examples{
 library("semTests")
 library("lavaan")
-model <- "A =~ A1+A2+A3+A4+A5;
-          C =~ C1+C2+C3+C4+C5"
-n <- 200
-object <- sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+model <- "visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9"
+object <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
 
 # For the pEBA6 method with biased gamma and ML chisq statistic:
 pvalues(object, "pEBA6_ML")
 
+# Nested model comparison (constrain the textual loadings to be equal):
+constrained <- "visual  =~ x1 + x2 + x3
+                textual =~ a*x4 + a*x5 + a*x6
+                speed   =~ x7 + x8 + x9"
+m1 <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
+pvalues_nested(m0, m1)
+
 }
 \references{
 Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1-13. https://doi.org/10.1080/10705511.2024.2372028
+
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
 
 Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
 

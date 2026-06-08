@@ -2,12 +2,12 @@
 #'
 #' @param chisq Chi-square fit value from a lavaan object.
 #' @param lambdas Eigenvalues of UG matrix.
-#' @name laavan_tests
+#' @name lavaan_tests
 #' @keywords internal
 #' @return The scaled and shifted p-value or the mean-variance adjusted p-value.
 NULL
 
-#' @rdname laavan_tests
+#' @rdname lavaan_tests
 scaled_and_shifted <- function(chisq, lambdas) {
   df <- length(lambdas)
   tr_ug <- sum(lambdas)

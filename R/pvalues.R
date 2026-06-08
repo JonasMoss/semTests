@@ -13,26 +13,30 @@
 #' fourth order moment matrix (Du, Bentler, 2022) is used. If not, the
 #' standard biased matrix is used. There is no simple relationship between
 #' *p*-value performance and the choice of `unbiased`.
-#' * The final part of specifies the chi square statistic. The `ML`
+#' * The final part specifies the chi square statistic. The `ML`
 #' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 #' The `RLS` choice (default) uses the reweighted least squares statistic of Browne (1974).
 #'
-#' The `eba` method partitions the eigenvalues into `j` equally sized sets
-#' (if not possible, the smallest set is incomplete), and takes the mean
-#' eigenvalue of these sets. Provide a list of integers `j` to partition
-#' with respect to. The method was proposed by Foldnes & Grønneberg (2018).
-#' `eba` with `j=2` -- `j=4` appear to work best.
+#' The `peba` method is the recommended default. It partitions the eigenvalues
+#' into `j` equally sized sets (if not possible, the smallest set is incomplete),
+#' shrinks them towards their common mean, and averages within each set. Provide
+#' a list of integers `j` to partition with respect to; the best choices are
+#' typically about `2`--`6`. It was introduced by Foldnes, Moss, & Grønneberg
+#' (2024).
 #'
-#' The `peba` method is a penalized variant of `eba`, described in
-#' (Foldnes, Moss, Grønneberg, 2024). It typically outperforms `eba`, and
-#' the best choice of `j` are typically about `2`--`6`.
+#' `pols` is a penalized regression method with a penalization term ranging from
+#' 0 to infinity. Foldnes, Moss, & Grønneberg (2024) studied `pols=2`, which has
+#' good performance in a variety of contexts.
 #'
-#' `pols` is a penalized regression method with a penalization term from ranging
-#' from 0 to infinity. Foldnes, Moss, Grønneberg (2024) studied `pols=2`, which
-#' has good performance in a variety of contexts.
+#' `pall` penalizes all eigenvalues in ugamma, while `all` uses all eigenvalues
+#' without penalization. `pall` is the recommended option for nested models, for
+#' which the penalized methods were extended and evaluated by Foldnes,
+#' Grønneberg, & Moss (2026).
 #'
-#' `pall` uses all eigenvalues in ugamma, but penalizes them.
-#' This is the recommended option for nested models. `all` uses all eigenvalues.
+#' The `eba` method is the unpenalized predecessor of `peba` (Foldnes &
+#' Grønneberg, 2018): it averages within the eigenvalue blocks without shrinkage.
+#' It is generally outperformed by `peba` and is kept mainly for comparison;
+#' `eba` with `j=2` -- `j=4` tends to work best.
 #'
 #' In addition, you may specify a
 #' * `std` the standard *p*-value where the choice of `chisq` is approximated by a chi square distribution.
@@ -40,7 +44,7 @@
 #' * `ss` The scaled and shifted *p*-value proposed by Asparouhov & Muthén (2010).
 #' * `sf` The scaled *F* *p*-value proposed by Wu and Lin (2016).
 #'
-#' The `unbiased` argument is `TRUE` if the the unbiased estimator of the
+#' The `unbiased` argument is `TRUE` if the unbiased estimator of the
 #' fourth order moment matrix (Du, Bentler, 2022) is used. If `FALSE`, the
 #' standard biased matrix is used. There is no simple relationship between
 #' p-value performance and the choice of `unbiased`.
@@ -59,20 +63,30 @@
 #' @examples
 #' library("semTests")
 #' library("lavaan")
-#' model <- "A =~ A1+A2+A3+A4+A5;
-#'           C =~ C1+C2+C3+C4+C5"
-#' n <- 200
-#' object <- sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+#' model <- "visual  =~ x1 + x2 + x3
+#'           textual =~ x4 + x5 + x6
+#'           speed   =~ x7 + x8 + x9"
+#' object <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
 #' pvalues(object)
 #'
 #' # For the pEBA6 method with biased gamma and ML chisq statistic:
 #' pvalues(object, "pEBA6_ML")
+#'
+#' # Nested model comparison (constrain the textual loadings to be equal):
+#' constrained <- "visual  =~ x1 + x2 + x3
+#'                 textual =~ a*x4 + a*x5 + a*x6
+#'                 speed   =~ x7 + x8 + x9"
+#' m1 <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+#' m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
+#' pvalues_nested(m0, m1)
 #'
 #' @return A named vector of p-values.
 #'
 #' @references
 #'
 #' Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1-13. https://doi.org/10.1080/10705511.2024.2372028
+#'
+#' Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
 #'
 #' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
 #'
@@ -111,7 +125,7 @@ pvalues_nested <- function(m0, m1, method = c("2000", "2001"), tests = c("PALL_U
 }
 
 #' @keywords internal
-pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = c("P_ALL_UG"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
   method <- match.arg(method)
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
@@ -183,6 +197,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
     chisqs <- make_chisqs(chisq, m0)
     ug_list <- ugamma(m0, unbiased)
     lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
+
   } else {
     if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
       stop("Only the 'ML' estimator supported.")

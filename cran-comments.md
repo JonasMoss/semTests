@@ -1,9 +1,12 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 notes
+0 errors | 0 warnings | 0 notes
 
 Tested on macos (release), windows (release), and ubuntu (devel, release, oldrel).
 
-* Fixed DESCRIPTION by adding quotes to ORCID number.
-* The imported `lavaan:::lav_test_diff_A` is necessary for our program
-  to run.
+## Submission notes
+
+This is a maintenance release. It fixes compatibility with the upcoming
+lavaan 0.7-1, in which `lavaan::lavTest()` returns a named list of test
+results; the chi-square statistic is now extracted in a way that works with
+both old and new lavaan versions.

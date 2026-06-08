@@ -1,8 +1,15 @@
 
 #' @keywords internal
 make_chisqs <- function(chisq, m0, m1) {
-  ml <- function(object) lavaan::lavTest(object, test = "standard")$stat
-  rls <- function(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
+  # lavaan >= 0.7-1 returns a named list of tests from `lavTest()` (e.g. both
+  # "standard" and the requested test), whereas earlier versions return a single
+  # flat test object with `$stat`. Grab the statistic from whichever layout we get.
+  get_stat <- function(object, test) {
+    res <- lavaan::lavTest(object, test = test)
+    if (!is.null(res[[test]])) res[[test]][["stat"]] else res[["stat"]]
+  }
+  ml <- function(object) get_stat(object, "standard")
+  rls <- function(object) get_stat(object, "browne.residual.nt.model")
   wrap <- function(f, object) if (missing(object)) 0 else f(object)
   chisqs <- c()
   if ("ml" %in% chisq) chisqs["ml"] <- ml(m0) - wrap(ml, m1)
@@ -30,6 +37,7 @@ default <- function(x) {
 #' @param mat Matrix input.
 #' @param lim Elements with absolute value less than `lim` get set to `0`.
 #' @return Object of `dgCMatrix`.
+#' @noRd
 sparsify <- function(mat, lim = 1e-9) {
   mat[abs(mat) < lim] = 0
   Matrix::Matrix(mat, sparse = TRUE)
