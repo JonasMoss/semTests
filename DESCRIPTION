@@ -9,7 +9,7 @@ Description: Supports penalized eigenvalue block-averaging and penalized
     Satorra-Bentler. All p-values can be calculated using unbiased or biased
     gamma estimates (Du, Bentler, 2022) <doi:10.1080/10705511.2022.2063870> and
     two choices of chi square statistics.
-Version: 0.7.2
+Version: 0.7.3
 Authors@R: c(
     person(given="Jonas", 
            family="Moss",
