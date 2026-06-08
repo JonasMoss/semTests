@@ -53,6 +53,27 @@
 #' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 #' The `rls` choice uses the reweighted least squares statistic of Browne (1974).
 #'
+#' ## Estimators and data types
+#'
+#' The limiting null law of the test statistic is a weighted sum of
+#' chi-squares for any minimum-discrepancy estimator, so these tests are not
+#' specific to normal-theory ML. `pvalues()` supports ML/MLM/MLR, GLS, ULS,
+#' FIML (missing data), and categorical WLSMV/DWLS; `pvalues_nested()` supports
+#' the continuous estimators (nested categorical is not yet implemented). The
+#' model must be fit so that lavaan exposes the asymptotic moment covariance --
+#' fit with a robust test such as `test = "satorra.bentler"`, or with
+#' `estimator = "MLM"/"MLR"/"DWLS"`. Off the classical continuous-complete-data
+#' ML case, the RLS statistic (`browne.residual.nt.model`) and the unbiased
+#' (`UG`) Du-Bentler gamma are undefined and are refused; the standard statistic
+#' and the biased gamma are used instead. ADF/WLS is the degenerate exception,
+#' where the test equals the ordinary chi-square and the correction adds nothing.
+#'
+#' The information matrix (expected vs observed) is taken from the fit; to
+#' control it, fit the lavaan model with `information = "expected"` or
+#' `"observed"`. The returned object records the estimator, statistic,
+#' information type, data type and degrees of freedom actually used; see its
+#' printed footer and `attr(x, "semtests")`.
+#'
 #' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does goodness-of-fit testing on one object,
 #'    `pvalues_nested` does hypothesis testing on two nested models.
 #' @param tests A list of tests to evaluate on the
@@ -80,7 +101,9 @@
 #' m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
 #' pvalues_nested(m0, m1)
 #'
-#' @return A named vector of p-values.
+#' @return A named numeric vector of p-values, of class `semTests_pvalues`,
+#'   carrying an `"semtests"` attribute that records the options used (estimator,
+#'   statistic, information type, gamma type, data type, and degrees of freedom).
 #'
 #' @references
 #'
@@ -101,7 +124,12 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- function(object, tests = c("pEBA4_RLS")) {
+pvalues <- function(object,
+                    tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4") {
+  # The default is fit-appropriate: the historical RLS default for the classical
+  # normal-theory ML case, the suffix-free form (standard statistic, biased
+  # gamma) otherwise. `tests = NULL` still routes to the "nothing requested"
+  # error in pvalues_internal().
   pvalues_internal(object, tests)
 }
 
@@ -110,17 +138,20 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
-  if (is.null(tests)) {
+  result <- if (is.null(tests)) {
     pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   } else {
     options <- lapply(tests, function(test) split_input(test))
     sapply(options, function(option) do.call(pvalues_, c(object, option, extras = extras)))
   }
+  as_semtests(result, fit_provenance(object, nested = FALSE,
+                                     df = unname(lavaan::fitmeasures(object, "df"))))
 }
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- function(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML")) {
+pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
+                           tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL") {
   pvalues_nested_internal(m0, m1, method = method, tests = tests)
 }
 
@@ -138,17 +169,68 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = 
   if (m == 0L) {
     stop("Cannot test models with the same degree of freedom.")
   } else if (m < 0) {
-    m = m1
-    m1 = m0
-    m0 = m
+    tmp <- m1
+    m1 <- m0
+    m0 <- tmp
   }
+  df <- m0@test[[1]]$df - m1@test[[1]]$df
 
-  if (is.null(tests)) {
+  result <- if (is.null(tests)) {
     pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
   } else {
     options <- lapply(tests, function(test) split_input(test))
     sapply(options, function(option) do.call(pvalues_, c(m0, m1, option, extras = extras, method = method)))
   }
+  as_semtests(result, fit_provenance(m0, nested = TRUE, method = method, df = df))
+}
+
+#' Provenance of a `semTests_pvalues` object.
+#'
+#' Records the fit-level options actually used to compute the p-values, so the
+#' returned object is self-describing across estimators and data types.
+#' @keywords internal
+fit_provenance <- function(fit, nested, method = NA, df = NULL) {
+  list(
+    estimator   = fit@Options$estimator,
+    lavaan_test = names(fit@test),
+    information = fit@Options$information,
+    data_type   = if (isTRUE(fit@Model@categorical)) "categorical" else "continuous",
+    missing     = fit@Options$missing,
+    df          = if (is.null(df)) unname(lavaan::fitmeasures(fit, "df")) else df,
+    nested      = nested,
+    method      = method
+  )
+}
+
+#' @keywords internal
+as_semtests <- function(x, info) {
+  attr(x, "semtests") <- info
+  class(x) <- c("semTests_pvalues", class(x))
+  x
+}
+
+#' Print method for p-values from [pvalues()] / [pvalues_nested()].
+#'
+#' Prints the p-values, then a one-line provenance footer (estimator, data type,
+#' information, df) recording the options used.
+#' @param x A `semTests_pvalues` object.
+#' @param ... Passed to the default print method.
+#' @return `x`, invisibly.
+#' @exportS3Method
+print.semTests_pvalues <- function(x, ...) {
+  info <- attr(x, "semtests")
+  y <- unclass(x)
+  attr(y, "semtests") <- NULL
+  print.default(y, ...)
+  if (!is.null(info)) {
+    fiml <- !is.null(info$missing) && info$missing[1] %in% c("ml", "fiml")
+    # lavaan stores `information` as a length-2 vector; show the (single) choice.
+    cat(sprintf("estimator: %s%s | data: %s | information: %s | df: %s%s\n",
+                info$estimator[1], if (fiml) " (FIML)" else "",
+                info$data_type[1], info$information[1], info$df[1],
+                if (isTRUE(info$nested)) sprintf(" | nested (method %s)", info$method[1]) else ""))
+  }
+  invisible(x)
 }
 
 #' P value function for one and two arguments.
@@ -199,8 +281,14 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
     lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
 
   } else {
-    if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
-      stop("Only the 'ML' estimator supported.")
+    # The nested reduction (method 2000) is estimator-agnostic for continuous
+    # data -- the estimator enters only through WLS.V and the information matrix.
+    # Categorical nesting is deferred: computeDelta() (get_a_matrix.R) blocks the
+    # 2000 reduction, and the 2001 difference-of-U route has no non-negativity
+    # guarantee.
+    if (isTRUE(m0@Model@categorical) || isTRUE(m1@Model@categorical)) {
+      stop("Nested tests are not yet supported for categorical data; ",
+           "single-model tests are.", call. = FALSE)
     }
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     chisqs <- make_chisqs(chisq, m0, m1)

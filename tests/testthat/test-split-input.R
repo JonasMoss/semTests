@@ -2,7 +2,8 @@ test_that("split_input parses the two-part unbiased form", {
   opt <- split_input("sb_ug")
   expect_equal(opt$unbiased, 2)
   expect_equal(opt$trad, "sb")
-  expect_equal(opt$chisq, "rls")
+  # No statistic token -> "auto", resolved per fit in make_chisqs().
+  expect_equal(opt$chisq, "auto")
 })
 
 test_that("split_input parses the two-part chi-square form", {

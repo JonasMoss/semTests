@@ -16,6 +16,7 @@ test_that("pvalues_nested errors when the models have equal degrees of freedom",
   )
 })
 
-test_that("pvalues_nested supports only the ML estimator", {
-  expect_error(pvalues_nested(m0_, m1_), "ML")
+test_that("pvalues_nested now supports continuous non-ML estimators (GLS)", {
+  p <- pvalues_nested(m0_, m1_)            # GLS fits from setup.R
+  expect_true(all(is.finite(p) & p >= 0 & p <= 1))
 })

@@ -5,9 +5,14 @@
 \alias{pvalues_nested}
 \title{Calculate \emph{p}-values for one or two \code{lavaan} objects.}
 \usage{
-pvalues(object, tests = c("pEBA4_RLS"))
+pvalues(object, tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4")
 
-pvalues_nested(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML"))
+pvalues_nested(
+  m0,
+  m1,
+  method = c("2000", "2001"),
+  tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL"
+)
 }
 \arguments{
 \item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does goodness-of-fit testing on one object,
@@ -19,7 +24,9 @@ form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below. 
 \item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
 }
 \value{
-A named vector of p-values.
+A named numeric vector of p-values, of class \code{semTests_pvalues},
+carrying an \code{"semtests"} attribute that records the options used (estimator,
+statistic, information type, gamma type, data type, and degrees of freedom).
 }
 \description{
 Calculate \emph{p}-values for a \code{lavaan} object using several methods,
@@ -78,6 +85,27 @@ p-value performance and the choice of \code{unbiased}.
 The \code{chisq} argument controls which basic test statistic is used. The \code{ml}
 choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 The \code{rls} choice uses the reweighted least squares statistic of Browne (1974).
+\subsection{Estimators and data types}{
+
+The limiting null law of the test statistic is a weighted sum of
+chi-squares for any minimum-discrepancy estimator, so these tests are not
+specific to normal-theory ML. \code{pvalues()} supports ML/MLM/MLR, GLS, ULS,
+FIML (missing data), and categorical WLSMV/DWLS; \code{pvalues_nested()} supports
+the continuous estimators (nested categorical is not yet implemented). The
+model must be fit so that lavaan exposes the asymptotic moment covariance --
+fit with a robust test such as \code{test = "satorra.bentler"}, or with
+\code{estimator = "MLM"/"MLR"/"DWLS"}. Off the classical continuous-complete-data
+ML case, the RLS statistic (\code{browne.residual.nt.model}) and the unbiased
+(\code{UG}) Du-Bentler gamma are undefined and are refused; the standard statistic
+and the biased gamma are used instead. ADF/WLS is the degenerate exception,
+where the test equals the ordinary chi-square and the correction adds nothing.
+
+The information matrix (expected vs observed) is taken from the fit; to
+control it, fit the lavaan model with \code{information = "expected"} or
+\code{"observed"}. The returned object records the estimator, statistic,
+information type, data type and degrees of freedom actually used; see its
+printed footer and \code{attr(x, "semtests")}.
+}
 }
 \examples{
 library("semTests")
