@@ -184,6 +184,25 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = 
   as_semtests(result, fit_provenance(m0, nested = TRUE, method = method, df = df))
 }
 
+#' Renormalise the eigenvalue spectrum under missing data.
+#'
+#' For complete data, lavaan's `UGamma` spectrum has mean equal to the robust
+#' scaling factor, so the reference law `sum lambda_j chi^2_1` has the right
+#' first moment. Under missing data (FIML) lavaan's `UGamma` is mis-scaled (its
+#' mean is off by a constant, ~1.8x in practice), which makes the eigenvalue
+#' p-values badly anti-conservative. The spectrum *shape* is correct, so we
+#' rescale it to mean = `chisq.scaling.factor`. This is a no-op for complete
+#' data (where the mean already equals the scaling factor) and requires a robust
+#' test, which FIML fits always have.
+#' @keywords internal
+rescale_missing <- function(lambdas_list, fit, df) {
+  if (identical(fit@Options$missing, "listwise")) return(lambdas_list)
+  sc <- tryCatch(as.numeric(lavaan::fitmeasures(fit, "chisq.scaling.factor")),
+                 error = function(e) NA_real_)
+  if (!is.finite(sc) || sc <= 0) return(lambdas_list)
+  lapply(lambdas_list, function(l) l * (sc * df / sum(l)))
+}
+
 #' Provenance of a `semTests_pvalues` object.
 #'
 #' Records the fit-level options actually used to compute the p-values, so the
@@ -279,6 +298,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
     chisqs <- make_chisqs(chisq, m0)
     ug_list <- ugamma(m0, unbiased)
     lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
+    lambdas_list <- rescale_missing(lambdas_list, m0, df)
 
   } else {
     # The nested reduction (method 2000) is estimator-agnostic for continuous
@@ -288,6 +308,11 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
     # guarantee.
     if (isTRUE(m0@Model@categorical) || isTRUE(m1@Model@categorical)) {
       stop("Nested tests are not yet supported for categorical data; ",
+           "single-model tests are.", call. = FALSE)
+    }
+    if (!identical(m0@Options$missing, "listwise") ||
+        !identical(m1@Options$missing, "listwise")) {
+      stop("Nested tests are not yet supported for missing-data (FIML) fits; ",
            "single-model tests are.", call. = FALSE)
     }
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")

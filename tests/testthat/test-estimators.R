@@ -76,6 +76,25 @@ test_that("nested categorical is deferred with a clear message", {
   expect_error(pvalues_nested(fc0, fc1), "categorical")
 })
 
+test_that("nested missing-data (FIML) is deferred with a clear message", {
+  HS <- lavaan::HolzingerSwineford1939
+  set.seed(2); HS$x1[sample(nrow(HS), 40)] <- NA
+  f1 <- lavaan::cfa(hs,  HS, missing = "fiml", estimator = "MLR")
+  f0 <- lavaan::cfa(hs0, HS, missing = "fiml", estimator = "MLR")
+  expect_error(pvalues_nested(f0, f1), "missing-data")
+})
+
+test_that("rescale_missing is a no-op for complete data, active under missingness", {
+  HS <- lavaan::HolzingerSwineford1939
+  cm <- lavaan::cfa(hs, HS, estimator = "MLM")
+  expect_identical(rescale_missing(list(c(1, 2, 3)), cm, 3L), list(c(1, 2, 3)))
+  HSm <- HS; set.seed(4); HSm$x1[sample(nrow(HS), 50)] <- NA
+  fm <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
+  out <- rescale_missing(list(c(1, 2, 3)), fm, 3L)[[1]]
+  sc <- as.numeric(lavaan::fitmeasures(fm, "chisq.scaling.factor"))
+  expect_equal(mean(out), sc)                 # mean renormalised to scaling factor
+})
+
 test_that("the output object records the options it used", {
   fit  <- lavaan::cfa(hs, lavaan::HolzingerSwineford1939, estimator = "MLM")
   info <- attr(pvalues(fit, "PEBA4_RLS"), "semtests")
