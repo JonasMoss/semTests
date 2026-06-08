@@ -204,13 +204,11 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
     }
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     chisqs <- make_chisqs(chisq, m0, m1)
-    ug_list <- ugamma_nested(m0, m1, method, unbiased)
-    lambdas_list <- lapply(ug_list, function(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
+    lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
 
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
-      ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
-      lambdas_list <- lapply(ug_list, function(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
+      lambdas_list <- lambdas_nested(m0, m1, "2000", unbiased, df)
       bad_2001 <- TRUE
     }
   }
@@ -219,8 +217,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
   return_value <- c()
   for (i in seq_along(chisqs)) {
     chisq <- chisqs[i]
-    result <- unlist(lapply(seq_along(ug_list), function(j) {
-      ug <- ug_list[[j]]
+    result <- unlist(lapply(seq_along(lambdas_list), function(j) {
       lambdas <- lambdas_list[[j]]
 
       if (!is.null(peba)) {
@@ -248,7 +245,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
       names(ptrad) <- use_trad
 
       out <- pmax(c(ptrad, peba, ppeba, ppols), 0)
-      name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ug"
+      name <- if (names(lambdas_list)[[j]] == "ug_biased") "" else "_ug"
       name <- paste0(name, "_", names(chisqs)[i])
 
       if (length(out) != 0) {

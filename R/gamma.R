@@ -187,3 +187,69 @@ ugamma_nested <- function(m0, m1, method = c("2000", "2001"), unbiased = 1) {
 
   lapply(gamma_list, f)
 }
+
+#' Gamma-free factors of the reduced nested spectrum (Satorra 2000).
+#'
+#' Returns the restriction-space factor `D` and companion `C` such that the `m`
+#' nonzero eigenvalues of the full `q x q` UGamma equal those of
+#' `C^{-1} D' Gamma D`, an `m x m` problem with `m` the number of restrictions.
+#' This is the materialised reduction of Moss (2026): the full `q x q` U matrix
+#' and its eigendecomposition are never formed. With `U = D C^+ D'` one has
+#' `D = V Delta P^+ A'` and `C = A P^+ A'`, where `V` is the (group-weighted)
+#' weight, `Delta` the Jacobian, `P^+` the inverted information, and `A` the
+#' restriction matrix.
+#' @keywords internal
+nested_factor_2000 <- function(m0, m1, a = NULL) {
+  wls_v <- lavaan::lavTech(m1, "WLS.V")
+  pi <- lavaan::lavInspect(m1, "delta")
+  p_inv <- lavaan::lavInspect(m1, what = "inverted.information")
+
+  if (is.null(a)) {
+    a <- do.call(get_a_matrix, list(m1, m0))
+    if (m1@Model@eq.constraints) {
+      a <- a %*% t(m1@Model@eq.constraints.K)
+    }
+  }
+
+  fg <- unlist(m1@SampleStats@nobs) / m1@SampleStats@ntotal
+  for (i in seq_along(wls_v)) wls_v[[i]] <- fg[i] * wls_v[[i]]
+  v_global <- lavaan::lav_matrix_bdiag(wls_v)
+  pi_global <- if (is.list(pi)) do.call(rbind, pi) else pi
+
+  list(
+    D = v_global %*% pi_global %*% p_inv %*% t(a),
+    C = a %*% p_inv %*% t(a)
+  )
+}
+
+#' Reference spectrum of the nested test, without forming the full UGamma.
+#'
+#' For Satorra's (2000) method the nonzero eigenvalues are those of the `m x m`
+#' matrix `C^{-1} D' Gamma D` (see [nested_factor_2000]); the `q x q` UGamma and
+#' its eigendecomposition are avoided. The (2001) method has no such reduction,
+#' so the top-`df` eigenvalues of the full `(U0 - U1) Gamma` are returned.
+#' @param m0,m1 Two nested `lavaan` objects.
+#' @param method Either `"2000"` or `"2001"`.
+#' @param unbiased Biased (1), unbiased (2), or both (3) gamma.
+#' @param df Number of restrictions (degrees-of-freedom difference).
+#' @return A list of eigenvalue vectors, one per gamma estimate.
+#' @keywords internal
+lambdas_nested <- function(m0, m1, method = c("2000", "2001"), unbiased = 1, df) {
+  method <- match.arg(method)
+  gamma_list <- gamma(m1, unbiased, m0)
+
+  if (method == "2001") {
+    du <- lavaan::lavInspect(m0, "U") - lavaan::lavInspect(m1, "U")
+    lapply(gamma_list, function(g) {
+      ev <- Re(eigen(du %*% g, only.values = TRUE)$values)
+      sort(ev, decreasing = TRUE)[seq_len(df)]
+    })
+  } else {
+    factors <- nested_factor_2000(m0, m1)
+    c_inv <- generalized_inverse(factors$C)
+    lapply(gamma_list, function(g) {
+      m_phi <- t(factors$D) %*% g %*% factors$D
+      sort(Re(eigen(c_inv %*% m_phi, only.values = TRUE)$values), decreasing = TRUE)
+    })
+  }
+}
