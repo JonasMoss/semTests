@@ -1,6 +1,6 @@
 Package: semTests
 Type: Package
-Title: Goodness-of-Fit Testing for Structural Equation Models
+Title: Robust Test Statistics for Structural Equation Models
 Description: Supports penalized eigenvalue block-averaging and penalized
     regression p-values (Foldnes, Moss, Grønneberg, 2024)
     <doi:10.1080/10705511.2024.2372028>, including their extension to nested

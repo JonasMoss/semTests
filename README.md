@@ -9,9 +9,9 @@
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-An R package for goodness of fit testing of structural equation models.
-Built on top of `lavaan`. Implements the *p*-values of (Foldnes, Moss,
-Grønneberg, 2024).
+An R package for robust test statistics in structural equation models,
+covering both overall fit and nested model comparison. Built on top of
+`lavaan`. Implements the *p*-values of (Foldnes, Moss, Grønneberg, 2024).
 
 ## Installation¨
 
