@@ -6,7 +6,7 @@ Tested on macos (release), windows (release), and ubuntu (devel, release, oldrel
 
 ## Submission notes
 
-This is a maintenance release. It fixes compatibility with the upcoming
-lavaan 0.7-1, in which `lavaan::lavTest()` returns a named list of test
-results; the chi-square statistic is now extracted in a way that works with
-both old and new lavaan versions.
+This release drops the CompQuadForm and Matrix dependencies. The upper-tail
+probabilities of the quadratic forms underlying the eigenvalue-based p-values
+are now computed internally, which is also more accurate in the tail, where
+CompQuadForm's routines lose precision.
