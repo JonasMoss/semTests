@@ -94,11 +94,10 @@ check_supported_nested <- function(m0, m1, method, A.method = "exact") {
     stop("Nested tests for missing data currently require FIML fits. ",
          "See `?semTests-support`.", call. = FALSE)
   }
+  # If either fit is FIML then both are: the mixed-missing check above rejects a
+  # FIML/non-FIML pair, and check_supported() rejects any other missing mode. So
+  # only the method restriction remains to enforce here.
   if (is_fiml(m0) || is_fiml(m1)) {
-    if (!is_fiml(m0) || !is_fiml(m1)) {
-      stop("Nested FIML tests require both fits to use FIML/missing data. ",
-           "See `?semTests-support`.", call. = FALSE)
-    }
     if (method != "2000") {
       stop("Nested FIML tests support method = \"2000\" only. ",
            "See `?semTests-support`.", call. = FALSE)

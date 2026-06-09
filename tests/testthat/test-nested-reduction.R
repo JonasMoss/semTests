@@ -39,6 +39,23 @@ test_that("2001 spectrum matches full UGamma top-df (no reduction, base eigen)",
   expect_spectrum_matches(m0_no_groups, m1_no_groups, "2001", 2)
 })
 
+test_that("reduced spectrum matches full UGamma under a general (==) equality constraint", {
+  # `a*` labels create *simple* equalities (ceq.simple); an explicit `==` makes a
+  # general equality constraint (eq.constraints), which routes through the
+  # eq.constraints.K mapping in both the reduced and the full reference paths.
+  HS <- lavaan::HolzingerSwineford1939
+  m1 <- lavaan::cfa("visual =~ x1 + x2 + x3
+                     textual =~ x4 + x5 + x6
+                     speed   =~ x7 + x8 + x9", HS, estimator = "MLM")
+  m0 <- lavaan::cfa("visual =~ x1 + v2*x2 + v3*x3
+                     textual =~ x4 + x5 + x6
+                     speed   =~ x7 + x8 + x9
+                     v2 == v3", HS, estimator = "MLM")
+  expect_true(m0@Model@eq.constraints)             # general constraint, not ceq.simple
+  expect_spectrum_matches(m0, m1, "2000", 1)
+  expect_spectrum_matches(m0, m1, "2000", 2)
+})
+
 test_that("reduced spectrum matches full UGamma on a big model (q = 210)", {
   skip_on_cran()
   set.seed(1)

@@ -161,6 +161,9 @@ test_that("zeros and non-finite weights are dropped", {
   # all-zero weights => Q is degenerate at 0
   expect_equal(imhof_pvalue(1,  c(0, 0)), 0)
   expect_equal(imhof_pvalue(-1, c(0, 0)), 1)
+  # all weights non-finite => nothing left after the finite filter, also Q = 0
+  expect_equal(imhof_pvalue(1,  c(NA, Inf, -Inf)), 0)
+  expect_equal(imhof_pvalue(-1, c(NA_real_, NA_real_)), 1)
 })
 
 test_that("monotone in q and bounded in [0, 1]", {
@@ -178,4 +181,34 @@ test_that("vectorises over q", {
   qs <- c(0, 1, 5, 10)
   expect_equal(imhof_pvalue(qs, lambda),
                vapply(qs, imhof_pvalue, numeric(1), lambda = lambda))
+})
+
+# --- the Lugannani-Rice saddlepoint fallback (mixed-sign deep tail) ----------
+
+test_that("the saddlepoint keeps a valid, monotone tail for mixed-sign weights", {
+  # Mixed-sign spectrum pushed far enough that the Imhof integral can no longer
+  # resolve the (tiny) tail and imhof_pvalue() hands off to the saddlepoint.
+  lambda <- c(6, 3, 1, -2)
+  qs <- c(20, 40, 70, 110)
+  ps <- vapply(qs, imhof_pvalue, numeric(1), lambda = lambda)
+  expect_true(all(is.finite(ps) & ps >= 0 & ps <= 1))
+  expect_true(all(diff(ps) <= 1e-9))            # non-increasing in q
+  expect_gt(ps[1], ps[length(ps)])              # genuinely decaying
+})
+
+test_that(".saddle_one handles the removable singularity at the mean", {
+  # At q = E[Q] = sum(lambda) the Lugannani-Rice formula has a removable
+  # singularity handled by a skewness expansion; the result is a valid F(mean).
+  lambda <- c(6, 3, 1, -2)
+  s <- .saddle_one(sum(lambda), lambda)
+  expect_true(is.finite(s) && s > 0 && s < 1)
+  # off the mean the saddle root exists for a one-sided (all-positive) spectrum
+  expect_true(is.finite(.saddle_root(10, c(3, 2, 1))))
+})
+
+test_that(".imhof_integrand has the correct u -> 0 limit", {
+  lambda <- c(2, 1, 0.5); q <- 1.5
+  v <- .imhof_integrand(c(0, 0.3), q, lambda)
+  expect_equal(v[1], 0.5 * (sum(lambda) - q))   # the analytic limit at u = 0
+  expect_true(is.finite(v[2]))
 })
