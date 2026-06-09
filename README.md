@@ -12,18 +12,17 @@ state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 An R package for robust test statistics in structural equation models,
-covering both overall goodness-of-fit testing and nested model
+covering both overall goodness of fit testing and nested model
 comparison. Built on top of `lavaan`. It implements the penalized
-eigenvalue block-averaging and penalized regression *p*-values of
+eigenvalue block averaging and penalized regression *p* values of
 Foldnes, Moss, & Grønneberg (2024), together with their extension to
 nested model comparison in Foldnes, Grønneberg, & Moss (2026).
 
 The eigenvalue correction targets the limiting null law of the test
-statistic — a weighted sum of chi-squares — which holds for any
-minimum-discrepancy estimator, so support now reaches beyond
-normal-theory ML to GLS, ULS, categorical WLSMV/DWLS, and FIML
-missing-data fits. See `?semTests-support` for the full, validated
-matrix.
+statistic, a weighted sum of chi squares. This law holds for any minimum
+discrepancy estimator, so support now reaches beyond normal theory ML to
+GLS, ULS, categorical WLSMV/DWLS, and FIML missing data fits. See
+`?semTests-support` for the full validated matrix.
 
 ## Installation
 
@@ -34,7 +33,7 @@ install.packages("semTests")
 ```
 
 Or install the development version using the following command inside
-`R`:
+`R`.
 
 ``` r
 # install.packages("remotes")
@@ -59,7 +58,7 @@ pvalues(object)
 ```
 
 For nested model comparison, fit the constrained and unconstrained
-models and pass both to `pvalues_nested` (the constrained model first):
+models and pass both to `pvalues_nested`, the constrained model first.
 
 ``` r
 constrained <- "visual  =~ x1 + x2 + x3
@@ -73,15 +72,15 @@ pvalues_nested(m0, m1)
 #> estimator: ML | data: continuous | information: expected | df: 2 | nested (method 2000)
 ```
 
-> **Note.** Support for estimators other than normal-theory ML — GLS,
-> ULS, categorical WLSMV/DWLS, and FIML — and for nested comparison
-> under FIML is **experimental** in this release; the classical ML path
-> is stable. See `?semTests-support`.
+> **Note.** Support for estimators other than normal theory ML (GLS,
+> ULS, categorical WLSMV/DWLS, and FIML) and for nested comparison under
+> FIML is **experimental** in this release. The classical ML path is
+> stable. See `?semTests-support`.
 
-Missing data is handled through full-information maximum likelihood: fit
+Missing data is handled through full information maximum likelihood. Fit
 the model with `missing = "fiml"` and pass it to `pvalues` as usual.
-(FIML uses the biased gamma and the standard statistic, so the
-`UG`/`RLS` suffixes do not apply.)
+FIML uses the biased gamma and the standard statistic, so the `UG`/`RLS`
+suffixes do not apply.
 
 ``` r
 HS <- lavaan::HolzingerSwineford1939
