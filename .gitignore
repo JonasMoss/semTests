@@ -15,6 +15,9 @@
 # Output files from R CMD build
 /*.tar.gz
 
+# devtools submission record (local only)
+CRAN-SUBMISSION
+
 # Output files from R CMD check
 /*.Rcheck/
 
