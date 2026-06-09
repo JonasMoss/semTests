@@ -37,7 +37,8 @@ make_chisqs <- function(chisq, m0, m1) {
   if ("rls" %in% chisq && !classic_nt) {
     stop("The RLS statistic ('browne.residual.nt.model') is only available for ",
          "continuous, complete-data ML; it silently degrades to ADF otherwise. ",
-         "Use the standard statistic (the `_ML` suffix) or omit the suffix.",
+         "Use the standard statistic (the `_ML` suffix) or omit the suffix. ",
+         "See `?semTests-support`.",
          call. = FALSE)
   }
 

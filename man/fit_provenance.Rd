@@ -4,7 +4,7 @@
 \alias{fit_provenance}
 \title{Provenance of a \code{semTests_pvalues} object.}
 \usage{
-fit_provenance(fit, nested, method = NA, df = NULL)
+fit_provenance(fit, nested, method = NA, A.method = NA, df = NULL)
 }
 \description{
 Records the fit-level options actually used to compute the p-values, so the

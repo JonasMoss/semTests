@@ -59,14 +59,35 @@ test_that("nested p-values work for continuous non-ML estimators", {
 })
 
 test_that("normal-theory-only options are refused off the normal-theory ML case", {
-  cat_fit <- lavaan::cfa(hs, ordinalize(lavaan::HolzingerSwineford1939),
-                         ordered = paste0("x", 1:9))
-  uls_fit <- lavaan::cfa(hs, lavaan::HolzingerSwineford1939,
-                         estimator = "ULS", test = "satorra.bentler")
-  expect_error(pvalues(cat_fit, "SB_RLS"), "RLS")
-  expect_error(pvalues(cat_fit, "SB_UG"),  "unbiased")
-  expect_error(pvalues(uls_fit, "SB_RLS"), "RLS")
-  expect_error(pvalues(uls_fit, "SB_UG"),  "unbiased")
+  # is_classic_nt() keys on the *estimator* (ML), so MLM/MLR on complete data
+  # still admit RLS/UG; the non-classic fits are GLS, ULS, categorical, and FIML.
+  HS  <- lavaan::HolzingerSwineford1939
+  HSm <- HS; set.seed(8); HSm$x1[sample(nrow(HS), 40)] <- NA
+  non_classic <- list(
+    ULS         = lavaan::cfa(hs, HS, estimator = "ULS", test = "satorra.bentler"),
+    GLS         = lavaan::cfa(hs, HS, estimator = "GLS"),
+    categorical = lavaan::cfa(hs, ordinalize(HS), ordered = paste0("x", 1:9)),
+    FIML        = lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
+  )
+  for (nm in names(non_classic)) {
+    expect_error(pvalues(non_classic[[nm]], "SB_RLS"), "RLS",      info = nm)
+    expect_error(pvalues(non_classic[[nm]], "SB_UG"),  "unbiased", info = nm)
+  }
+})
+
+test_that("FIML constraints (single-group, no fixed exogenous covariates) are enforced", {
+  HS  <- lavaan::HolzingerSwineford1939
+  HSm <- HS; set.seed(9); HSm$x1[sample(nrow(HS), 40)] <- NA
+  mg_fiml <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR",
+                         group = "school")
+  expect_error(pvalues(mg_fiml, "PEBA4"), "single-group")
+
+  fixed_x <- lavaan::cfa(
+    "visual =~ x1 + x2 + x3
+     visual ~ ageyr",
+    HSm, missing = "fiml", estimator = "MLR", fixed.x = TRUE
+  )
+  expect_error(pvalues(fixed_x, "PEBA4"), "fixed exogenous")
 })
 
 test_that("nested categorical is deferred with a clear message", {
@@ -76,12 +97,18 @@ test_that("nested categorical is deferred with a clear message", {
   expect_error(pvalues_nested(fc0, fc1), "categorical")
 })
 
-test_that("nested missing-data (FIML) is deferred with a clear message", {
+test_that("nested missing-data (FIML) works for continuous fits", {
   HS <- lavaan::HolzingerSwineford1939
   set.seed(2); HS$x1[sample(nrow(HS), 40)] <- NA
   f1 <- lavaan::cfa(hs,  HS, missing = "fiml", estimator = "MLR")
   f0 <- lavaan::cfa(hs0, HS, missing = "fiml", estimator = "MLR")
-  expect_error(pvalues_nested(f0, f1), "missing-data")
+  p_exact <- pvalues_nested(f0, f1)
+  p_delta <- pvalues_nested(f0, f1, A.method = "delta")
+  expect_true(valid_p(p_exact))
+  expect_true(valid_p(p_delta))
+  expect_equal(attr(p_exact, "semtests")$A.method, "exact")
+  expect_error(pvalues_nested(f0, f1, method = "2001"), "method = \"2000\"")
+  expect_error(pvalues_nested(f0, f1, tests = "PALL_UG"), "unbiased")
 })
 
 test_that("rescale_missing is a no-op for complete data, active under missingness", {

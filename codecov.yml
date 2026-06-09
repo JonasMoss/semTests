@@ -1,0 +1,13 @@
+comment: false
+
+coverage:
+  status:
+    project:
+      default:
+        # Allow small dips while the test surface is still being broadened.
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        # New lines need not be fully covered to pass; report informationally.
+        informational: true

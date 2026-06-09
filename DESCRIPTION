@@ -35,7 +35,9 @@ Imports:
   lavaan (>= 0.6-16),
   methods
 Suggests:
-  testthat (>= 3.0.0)
+  testthat (>= 3.0.0),
+  covr,
+  xml2
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0

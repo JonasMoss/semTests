@@ -11,7 +11,8 @@ pvalues_nested(
   m0,
   m1,
   method = c("2000", "2001"),
-  tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL"
+  tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
+  A.method = c("exact", "delta")
 )
 }
 \arguments{
@@ -22,6 +23,10 @@ pvalues_nested(
 form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below. The defaults are the recommended options.}
 
 \item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
+
+\item{A.method}{For nested FIML models, choose \code{"exact"} for the literal
+parameter restriction map or \code{"delta"} for the local moment-tangent
+restriction map.}
 }
 \value{
 A named numeric vector of p-values, of class \code{semTests_pvalues},
@@ -87,10 +92,15 @@ choice uses the chi square based on the normal discrepancy function (Bollen, 201
 The \code{rls} choice uses the reweighted least squares statistic of Browne (1974).
 \subsection{Estimators and data types}{
 
+The authoritative list of supported estimators, data types, and
+configurations -- the matrix this function is validated against -- is
+\link{semTests-support} (\code{?semTests-support}). In brief:
+
 The limiting null law of the test statistic is a weighted sum of
 chi-squares for any minimum-discrepancy estimator, so these tests are not
 specific to normal-theory ML. \code{pvalues()} supports ML/MLM/MLR, GLS, ULS,
-FIML (missing data), and categorical WLSMV/DWLS; \code{pvalues_nested()} supports
+FIML (missing data), and categorical WLSMV/DWLS, with single- and
+multi-group continuous and categorical fits; \code{pvalues_nested()} supports
 the continuous estimators (nested categorical is not yet implemented). The
 model must be fit so that lavaan exposes the asymptotic moment covariance --
 fit with a robust test such as \code{test = "satorra.bentler"}, or with
@@ -146,4 +156,7 @@ Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimato
 Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 
 Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
+}
+\seealso{
+\link{semTests-support} for the full list of supported configurations.
 }

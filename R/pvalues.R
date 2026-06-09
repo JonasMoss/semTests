@@ -55,10 +55,15 @@
 #'
 #' ## Estimators and data types
 #'
+#' The authoritative list of supported estimators, data types, and
+#' configurations -- the matrix this function is validated against -- is
+#' [semTests-support] (`?semTests-support`). In brief:
+#'
 #' The limiting null law of the test statistic is a weighted sum of
 #' chi-squares for any minimum-discrepancy estimator, so these tests are not
 #' specific to normal-theory ML. `pvalues()` supports ML/MLM/MLR, GLS, ULS,
-#' FIML (missing data), and categorical WLSMV/DWLS; `pvalues_nested()` supports
+#' FIML (missing data), and categorical WLSMV/DWLS, with single- and
+#' multi-group continuous and categorical fits; `pvalues_nested()` supports
 #' the continuous estimators (nested categorical is not yet implemented). The
 #' model must be fit so that lavaan exposes the asymptotic moment covariance --
 #' fit with a robust test such as `test = "satorra.bentler"`, or with
@@ -79,6 +84,9 @@
 #' @param tests A list of tests to evaluate on the
 #'    form `"(test)_(ug?)_(rls?)"`; see the default arguments and details below. The defaults are the recommended options.
 #' @param method For nested models, choose between `2000` and `2001`. Note: `2001` and Satorra-Bentler will not correspond with the variant in the paper.
+#' @param A.method For nested FIML models, choose `"exact"` for the literal
+#'   parameter restriction map or `"delta"` for the local moment-tangent
+#'   restriction map.
 #' @name pvalues
 #' @export
 #' @examples
@@ -104,6 +112,8 @@
 #' @return A named numeric vector of p-values, of class `semTests_pvalues`,
 #'   carrying an `"semtests"` attribute that records the options used (estimator,
 #'   statistic, information type, gamma type, data type, and degrees of freedom).
+#'
+#' @seealso [semTests-support] for the full list of supported configurations.
 #'
 #' @references
 #'
@@ -138,6 +148,8 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
+  check_supported(object)
+  warn_fiml_information(object)
   result <- if (is.null(tests)) {
     pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   } else {
@@ -151,13 +163,21 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
 #' @rdname pvalues
 #' @export
 pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
-                           tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL") {
-  pvalues_nested_internal(m0, m1, method = method, tests = tests)
+                           tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
+                           A.method = c("exact", "delta")) {
+  pvalues_nested_internal(m0, m1, method = method, tests = tests,
+                          A.method = A.method)
 }
 
 #' @keywords internal
-pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
+                                    tests = c("PALL_UG_ML"), trad = NULL,
+                                    eba = NULL, peba = NULL, pols = NULL,
+                                    unbiased = 1, chisq = "ml",
+                                    extras = FALSE,
+                                    A.method = c("exact", "delta")) {
   method <- match.arg(method)
+  A.method <- match.arg(A.method)
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
@@ -175,13 +195,24 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = 
   }
   df <- m0@test[[1]]$df - m1@test[[1]]$df
 
+  check_supported_nested(m0, m1, method, A.method)
+  warn_fiml_information(m0)
+  warn_fiml_information(m1)
+
   result <- if (is.null(tests)) {
-    pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
+    pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba,
+             peba = peba, pols = pols, chisq = chisq, extras = extras,
+             method = method, A.method = A.method)
   } else {
     options <- lapply(tests, function(test) split_input(test))
-    sapply(options, function(option) do.call(pvalues_, c(m0, m1, option, extras = extras, method = method)))
+    sapply(options, function(option) {
+      do.call(pvalues_, c(m0, m1, option, extras = extras, method = method,
+                          A.method = A.method))
+    })
   }
-  as_semtests(result, fit_provenance(m0, nested = TRUE, method = method, df = df))
+  provenance_A_method <- if (is_fiml(m0) || is_fiml(m1)) A.method else NA
+  as_semtests(result, fit_provenance(m0, nested = TRUE, method = method,
+                                     A.method = provenance_A_method, df = df))
 }
 
 #' Renormalise the eigenvalue spectrum under missing data.
@@ -208,8 +239,8 @@ rescale_missing <- function(lambdas_list, fit, df) {
 #' Records the fit-level options actually used to compute the p-values, so the
 #' returned object is self-describing across estimators and data types.
 #' @keywords internal
-fit_provenance <- function(fit, nested, method = NA, df = NULL) {
-  list(
+fit_provenance <- function(fit, nested, method = NA, A.method = NA, df = NULL) {
+  out <- list(
     estimator   = fit@Options$estimator,
     lavaan_test = names(fit@test),
     information = fit@Options$information,
@@ -219,6 +250,8 @@ fit_provenance <- function(fit, nested, method = NA, df = NULL) {
     nested      = nested,
     method      = method
   )
+  if (!is.na(A.method[1])) out$A.method <- A.method
+  out
 }
 
 #' @keywords internal
@@ -247,7 +280,17 @@ print.semTests_pvalues <- function(x, ...) {
     cat(sprintf("estimator: %s%s | data: %s | information: %s | df: %s%s\n",
                 info$estimator[1], if (fiml) " (FIML)" else "",
                 info$data_type[1], info$information[1], info$df[1],
-                if (isTRUE(info$nested)) sprintf(" | nested (method %s)", info$method[1]) else ""))
+                if (isTRUE(info$nested)) {
+                  a_method <- if (!is.null(info$A.method) &&
+                                  !is.na(info$A.method[1])) {
+                    sprintf(", A.method %s", info$A.method[1])
+                  } else {
+                    ""
+                  }
+                  sprintf(" | nested (method %s%s)", info$method[1], a_method)
+                } else {
+                  ""
+                }))
   }
   invisible(x)
 }
@@ -290,38 +333,55 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "p
 }
 
 #' @rdname pvalue_internal
-pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
+pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
+                     chisq = c("ml", "rls"), extras = FALSE, method,
+                     A.method = "exact") {
   use_trad <- setdiff(trad, "std")
   bad_2001 <- FALSE
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
-    ug_list <- ugamma(m0, unbiased)
-    lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
-    lambdas_list <- rescale_missing(lambdas_list, m0, df)
+    if (is_fiml(m0)) {
+      if (unbiased != 1) {
+        stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
+             "drop `UG` from the test name to use the biased FIML spectrum. ",
+             "See `?semTests-support`.",
+             call. = FALSE)
+      }
+      lambdas_list <- fiml_lambdas(m0, df)
+    } else {
+      ug_list <- ugamma(m0, unbiased)
+      lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
+      lambdas_list <- rescale_missing(lambdas_list, m0, df)
+    }
 
   } else {
     # The nested reduction (method 2000) is estimator-agnostic for continuous
     # data -- the estimator enters only through WLS.V and the information matrix.
-    # Categorical nesting is deferred: computeDelta() (get_a_matrix.R) blocks the
-    # 2000 reduction, and the 2001 difference-of-U route has no non-negativity
-    # guarantee.
-    if (isTRUE(m0@Model@categorical) || isTRUE(m1@Model@categorical)) {
-      stop("Nested tests are not yet supported for categorical data; ",
-           "single-model tests are.", call. = FALSE)
-    }
-    if (!identical(m0@Options$missing, "listwise") ||
-        !identical(m1@Options$missing, "listwise")) {
-      stop("Nested tests are not yet supported for missing-data (FIML) fits; ",
-           "single-model tests are.", call. = FALSE)
-    }
+    # Fit-shape support (categorical / missing / FIML) is enforced upstream by
+    # check_supported_nested(); here we branch on the FIML vs complete-data
+    # computation and reject the FIML-incompatible UG gamma (a per-test option).
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     chisqs <- make_chisqs(chisq, m0, m1)
-    lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
+    if (is_fiml(m0) || is_fiml(m1)) {
+      if (unbiased != 1) {
+        stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
+             "drop `UG` from the test name to use the biased FIML spectrum. ",
+             "See `?semTests-support`.",
+             call. = FALSE)
+      }
+      lambdas_list <- fiml_lambdas_nested(m0, m1, df, A.method = A.method)
+    } else {
+      lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
+    }
 
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
-      lambdas_list <- lambdas_nested(m0, m1, "2000", unbiased, df)
+      lambdas_list <- if (is_fiml(m0) || is_fiml(m1)) {
+        fiml_lambdas_nested(m0, m1, df, A.method = A.method)
+      } else {
+        lambdas_nested(m0, m1, "2000", unbiased, df)
+      }
       bad_2001 <- TRUE
     }
   }

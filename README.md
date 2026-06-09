@@ -5,6 +5,7 @@
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semTests)](https://cran.r-project.org/package=semTests)
 [![R-CMD-check](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/JonasMoss/semTests/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semTests?branch=main)
 [![Project Status: Active – The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
