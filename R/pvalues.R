@@ -13,26 +13,30 @@
 #' fourth order moment matrix (Du, Bentler, 2022) is used. If not, the
 #' standard biased matrix is used. There is no simple relationship between
 #' *p*-value performance and the choice of `unbiased`.
-#' * The final part of specifies the chi square statistic. The `ML`
+#' * The final part specifies the chi square statistic. The `ML`
 #' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 #' The `RLS` choice (default) uses the reweighted least squares statistic of Browne (1974).
 #'
-#' The `eba` method partitions the eigenvalues into `j` equally sized sets
-#' (if not possible, the smallest set is incomplete), and takes the mean
-#' eigenvalue of these sets. Provide a list of integers `j` to partition
-#' with respect to. The method was proposed by Foldnes & Grønneberg (2018).
-#' `eba` with `j=2` -- `j=4` appear to work best.
+#' The `peba` method is the recommended default. It partitions the eigenvalues
+#' into `j` equally sized sets (if not possible, the smallest set is incomplete),
+#' shrinks them towards their common mean, and averages within each set. Provide
+#' a list of integers `j` to partition with respect to; the best choices are
+#' typically about `2`--`6`. It was introduced by Foldnes, Moss, & Grønneberg
+#' (2024).
 #'
-#' The `peba` method is a penalized variant of `eba`, described in
-#' (Foldnes, Moss, Grønneberg, 2024). It typically outperforms `eba`, and
-#' the best choice of `j` are typically about `2`--`6`.
+#' `pols` is a penalized regression method with a penalization term ranging from
+#' 0 to infinity. Foldnes, Moss, & Grønneberg (2024) studied `pols=2`, which has
+#' good performance in a variety of contexts.
 #'
-#' `pols` is a penalized regression method with a penalization term from ranging
-#' from 0 to infinity. Foldnes, Moss, Grønneberg (2024) studied `pols=2`, which
-#' has good performance in a variety of contexts.
+#' `pall` penalizes all eigenvalues in ugamma, while `all` uses all eigenvalues
+#' without penalization. `pall` is the recommended option for nested models, for
+#' which the penalized methods were extended and evaluated by Foldnes,
+#' Grønneberg, & Moss (2026).
 #'
-#' `pall` uses all eigenvalues in ugamma, but penalizes them.
-#' This is the recommended option for nested models. `all` uses all eigenvalues.
+#' The `eba` method is the unpenalized predecessor of `peba` (Foldnes &
+#' Grønneberg, 2018): it averages within the eigenvalue blocks without shrinkage.
+#' It is generally outperformed by `peba` and is kept mainly for comparison;
+#' `eba` with `j=2` -- `j=4` tends to work best.
 #'
 #' In addition, you may specify a
 #' * `std` the standard *p*-value where the choice of `chisq` is approximated by a chi square distribution.
@@ -40,7 +44,7 @@
 #' * `ss` The scaled and shifted *p*-value proposed by Asparouhov & Muthén (2010).
 #' * `sf` The scaled *F* *p*-value proposed by Wu and Lin (2016).
 #'
-#' The `unbiased` argument is `TRUE` if the the unbiased estimator of the
+#' The `unbiased` argument is `TRUE` if the unbiased estimator of the
 #' fourth order moment matrix (Du, Bentler, 2022) is used. If `FALSE`, the
 #' standard biased matrix is used. There is no simple relationship between
 #' p-value performance and the choice of `unbiased`.
@@ -49,30 +53,77 @@
 #' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 #' The `rls` choice uses the reweighted least squares statistic of Browne (1974).
 #'
+#' ## Estimators and data types
+#'
+#' The authoritative list of supported estimators, data types, and
+#' configurations -- the matrix this function is validated against -- is
+#' [semTests-support] (`?semTests-support`). In brief:
+#'
+#' The limiting null law of the test statistic is a weighted sum of
+#' chi-squares for any minimum-discrepancy estimator, so these tests are not
+#' specific to normal-theory ML. `pvalues()` supports ML/MLM/MLR, GLS, ULS,
+#' FIML (missing data), and categorical WLSMV/DWLS, with single- and
+#' multi-group continuous and categorical fits; `pvalues_nested()` supports
+#' the continuous estimators (nested categorical is not yet implemented). The
+#' model must be fit so that lavaan exposes the asymptotic moment covariance --
+#' fit with a robust test such as `test = "satorra.bentler"`, or with
+#' `estimator = "MLM"/"MLR"/"DWLS"`. Off the classical continuous-complete-data
+#' ML case, the RLS statistic (`browne.residual.nt.model`) and the unbiased
+#' (`UG`) Du-Bentler gamma are undefined and are refused; the standard statistic
+#' and the biased gamma are used instead. ADF/WLS is the degenerate exception,
+#' where the test equals the ordinary chi-square and the correction adds nothing.
+#'
+#' Support beyond classical normal-theory ML -- GLS, ULS, categorical WLSMV/DWLS,
+#' FIML missing data, and nested FIML comparison -- is **experimental** as of
+#' 0.9.0; see the Stability note in [semTests-support].
+#'
+#' The information matrix (expected vs observed) is taken from the fit; to
+#' control it, fit the lavaan model with `information = "expected"` or
+#' `"observed"`. The returned object records the estimator, statistic,
+#' information type, data type and degrees of freedom actually used; see its
+#' printed footer and `attr(x, "semtests")`.
+#'
 #' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does goodness-of-fit testing on one object,
 #'    `pvalues_nested` does hypothesis testing on two nested models.
 #' @param tests A list of tests to evaluate on the
 #'    form `"(test)_(ug?)_(rls?)"`; see the default arguments and details below. The defaults are the recommended options.
 #' @param method For nested models, choose between `2000` and `2001`. Note: `2001` and Satorra-Bentler will not correspond with the variant in the paper.
+#' @param A.method For nested FIML models, choose `"exact"` for the literal
+#'   parameter restriction map or `"delta"` for the local moment-tangent
+#'   restriction map.
 #' @name pvalues
 #' @export
 #' @examples
 #' library("semTests")
 #' library("lavaan")
-#' model <- "A =~ A1+A2+A3+A4+A5;
-#'           C =~ C1+C2+C3+C4+C5"
-#' n <- 200
-#' object <- sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+#' model <- "visual  =~ x1 + x2 + x3
+#'           textual =~ x4 + x5 + x6
+#'           speed   =~ x7 + x8 + x9"
+#' object <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
 #' pvalues(object)
 #'
 #' # For the pEBA6 method with biased gamma and ML chisq statistic:
 #' pvalues(object, "pEBA6_ML")
 #'
-#' @return A named vector of p-values.
+#' # Nested model comparison (constrain the textual loadings to be equal):
+#' constrained <- "visual  =~ x1 + x2 + x3
+#'                 textual =~ a*x4 + a*x5 + a*x6
+#'                 speed   =~ x7 + x8 + x9"
+#' m1 <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+#' m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
+#' pvalues_nested(m0, m1)
+#'
+#' @return A named numeric vector of p-values, of class `semTests_pvalues`,
+#'   carrying an `"semtests"` attribute that records the options used (estimator,
+#'   statistic, information type, gamma type, data type, and degrees of freedom).
+#'
+#' @seealso [semTests-support] for the full list of supported configurations.
 #'
 #' @references
 #'
 #' Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1-13. https://doi.org/10.1080/10705511.2024.2372028
+#'
+#' Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
 #'
 #' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
 #'
@@ -87,32 +138,58 @@
 #' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
-pvalues <- function(object, tests = c("pEBA4_RLS")) {
+pvalues <- function(object,
+                    tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4") {
+  # The default is fit-appropriate: the historical RLS default for the classical
+  # normal-theory ML case, the suffix-free form (standard statistic, biased
+  # gamma) otherwise. `tests = NULL` still routes to the "nothing requested"
+  # error in pvalues_internal().
   pvalues_internal(object, tests)
 }
 
 #' @keywords internal
 pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
+  # Class gate first: must precede the `tests` default promise (it forces
+  # is_classic_nt(object), which dereferences object@Options) and check_supported.
+  check_lavaan(object, "object")
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
-  if (is.null(tests)) {
+  check_supported(object)
+  warn_fiml_information(object)
+  result <- if (is.null(tests)) {
     pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
   } else {
     options <- lapply(tests, function(test) split_input(test))
     sapply(options, function(option) do.call(pvalues_, c(object, option, extras = extras)))
   }
+  as_semtests(result, fit_provenance(object, nested = FALSE,
+                                     df = unname(lavaan::fitmeasures(object, "df"))))
 }
 
 #' @rdname pvalues
 #' @export
-pvalues_nested <- function(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML")) {
-  pvalues_nested_internal(m0, m1, method = method, tests = tests)
+pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
+                           tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
+                           A.method = c("exact", "delta")) {
+  pvalues_nested_internal(m0, m1, method = method, tests = tests,
+                          A.method = A.method)
 }
 
 #' @keywords internal
-pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = c("P_ALL_UG"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = "ml", extras = FALSE) {
+pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
+                                    tests = c("PALL_UG_ML"), trad = NULL,
+                                    eba = NULL, peba = NULL, pols = NULL,
+                                    unbiased = 1, chisq = "ml",
+                                    extras = FALSE,
+                                    A.method = c("exact", "delta")) {
   method <- match.arg(method)
+  A.method <- match.arg(A.method)
+
+  # Class gate first: the df computation below reads m0@test / m1@test, which
+  # would otherwise die on a cryptic S4 slot error for a non-lavaan argument.
+  check_lavaan(m0, "m0")
+  check_lavaan(m1, "m1")
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
@@ -124,17 +201,110 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"), tests = 
   if (m == 0L) {
     stop("Cannot test models with the same degree of freedom.")
   } else if (m < 0) {
-    m = m1
-    m1 = m0
-    m0 = m
+    tmp <- m1
+    m1 <- m0
+    m0 <- tmp
   }
+  df <- m0@test[[1]]$df - m1@test[[1]]$df
 
-  if (is.null(tests)) {
-    pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, method = method)
+  check_supported_nested(m0, m1, method, A.method)
+  warn_fiml_information(m0)
+  warn_fiml_information(m1)
+
+  result <- if (is.null(tests)) {
+    pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba,
+             peba = peba, pols = pols, chisq = chisq, extras = extras,
+             method = method, A.method = A.method)
   } else {
     options <- lapply(tests, function(test) split_input(test))
-    sapply(options, function(option) do.call(pvalues_, c(m0, m1, option, extras = extras, method = method)))
+    sapply(options, function(option) {
+      do.call(pvalues_, c(m0, m1, option, extras = extras, method = method,
+                          A.method = A.method))
+    })
   }
+  provenance_A_method <- if (is_fiml(m0) || is_fiml(m1)) A.method else NA
+  as_semtests(result, fit_provenance(m0, nested = TRUE, method = method,
+                                     A.method = provenance_A_method, df = df))
+}
+
+#' Renormalise the eigenvalue spectrum under missing data.
+#'
+#' For complete data, lavaan's `UGamma` spectrum has mean equal to the robust
+#' scaling factor, so the reference law `sum lambda_j chi^2_1` has the right
+#' first moment. Under missing data (FIML) lavaan's `UGamma` is mis-scaled (its
+#' mean is off by a constant, ~1.8x in practice), which makes the eigenvalue
+#' p-values badly anti-conservative. The spectrum *shape* is correct, so we
+#' rescale it to mean = `chisq.scaling.factor`. This is a no-op for complete
+#' data (where the mean already equals the scaling factor) and requires a robust
+#' test, which FIML fits always have.
+#' @keywords internal
+rescale_missing <- function(lambdas_list, fit, df) {
+  if (identical(fit@Options$missing, "listwise")) return(lambdas_list)
+  sc <- tryCatch(as.numeric(lavaan::fitmeasures(fit, "chisq.scaling.factor")),
+                 error = function(e) NA_real_)
+  if (!is.finite(sc) || sc <= 0) return(lambdas_list)
+  lapply(lambdas_list, function(l) l * (sc * df / sum(l)))
+}
+
+#' Provenance of a `semTests_pvalues` object.
+#'
+#' Records the fit-level options actually used to compute the p-values, so the
+#' returned object is self-describing across estimators and data types.
+#' @keywords internal
+fit_provenance <- function(fit, nested, method = NA, A.method = NA, df = NULL) {
+  out <- list(
+    estimator   = fit@Options$estimator,
+    lavaan_test = names(fit@test),
+    information = fit@Options$information,
+    data_type   = if (isTRUE(fit@Model@categorical)) "categorical" else "continuous",
+    missing     = fit@Options$missing,
+    df          = if (is.null(df)) unname(lavaan::fitmeasures(fit, "df")) else df,
+    nested      = nested,
+    method      = method
+  )
+  if (!is.na(A.method[1])) out$A.method <- A.method
+  out
+}
+
+#' @keywords internal
+as_semtests <- function(x, info) {
+  attr(x, "semtests") <- info
+  class(x) <- c("semTests_pvalues", class(x))
+  x
+}
+
+#' Print method for p-values from [pvalues()] / [pvalues_nested()].
+#'
+#' Prints the p-values, then a one-line provenance footer (estimator, data type,
+#' information, df) recording the options used.
+#' @param x A `semTests_pvalues` object.
+#' @param ... Passed to the default print method.
+#' @return `x`, invisibly.
+#' @exportS3Method
+print.semTests_pvalues <- function(x, ...) {
+  info <- attr(x, "semtests")
+  y <- unclass(x)
+  attr(y, "semtests") <- NULL
+  print.default(y, ...)
+  if (!is.null(info)) {
+    fiml <- !is.null(info$missing) && info$missing[1] %in% c("ml", "fiml")
+    # lavaan stores `information` as a length-2 vector; show the (single) choice.
+    cat(sprintf("estimator: %s%s | data: %s | information: %s | df: %s%s\n",
+                info$estimator[1], if (fiml) " (FIML)" else "",
+                info$data_type[1], info$information[1], info$df[1],
+                if (isTRUE(info$nested)) {
+                  a_method <- if (!is.null(info$A.method) &&
+                                  !is.na(info$A.method[1])) {
+                    sprintf(", A.method %s", info$A.method[1])
+                  } else {
+                    ""
+                  }
+                  sprintf(" | nested (method %s%s)", info$method[1], a_method)
+                } else {
+                  ""
+                }))
+  }
+  invisible(x)
 }
 
 #' P value function for one and two arguments.
@@ -175,28 +345,55 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "p
 }
 
 #' @rdname pvalue_internal
-pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "rls"), extras = FALSE, method) {
+pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
+                     chisq = c("ml", "rls"), extras = FALSE, method,
+                     A.method = "exact") {
   use_trad <- setdiff(trad, "std")
   bad_2001 <- FALSE
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
-    ug_list <- ugamma(m0, unbiased)
-    lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
-  } else {
-    if (m0@Options$estimator != "ML" || m1@Options$estimator != "ML") {
-      stop("Only the 'ML' estimator supported.")
+    if (is_fiml(m0)) {
+      if (unbiased != 1) {
+        stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
+             "drop `UG` from the test name to use the biased FIML spectrum. ",
+             "See `?semTests-support`.",
+             call. = FALSE)
+      }
+      lambdas_list <- fiml_lambdas(m0, df)
+    } else {
+      ug_list <- ugamma(m0, unbiased)
+      lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
+      lambdas_list <- rescale_missing(lambdas_list, m0, df)
     }
+
+  } else {
+    # The nested reduction (method 2000) is estimator-agnostic for continuous
+    # data -- the estimator enters only through WLS.V and the information matrix.
+    # Fit-shape support (categorical / missing / FIML) is enforced upstream by
+    # check_supported_nested(); here we branch on the FIML vs complete-data
+    # computation and reject the FIML-incompatible UG gamma (a per-test option).
     df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     chisqs <- make_chisqs(chisq, m0, m1)
-    ug_list <- ugamma_nested(m0, m1, method, unbiased)
-    ug_list <- lapply(ug_list, sparsify)
-    lambdas_list <- lapply(ug_list, function(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
+    if (is_fiml(m0) || is_fiml(m1)) {
+      if (unbiased != 1) {
+        stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
+             "drop `UG` from the test name to use the biased FIML spectrum. ",
+             "See `?semTests-support`.",
+             call. = FALSE)
+      }
+      lambdas_list <- fiml_lambdas_nested(m0, m1, df, A.method = A.method)
+    } else {
+      lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
+    }
 
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
-      ug_list <- ugamma_nested(m0, m1, "2000", unbiased)
-      lambdas_list <- lapply(ug_list, function(ug) Re(RSpectra::eigs(ug, k = df, which = "LR", opts = list(retvec = FALSE))$values))
+      lambdas_list <- if (is_fiml(m0) || is_fiml(m1)) {
+        fiml_lambdas_nested(m0, m1, df, A.method = A.method)
+      } else {
+        lambdas_nested(m0, m1, "2000", unbiased, df)
+      }
       bad_2001 <- TRUE
     }
   }
@@ -205,8 +402,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
   return_value <- c()
   for (i in seq_along(chisqs)) {
     chisq <- chisqs[i]
-    result <- unlist(lapply(seq_along(ug_list), function(j) {
-      ug <- ug_list[[j]]
+    result <- unlist(lapply(seq_along(lambdas_list), function(j) {
       lambdas <- lambdas_list[[j]]
 
       if (!is.null(peba)) {
@@ -234,7 +430,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols, chisq = c("ml", "r
       names(ptrad) <- use_trad
 
       out <- pmax(c(ptrad, peba, ppeba, ppols), 0)
-      name <- if (names(ug_list)[[j]] == "ug_biased") "" else "_ug"
+      name <- if (names(lambdas_list)[[j]] == "ug_biased") "" else "_ug"
       name <- paste0(name, "_", names(chisqs)[i])
 
       if (length(out) != 0) {

@@ -14,6 +14,75 @@ m0 <- lavaan::cfa(hs_model_0,
                   data = lavaan::HolzingerSwineford1939, test = "SB"
 )
 
+
+hs_model_0 <- " visual  =~ x1 + a*x2 + x3
+              textual =~ x4 + a*x5 + a*x6
+              speed   =~ x7 + x8 + x9 "
+
+as.numeric(fitMeasures(m0,"pvalue"))
+
+m0 <- lavaan::cfa(hs_model_1,
+                  data = head(lavaan::HolzingerSwineford1939,100),
+                  estimator = "MLM"
+)
+
+as.numeric(fitMeasures(m0,"pvalue.scaled"))
+
+m0 <- lavaan::cfa(hs_model_1,
+                  data = head(lavaan::HolzingerSwineford1939,100),
+                  estimator = "MLM",
+                  gamma.unbiased = TRUE
+)
+
+as.numeric(fitMeasures(m0,"pvalue.scaled"))
+
+semTests::pvalues(m0, test = "sb_ug_ml")
+semTests::pvalues(m0, test = "sb_ml")
+
+m0 <- lavaan::cfa(hs_model_1,
+                  data = head(lavaan::HolzingerSwineford1939,100),
+                  estimator = "MLM",
+                  gamma.unbiased = FALSE
+)
+
+semTests::pvalues(m0, test = "sb_ug_ml")
+semTests::pvalues(m0, test = "sb_ml")
+
+
+m0 <- lavaan::cfa(hs_model_1,
+                  data = head(lavaan::HolzingerSwineford1939,100),
+                  estimator = "MLM",
+                  scaled.test = "browne.residual.nt.model",
+                  gamma.unbiased = TRUE
+)
+
+
+as.numeric(fitMeasures(m0,"pvalue.scaled"))
+semTests::pvalues(m0, test = "sb_rls")
+
+m0 <- lavaan::cfa(hs_model_1,
+                  data = head(lavaan::HolzingerSwineford1939,100),
+                  estimator = "MLM",
+                  scaled.test = "browne.residual.nt.model",
+                  gamma.unbiased = FALSE
+)
+
+semTests::pvalues(m0, test = "sb_ug_rls")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 hs_model <- " visual  =~ x1 + x2 + x3
               textual =~ x4 + x5 + x6
               speed   =~ x7 + x8 + x9 "

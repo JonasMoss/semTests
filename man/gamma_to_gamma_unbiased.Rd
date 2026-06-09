@@ -2,7 +2,7 @@
 % Please edit documentation in R/gamma.R
 \name{gamma_to_gamma_unbiased}
 \alias{gamma_to_gamma_unbiased}
-\title{Calculate unbiase gamma from gamma and object.}
+\title{Calculate unbiased gamma from gamma and object.}
 \usage{
 gamma_to_gamma_unbiased(gammas, object)
 }
@@ -15,6 +15,6 @@ gamma_to_gamma_unbiased(gammas, object)
 List of unbiased gammas.
 }
 \description{
-Calculate unbiase gamma from gamma and object.
+Calculate unbiased gamma from gamma and object.
 }
 \keyword{internal}

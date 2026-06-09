@@ -1,11 +1,49 @@
 
+#' Is this the classical normal-theory, complete-data, ML case?
+#'
+#' The Du-Bentler unbiased gamma and the RLS (`browne.residual.nt.model`)
+#' statistic are only defined here; off this case the eigenvalue machinery uses
+#' the biased gamma and the estimator's own (uncorrected) statistic.
+#' @keywords internal
+is_classic_nt <- function(fit) {
+  fit@Options$estimator == "ML" &&
+    !isTRUE(fit@Model@categorical) &&
+    identical(fit@Options$missing, "listwise")
+}
+
 #' @keywords internal
 make_chisqs <- function(chisq, m0, m1) {
-  ml <- function(object) lavaan::lavTest(object, test = "standard")$stat
-  rls <- function(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
+  # lavaan >= 0.7-1 returns a named list of tests from `lavTest()` (e.g. both
+  # "standard" and the requested test), whereas earlier versions return a single
+  # flat test object with `$stat`. Grab the statistic from whichever layout we get.
+  get_stat <- function(object, test) {
+    res <- lavaan::lavTest(object, test = test)
+    if (!is.null(res[[test]])) res[[test]][["stat"]] else res[["stat"]]
+  }
+  # "ml" is the standard (uncorrected) test statistic of the fit -- the LRT for
+  # ML, and the corresponding uncorrected quadratic form for ULS/GLS/DWLS/FIML.
+  # It is the right input to the eigenvalue correction for any estimator; the
+  # native scaled/shifted statistic is already corrected and must NOT be used.
+  standard <- function(object) get_stat(object, "standard")
+  rls <- function(object) get_stat(object, "browne.residual.nt.model")
   wrap <- function(f, object) if (missing(object)) 0 else f(object)
+
+  classic_nt <- is_classic_nt(m0)
+  # The default statistic is fit-appropriate: RLS for the classical case (its
+  # historical default), the standard statistic otherwise.
+  chisq[chisq == "auto"] <- if (classic_nt) "rls" else "ml"
+  chisq <- unique(chisq)
+
+  if ("rls" %in% chisq && !classic_nt) {
+    stop("The RLS statistic ('browne.residual.nt.model') is only available for ",
+         "continuous, complete-data ML; it silently degrades to ADF otherwise. ",
+         "Use the standard statistic (the `_ML` suffix) or omit the suffix. ",
+         "See `?semTests-support`.",
+         call. = FALSE)
+  }
+
   chisqs <- c()
-  if ("ml" %in% chisq) chisqs["ml"] <- ml(m0) - wrap(ml, m1)
+  if ("ml" %in% chisq) chisqs["ml"] <- standard(m0) - wrap(standard, m1)
   if ("rls" %in% chisq) chisqs["rls"] <- rls(m0) - wrap(rls, m1)
   chisqs
 }
@@ -26,15 +64,6 @@ default <- function(x) {
   if (x != "") as.numeric(x) else 2
 }
 
-#' Create sparse matrix
-#' @param mat Matrix input.
-#' @param lim Elements with absolute value less than `lim` get set to `0`.
-#' @return Object of `dgCMatrix`.
-sparsify <- function(mat, lim = 1e-9) {
-  mat[abs(mat) < lim] = 0
-  Matrix::Matrix(mat, sparse = TRUE)
-}
-
 #' Split string into options.
 #' @param string Input string
 #' @keywords internal
@@ -45,7 +74,7 @@ split_input <- function(string) {
   splitted <- strsplit(string, "_")[[1]]
   trad <- peba <- eba <- pols <- NULL
   unbiased <- 1
-  chisq <- "rls"
+  chisq <- "auto"   # resolved per fit in make_chisqs (rls if classical NT, else ml)
   type <- nanull(splitted[1])
 
   if (length(splitted) == 3) {

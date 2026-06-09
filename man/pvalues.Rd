@@ -5,9 +5,15 @@
 \alias{pvalues_nested}
 \title{Calculate \emph{p}-values for one or two \code{lavaan} objects.}
 \usage{
-pvalues(object, tests = c("pEBA4_RLS"))
+pvalues(object, tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4")
 
-pvalues_nested(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML"))
+pvalues_nested(
+  m0,
+  m1,
+  method = c("2000", "2001"),
+  tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
+  A.method = c("exact", "delta")
+)
 }
 \arguments{
 \item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does goodness-of-fit testing on one object,
@@ -17,9 +23,15 @@ pvalues_nested(m0, m1, method = c("2000", "2001"), tests = c("PALL_UG_ML"))
 form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below. The defaults are the recommended options.}
 
 \item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
+
+\item{A.method}{For nested FIML models, choose \code{"exact"} for the literal
+parameter restriction map or \code{"delta"} for the local moment-tangent
+restriction map.}
 }
 \value{
-A named vector of p-values.
+A named numeric vector of p-values, of class \code{semTests_pvalues},
+carrying an \code{"semtests"} attribute that records the options used (estimator,
+statistic, information type, gamma type, data type, and degrees of freedom).
 }
 \description{
 Calculate \emph{p}-values for a \code{lavaan} object using several methods,
@@ -36,27 +48,31 @@ The test argument is a list of character strings on the form
 fourth order moment matrix (Du, Bentler, 2022) is used. If not, the
 standard biased matrix is used. There is no simple relationship between
 \emph{p}-value performance and the choice of \code{unbiased}.
-\item The final part of specifies the chi square statistic. The \code{ML}
+\item The final part specifies the chi square statistic. The \code{ML}
 choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 The \code{RLS} choice (default) uses the reweighted least squares statistic of Browne (1974).
 }
 
-The \code{eba} method partitions the eigenvalues into \code{j} equally sized sets
-(if not possible, the smallest set is incomplete), and takes the mean
-eigenvalue of these sets. Provide a list of integers \code{j} to partition
-with respect to. The method was proposed by Foldnes & Grønneberg (2018).
-\code{eba} with \code{j=2} -- \code{j=4} appear to work best.
+The \code{peba} method is the recommended default. It partitions the eigenvalues
+into \code{j} equally sized sets (if not possible, the smallest set is incomplete),
+shrinks them towards their common mean, and averages within each set. Provide
+a list of integers \code{j} to partition with respect to; the best choices are
+typically about \code{2}--\code{6}. It was introduced by Foldnes, Moss, & Grønneberg
+(2024).
 
-The \code{peba} method is a penalized variant of \code{eba}, described in
-(Foldnes, Moss, Grønneberg, 2024). It typically outperforms \code{eba}, and
-the best choice of \code{j} are typically about \code{2}--\code{6}.
+\code{pols} is a penalized regression method with a penalization term ranging from
+0 to infinity. Foldnes, Moss, & Grønneberg (2024) studied \code{pols=2}, which has
+good performance in a variety of contexts.
 
-\code{pols} is a penalized regression method with a penalization term from ranging
-from 0 to infinity. Foldnes, Moss, Grønneberg (2024) studied \code{pols=2}, which
-has good performance in a variety of contexts.
+\code{pall} penalizes all eigenvalues in ugamma, while \code{all} uses all eigenvalues
+without penalization. \code{pall} is the recommended option for nested models, for
+which the penalized methods were extended and evaluated by Foldnes,
+Grønneberg, & Moss (2026).
 
-\code{pall} uses all eigenvalues in ugamma, but penalizes them.
-This is the recommended option for nested models. \code{all} uses all eigenvalues.
+The \code{eba} method is the unpenalized predecessor of \code{peba} (Foldnes &
+Grønneberg, 2018): it averages within the eigenvalue blocks without shrinkage.
+It is generally outperformed by \code{peba} and is kept mainly for comparison;
+\code{eba} with \code{j=2} -- \code{j=4} tends to work best.
 
 In addition, you may specify a
 \itemize{
@@ -66,7 +82,7 @@ In addition, you may specify a
 \item \code{sf} The scaled \emph{F} \emph{p}-value proposed by Wu and Lin (2016).
 }
 
-The \code{unbiased} argument is \code{TRUE} if the the unbiased estimator of the
+The \code{unbiased} argument is \code{TRUE} if the unbiased estimator of the
 fourth order moment matrix (Du, Bentler, 2022) is used. If \code{FALSE}, the
 standard biased matrix is used. There is no simple relationship between
 p-value performance and the choice of \code{unbiased}.
@@ -74,22 +90,62 @@ p-value performance and the choice of \code{unbiased}.
 The \code{chisq} argument controls which basic test statistic is used. The \code{ml}
 choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
 The \code{rls} choice uses the reweighted least squares statistic of Browne (1974).
+\subsection{Estimators and data types}{
+
+The authoritative list of supported estimators, data types, and
+configurations -- the matrix this function is validated against -- is
+\link{semTests-support} (\code{?semTests-support}). In brief:
+
+The limiting null law of the test statistic is a weighted sum of
+chi-squares for any minimum-discrepancy estimator, so these tests are not
+specific to normal-theory ML. \code{pvalues()} supports ML/MLM/MLR, GLS, ULS,
+FIML (missing data), and categorical WLSMV/DWLS, with single- and
+multi-group continuous and categorical fits; \code{pvalues_nested()} supports
+the continuous estimators (nested categorical is not yet implemented). The
+model must be fit so that lavaan exposes the asymptotic moment covariance --
+fit with a robust test such as \code{test = "satorra.bentler"}, or with
+\code{estimator = "MLM"/"MLR"/"DWLS"}. Off the classical continuous-complete-data
+ML case, the RLS statistic (\code{browne.residual.nt.model}) and the unbiased
+(\code{UG}) Du-Bentler gamma are undefined and are refused; the standard statistic
+and the biased gamma are used instead. ADF/WLS is the degenerate exception,
+where the test equals the ordinary chi-square and the correction adds nothing.
+
+Support beyond classical normal-theory ML -- GLS, ULS, categorical WLSMV/DWLS,
+FIML missing data, and nested FIML comparison -- is \strong{experimental} as of
+0.9.0; see the Stability note in \link{semTests-support}.
+
+The information matrix (expected vs observed) is taken from the fit; to
+control it, fit the lavaan model with \code{information = "expected"} or
+\code{"observed"}. The returned object records the estimator, statistic,
+information type, data type and degrees of freedom actually used; see its
+printed footer and \code{attr(x, "semtests")}.
+}
 }
 \examples{
 library("semTests")
 library("lavaan")
-model <- "A =~ A1+A2+A3+A4+A5;
-          C =~ C1+C2+C3+C4+C5"
-n <- 200
-object <- sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
+model <- "visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9"
+object <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
 
 # For the pEBA6 method with biased gamma and ML chisq statistic:
 pvalues(object, "pEBA6_ML")
 
+# Nested model comparison (constrain the textual loadings to be equal):
+constrained <- "visual  =~ x1 + x2 + x3
+                textual =~ a*x4 + a*x5 + a*x6
+                speed   =~ x7 + x8 + x9"
+m1 <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
+pvalues_nested(m0, m1)
+
 }
 \references{
 Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1-13. https://doi.org/10.1080/10705511.2024.2372028
+
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
 
 Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
 
@@ -104,4 +160,7 @@ Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimato
 Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
 
 Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
+}
+\seealso{
+\link{semTests-support} for the full list of supported configurations.
 }

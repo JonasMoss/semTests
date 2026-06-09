@@ -13,12 +13,10 @@ m0 <- lavaan::cfa(hs_model,
   group = "school", estimator = "MLM", group.equal = "loadings"
 )
 
-model <- "A =~ A1+A2+A3+A4+A5;
-          C =~ C1+C2+C3+C4+C5"
-n <- 50
-object <- lavaan::sem(model, psych::bfi[1:n, 1:10], estimator = "MLM")
-
-data <- bollen_stine_transform(m0)
+object <- lavaan::cfa(hs_model,
+  data = lavaan::HolzingerSwineford1939,
+  estimator = "MLM"
+)
 
 
 ## Estimation that isn't allowed.

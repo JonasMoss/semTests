@@ -2,12 +2,12 @@
 #'
 #' @param chisq Chi-square fit value from a lavaan object.
 #' @param lambdas Eigenvalues of UG matrix.
-#' @name laavan_tests
+#' @name lavaan_tests
 #' @keywords internal
 #' @return The scaled and shifted p-value or the mean-variance adjusted p-value.
 NULL
 
-#' @rdname laavan_tests
+#' @rdname lavaan_tests
 scaled_and_shifted <- function(chisq, lambdas) {
   df <- length(lambdas)
   tr_ug <- sum(lambdas)
@@ -52,19 +52,19 @@ eba_pvalue <- function(chisq, lambdas, j) {
   dim(eig) <- c(k, j)
   eig_means <- colMeans(eig, na.rm = TRUE)
   repeated <- rep(eig_means, each = k)[seq(m)]
-  CompQuadForm::imhof(chisq, repeated)$Qq
+  imhof_pvalue(chisq, repeated)
 }
 
 #' Calculate the jth all pvalue.
 #' @keywords internal
 pvalue_all <- function(chisq, lambdas) {
-  CompQuadForm::imhof(chisq, lambdas)$Qq
+  imhof_pvalue(chisq, lambdas)
 }
 
 #' Calculate the jth pall pvalue.
 #' @keywords internal
 pall <- function(chisq, lambdas) {
-  CompQuadForm::imhof(chisq, lambdas/2 + mean(lambdas)/2)$Qq
+  imhof_pvalue(chisq, lambdas / 2 + mean(lambdas) / 2)
 }
 
 #' Calculate the jth eba pvalue.
@@ -78,7 +78,7 @@ peba_pvalue <- function(chisq, lambdas, j) {
   eig_means <- colMeans(eig, na.rm = TRUE)
   eig_mean <- mean(lambdas)
   repeated <- rep(eig_means, each = k)[seq(m)]
-  CompQuadForm::imhof(chisq, (repeated + eig_mean) / 2)$Qq
+  imhof_pvalue(chisq, (repeated + eig_mean) / 2)
 }
 
 #' Calculate penalized OLS pvalue.
@@ -93,5 +93,5 @@ pols_pvalue <- function(chisq, lambdas, gamma) {
     beta0_hat <- mean(lambdas) - beta1_hat * mean(x)
     lambda_hat <- pmax(beta0_hat + beta1_hat * x, 0)
   }
-  CompQuadForm::imhof(chisq, lambda_hat)$Qq
+  imhof_pvalue(chisq, lambda_hat)
 }

@@ -15,7 +15,8 @@ pvalues_(
   pols,
   chisq = c("ml", "rls"),
   extras = FALSE,
-  method
+  method,
+  A.method = "exact"
 )
 }
 \value{
