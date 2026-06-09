@@ -46,6 +46,22 @@ jobs:
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Run test suite for JUnit results
+        if: ${{ !cancelled() }}
+        run: |
+          testthat::test_local(
+            reporter = testthat::JunitReporter$new(file = "test-results.xml"),
+            stop_on_failure = FALSE
+          )
+        shell: Rscript {0}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./test-results.xml
+
       - name: Show testthat output
         if: always()
         run: |
