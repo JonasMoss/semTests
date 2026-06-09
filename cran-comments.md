@@ -2,11 +2,13 @@
 
 0 errors | 0 warnings | 0 notes
 
-Tested on macos (release), windows (release), and ubuntu (devel, release, oldrel).
+Tested with GitHub Actions on macos (release), windows (release), and ubuntu
+(devel, release, oldrel), and locally on ubuntu.
 
 ## Submission notes
 
-This release drops the CompQuadForm and Matrix dependencies. The upper-tail
-probabilities of the quadratic forms underlying the eigenvalue-based p-values
-are now computed internally, which is also more accurate in the tail, where
-CompQuadForm's routines lose precision.
+* Ensures the forthcoming lavaan release can be published (compatibility fix).
+* Adds new features (more estimators, plus FIML for missing data).
+* Removes dependencies (Imports is now just lavaan and methods).
+
+See NEWS.md for details.
