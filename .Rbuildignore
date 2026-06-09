@@ -10,3 +10,4 @@ README_cache
 ^CRAN-SUBMISSION$
 ^cran-comments\.md$
 \.Rhistory$
+^\.claude$
