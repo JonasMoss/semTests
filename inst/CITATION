@@ -1,0 +1,36 @@
+citHeader("To cite semTests in publications use the method papers below; cite the package itself for the software.")
+
+bibentry(
+  bibtype = "Article",
+  title   = "Improved goodness of fit procedures for structural equation models",
+  author  = c(person("Njål", "Foldnes"),
+              person("Jonas", "Moss"),
+              person("Steffen", "Grønneberg")),
+  journal = "Structural Equation Modeling: A Multidisciplinary Journal",
+  year    = "2024",
+  pages   = "1--13",
+  doi     = "10.1080/10705511.2024.2372028"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = paste("Penalized eigenvalue block averaging: Extension to nested",
+                  "model comparison and Monte Carlo evaluations"),
+  author  = c(person("Njål", "Foldnes"),
+              person("Steffen", "Grønneberg"),
+              person("Jonas", "Moss")),
+  journal = "Behavior Research Methods",
+  year    = "2026",
+  doi     = "10.3758/s13428-026-02968-4"
+)
+
+bibentry(
+  bibtype = "Manual",
+  title   = "semTests: Robust Test Statistics for Structural Equation Models",
+  author  = c(person("Jonas", "Moss"),
+              person("Njål", "Foldnes"),
+              person("Steffen", "Grønneberg")),
+  year    = format(Sys.Date(), "%Y"),
+  note    = paste("R package version", meta$Version),
+  url     = meta$URL
+)

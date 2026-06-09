@@ -30,7 +30,9 @@ options(warn = -1)
 [![Codecov test coverage](https://codecov.io/gh/JonasMoss/semTests/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semTests?branch=main)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-An R package for robust test statistics in structural equation models, covering both overall fit and nested model comparison. Built on top of `lavaan`. Implements the *p*-values of (Foldnes, Moss, Grønneberg, 2024).
+An R package for robust test statistics in structural equation models, covering both overall goodness-of-fit testing and nested model comparison. Built on top of `lavaan`. It implements the penalized eigenvalue block-averaging and penalized regression *p*-values of Foldnes, Moss, & Grønneberg (2024), together with their extension to nested model comparison in Foldnes, Grønneberg, & Moss (2026).
+
+The eigenvalue correction targets the limiting null law of the test statistic — a weighted sum of chi-squares — which holds for any minimum-discrepancy estimator, so support now reaches beyond normal-theory ML to GLS, ULS, categorical WLSMV/DWLS, and FIML missing-data fits. See `?semTests-support` for the full, validated matrix.
 
 ```{r setup, include=FALSE}
 # library("semTests")
@@ -38,7 +40,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(out.width = "750px", dpi = 200)
 ```
 
-## Installation¨
+## Installation
 Either install from `CRAN`,
 ```{r, eval = FALSE}
 install.packages("semTests")
@@ -50,8 +52,8 @@ remotes::install_github("JonasMoss/semTests")
 ```
 
 ## Usage
-Call the `library` function, create a `lavaan` model, and run the 
-`pvalues` function. 
+Call the `library` function, create a `lavaan` model, and run the
+`pvalues` function.
 
 ```{r prepare, echo = TRUE, eval = TRUE}
 library("semTests")
@@ -61,11 +63,45 @@ model <- "visual  =~ x1 + x2 + x3
 object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
 ```
+
+For nested model comparison, fit the constrained and unconstrained models and
+pass both to `pvalues_nested` (the constrained model first):
+
+```{r nested, echo = TRUE, eval = TRUE}
+constrained <- "visual  =~ x1 + x2 + x3
+                textual =~ a*x4 + a*x5 + a*x6
+                speed   =~ x7 + x8 + x9"
+m1 <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
+m0 <- lavaan::cfa(constrained, lavaan::HolzingerSwineford1939, estimator = "MLM")
+pvalues_nested(m0, m1)
+```
+
+> **Note.** Support for estimators other than normal-theory ML — GLS, ULS,
+> categorical WLSMV/DWLS, and FIML — and for nested comparison under FIML is
+> **experimental** in this release; the classical ML path is stable. See
+> `?semTests-support`.
+
+Missing data is handled through full-information maximum likelihood: fit the
+model with `missing = "fiml"` and pass it to `pvalues` as usual. (FIML uses the
+biased gamma and the standard statistic, so the `UG`/`RLS` suffixes do not apply.)
+
+```{r fiml, echo = TRUE, eval = TRUE}
+HS <- lavaan::HolzingerSwineford1939
+set.seed(313)
+HS$x1[sample(nrow(HS), 60)] <- NA
+fit_fiml <- lavaan::cfa(model, HS, missing = "fiml", estimator = "MLR")
+pvalues(fit_fiml)
+```
+
 ## References
 
 Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1–13. https://doi.org/10.1080/10705511.2024.2372028
 
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
+
 Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101–114. https://doi.org/10.1080/10705511.2017.1373021
+
+Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872–887. https://doi.org/10.1080/10705511.2022.2063870
 
 Grønneberg, S., & Foldnes, N. (2019). Testing Model Fit by Bootstrap Selection. Structural Equation Modeling, 26(2), 182–190. https://doi.org/10.1080/10705511.2018.1503543
 

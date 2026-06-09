@@ -110,6 +110,10 @@ ML case, the RLS statistic (\code{browne.residual.nt.model}) and the unbiased
 and the biased gamma are used instead. ADF/WLS is the degenerate exception,
 where the test equals the ordinary chi-square and the correction adds nothing.
 
+Support beyond classical normal-theory ML -- GLS, ULS, categorical WLSMV/DWLS,
+FIML missing data, and nested FIML comparison -- is \strong{experimental} as of
+0.9.0; see the Stability note in \link{semTests-support}.
+
 The information matrix (expected vs observed) is taken from the fit; to
 control it, fit the lavaan model with \code{information = "expected"} or
 \code{"observed"}. The returned object records the estimator, statistic,

@@ -1,8 +1,9 @@
-# semTests 1.0.0
+# semTests 0.9.0
 
-A major release: semTests now has a self-contained numerical core and a minimal
-dependency footprint -- `Imports` is just `lavaan` and the base `methods`
-package.
+A major release on two fronts: semTests now has a self-contained numerical core
+with a minimal dependency footprint (`Imports` is just `lavaan` and the base
+`methods` package), and the eigenvalue-based p-values have been broadened well
+beyond normal-theory ML (see `?semTests-support`).
 
 * Fixed compatibility with lavaan 0.7-1, in which `lavaan::lavTest()` returns a
   named list of test results rather than a single flat object (the reweighted
@@ -28,4 +29,19 @@ package.
   `future.apply` dependencies, plus the `psych` suggestion (examples now use the
   built-in `HolzingerSwineford1939` data). `Imports` is now `lavaan` and
   `methods`.
+* Broadened the eigenvalue-based p-values beyond normal-theory ML. `pvalues()`
+  now supports GLS, ULS, and categorical WLSMV/DWLS in addition to ML/MLM/MLR,
+  plus FIML missing-data fits (single-group, continuous); `pvalues_nested()`
+  supports the continuous estimators and nested FIML comparison
+  (`method = "2000"`). See `?semTests-support`. **This broadened support is
+  experimental**; the classical normal-theory ML path remains stable.
+* Added entry-point validation with clear messages pointing at
+  `?semTests-support`: non-`lavaan` objects, unsupported estimators, unsupported
+  missing-data modes, multi-group / fixed-exogenous FIML, the normal-theory-only
+  RLS statistic and the Du-Bentler `UG` gamma off the classical case, and
+  categorical nested tests are now refused up front.
+* The returned value is now a `semTests_pvalues` object that records the options
+  actually used (estimator, statistic, information type, gamma type, data type,
+  degrees of freedom) and prints a one-line provenance footer.
+* Added a `semTests` vignette and an `inst/CITATION`.
 * Documentation fixes and a substantially expanded test suite.

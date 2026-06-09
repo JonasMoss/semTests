@@ -1,5 +1,32 @@
 # Defensive checks on the fitted object, kept separate from the p-value engine.
 
+#' Reject anything that is not a fitted lavaan object.
+#'
+#' The class gate for [pvalues()] / [pvalues_nested()]. It must run before any
+#' `@`-slot access so a `NULL` / data.frame / list argument fails with a readable
+#' message instead of a cryptic S4 "no slot of name ..." error -- the nested
+#' entry point in particular reads `m0@test` to compute the degrees of freedom
+#' before the support gate runs.
+#'
+#' @param x The object passed by the user.
+#' @param arg The argument name, used in the message (e.g. `"object"`, `"m0"`).
+#' @return `x`, invisibly.
+#' @keywords internal
+check_lavaan <- function(x, arg = "object") {
+  if (!inherits(x, "lavaan")) {
+    what <- if (is.null(x)) {
+      "NULL"
+    } else {
+      paste0("an object of class ",
+             paste(dQuote(class(x), q = FALSE), collapse = "/"))
+    }
+    stop("`", arg, "` must be a fitted lavaan object (class \"lavaan\"), not ",
+         what, ". Fit your model with lavaan::cfa()/sem()/lavaan() first. ",
+         "See `?semTests-support`.", call. = FALSE)
+  }
+  invisible(x)
+}
+
 #' Warn when a FIML fit uses expected information.
 #'
 #' Under missing data the expected (Fisher) information is consistent only under
@@ -48,6 +75,7 @@ warn_fiml_information <- function(fit) {
 #' @return `fit`, invisibly.
 #' @keywords internal
 check_supported <- function(fit) {
+  check_lavaan(fit)
   est <- fit@Options$estimator
   if (!est %in% .supported_estimators) {
     stop("Estimator '", est, "' is not supported. The supported estimators are ",

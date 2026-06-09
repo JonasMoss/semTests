@@ -8,8 +8,11 @@ Description: Supports penalized eigenvalue block-averaging and penalized
     <doi:10.3758/s13428-026-02968-4>, as well as traditional p-values such as
     Satorra-Bentler. All p-values can be calculated using unbiased or biased
     gamma estimates (Du, Bentler, 2022) <doi:10.1080/10705511.2022.2063870> and
-    two choices of chi square statistics.
-Version: 1.0.0
+    two choices of chi square statistics. The tests apply to any
+    minimum-discrepancy estimator -- ML, GLS, ULS, and categorical WLSMV/DWLS --
+    with experimental support for full-information maximum-likelihood (FIML) fits
+    under missing data.
+Version: 0.9.0
 Authors@R: c(
     person(given="Jonas", 
            family="Moss",
@@ -37,7 +40,10 @@ Imports:
 Suggests:
   testthat (>= 3.0.0),
   covr,
-  xml2
+  xml2,
+  knitr,
+  rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0

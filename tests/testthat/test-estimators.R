@@ -130,3 +130,16 @@ test_that("the output object records the options it used", {
   expect_false(info$nested)
   expect_true(is.numeric(info$df))
 })
+
+test_that("non-lavaan objects are rejected with a clear message", {
+  fit <- lavaan::cfa(hs, lavaan::HolzingerSwineford1939, estimator = "MLM")
+  # Single-model: NULL, a list, and a data.frame must all be refused up front.
+  expect_error(pvalues(NULL), "lavaan")
+  expect_error(pvalues(list(a = 1)), "lavaan")
+  expect_error(pvalues(lavaan::HolzingerSwineford1939), "lavaan")
+  # Nested: a non-lavaan in either slot must fail by name *before* the df
+  # computation reads m0@test / m1@test (the ordering regression).
+  expect_error(pvalues_nested(NULL, fit), "m0")
+  expect_error(pvalues_nested(fit, NULL), "m1")
+  expect_error(pvalues_nested(fit, "not a fit"), "m1")
+})

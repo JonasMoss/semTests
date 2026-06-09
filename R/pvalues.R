@@ -73,6 +73,10 @@
 #' and the biased gamma are used instead. ADF/WLS is the degenerate exception,
 #' where the test equals the ordinary chi-square and the correction adds nothing.
 #'
+#' Support beyond classical normal-theory ML -- GLS, ULS, categorical WLSMV/DWLS,
+#' FIML missing data, and nested FIML comparison -- is **experimental** as of
+#' 0.9.0; see the Stability note in [semTests-support].
+#'
 #' The information matrix (expected vs observed) is taken from the fit; to
 #' control it, fit the lavaan model with `information = "expected"` or
 #' `"observed"`. The returned object records the estimator, statistic,
@@ -145,6 +149,9 @@ pvalues <- function(object,
 
 #' @keywords internal
 pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
+  # Class gate first: must precede the `tests` default promise (it forces
+  # is_classic_nt(object), which dereferences object@Options) and check_supported.
+  check_lavaan(object, "object")
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")
   }
@@ -178,6 +185,11 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
                                     A.method = c("exact", "delta")) {
   method <- match.arg(method)
   A.method <- match.arg(A.method)
+
+  # Class gate first: the df computation below reads m0@test / m1@test, which
+  # would otherwise die on a cryptic S4 slot error for a non-lavaan argument.
+  check_lavaan(m0, "m0")
+  check_lavaan(m1, "m1")
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
     stop("Please provide some p-values to calculate.")

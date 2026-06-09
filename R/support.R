@@ -30,6 +30,17 @@
 #' | WLSMV / DWLS            | categorical | any             | any              | --          | --              | rejected  |
 #' | any                     | continuous  | --              | mixed / non-FIML | --          | --              | rejected  |
 #'
+#' ## Stability
+#'
+#' The classical normal-theory ML path (continuous, complete data) is the mature,
+#' paper-backed core and is stable. Support for the other estimators (GLS, ULS,
+#' categorical WLSMV/DWLS), for FIML missing-data fits, and for nested comparison
+#' under FIML is **experimental** as of 0.9.0: the methodology rests on the
+#' references but the implementation surface is newer and less Monte-Carlo-vetted,
+#' so the API and numerical details may change. Everything in the tables above is
+#' validated and tested; configurations outside them are refused at the entry
+#' point.
+#'
 #' ## Statistic and gamma options
 #'
 #' Test names have the form `(test)_(ug?)_(ml|rls?)` (e.g. `"SB_UG_RLS"`); see
