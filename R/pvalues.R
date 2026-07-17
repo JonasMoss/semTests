@@ -62,9 +62,10 @@
 #' The limiting null law of the test statistic is a weighted sum of
 #' chi-squares for any minimum-discrepancy estimator, so these tests are not
 #' specific to normal-theory ML. `pvalues()` supports ML/MLM/MLR, GLS, ULS,
-#' FIML (missing data), and categorical WLSMV/DWLS, with single- and
-#' multi-group continuous and categorical fits; `pvalues_nested()` supports
-#' the continuous estimators (nested categorical is not yet implemented). The
+#' FIML (missing data), and categorical DWLS/ULS/WLS families, with single- and
+#' multi-group continuous, ordered, and mixed-indicator fits;
+#' `pvalues_nested()` supports continuous estimators and categorical
+#' Satorra-2000 comparisons with a delta restriction map. The
 #' model must be fit so that lavaan exposes the asymptotic moment covariance --
 #' fit with a robust test such as `test = "satorra.bentler"`, or with
 #' `estimator = "MLM"/"MLR"/"DWLS"`. Off the classical continuous-complete-data
@@ -73,24 +74,41 @@
 #' and the biased gamma are used instead. ADF/WLS is the degenerate exception,
 #' where the test equals the ordinary chi-square and the correction adds nothing.
 #'
-#' Support beyond classical normal-theory ML -- GLS, ULS, categorical WLSMV/DWLS,
-#' FIML missing data, and nested FIML comparison -- is **experimental** as of
-#' 0.9.0; see the Stability note in [semTests-support].
+#' Support beyond classical normal-theory ML -- GLS, ULS, categorical
+#' DWLS/ULS/WLS, FIML missing data, and nested FIML or categorical comparison --
+#' is **experimental** as of 0.9.0; see the Stability note in
+#' [semTests-support].
 #'
-#' The information matrix (expected vs observed) is taken from the fit; to
-#' control it, fit the lavaan model with `information = "expected"` or
-#' `"observed"`. The returned object records the estimator, statistic,
-#' information type, data type and degrees of freedom actually used; see its
-#' printed footer and `attr(x, "semtests")`.
+#' For FIML, `fiml.convention = "observed"` (the default) uses observed
+#' saturated and model information throughout. This is the convention
+#' independently implemented and validated in magmaan. The `"lavaan"` option
+#' instead reproduces lavaan 0.7-2's robust-test construction: for a single
+#' model it uses lavaan's inspected `UGamma`; for nested models it uses lavaan's
+#' expected H1 weight and selected model information. Thus the two options make
+#' a real inferential convention visible rather than silently inheriting a fit
+#' option. The returned object records the convention actually used.
+#'
+#' For a single FIML model, `"lavaan"` means the eigenvalue spectrum returned by
+#' `lavInspect(fit, "UGamma")`. It does not necessarily reproduce the scalar
+#' Yuan--Bentler--Mplus test stored by a default MLR fit, which is a different
+#' correction. For nested FIML models it reproduces
+#' `lavTestLRT(..., method = "satorra.2000")`.
 #'
 #' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does goodness-of-fit testing on one object,
 #'    `pvalues_nested` does hypothesis testing on two nested models.
 #' @param tests A list of tests to evaluate on the
 #'    form `"(test)_(ug?)_(rls?)"`; see the default arguments and details below. The defaults are the recommended options.
-#' @param method For nested models, choose between `2000` and `2001`. Note: `2001` and Satorra-Bentler will not correspond with the variant in the paper.
+#' @param method For nested models, choose between `2000` and `2001`.
+#'   Categorical nested models support `"2000"` only. Note: `2001` and
+#'   Satorra-Bentler will not correspond with the variant in the paper.
 #' @param A.method For nested FIML models, choose `"exact"` for the literal
 #'   parameter restriction map or `"delta"` for the local moment-tangent
-#'   restriction map.
+#'   restriction map. `"delta"` is the default and applies to a wider range of
+#'   equivalent model parameterizations. Categorical nested models support
+#'   `"delta"` only.
+#' @param fiml.convention For FIML fits, use the fully observed-information
+#'   convention (`"observed"`, the default) or reproduce lavaan 0.7-2's
+#'   inspected robust-test spectrum (`"lavaan"`).
 #' @name pvalues
 #' @export
 #' @examples
@@ -114,8 +132,9 @@
 #' pvalues_nested(m0, m1)
 #'
 #' @return A named numeric vector of p-values, of class `semTests_pvalues`,
-#'   carrying an `"semtests"` attribute that records the options used (estimator,
-#'   statistic, information type, gamma type, data type, and degrees of freedom).
+#'   carrying an `"semtests"` attribute that records the options used (requested
+#'   and base estimator, statistic, information type, gamma type, data type,
+#'   parameterization where applicable, and degrees of freedom).
 #'
 #' @seealso [semTests-support] for the full list of supported configurations.
 #'
@@ -139,16 +158,17 @@
 #'
 #' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
 pvalues <- function(object,
-                    tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4") {
+                    tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
+                    fiml.convention = c("observed", "lavaan")) {
   # The default is fit-appropriate: the historical RLS default for the classical
   # normal-theory ML case, the suffix-free form (standard statistic, biased
   # gamma) otherwise. `tests = NULL` still routes to the "nothing requested"
   # error in pvalues_internal().
-  pvalues_internal(object, tests)
+  pvalues_internal(object, tests, fiml.convention = fiml.convention)
 }
 
 #' @keywords internal
-pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE) {
+pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE, fiml.convention = c("observed", "lavaan")) {
   # Class gate first: must precede the `tests` default promise (it forces
   # is_classic_nt(object), which dereferences object@Options) and check_supported.
   check_lavaan(object, "object")
@@ -156,14 +176,19 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
     stop("Please provide some p-values to calculate.")
   }
   check_supported(object)
-  warn_fiml_information(object)
+  fiml.convention <- match.arg(fiml.convention)
   result <- if (is.null(tests)) {
-    pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras)
+    pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, fiml.convention = fiml.convention)
   } else {
     options <- lapply(tests, function(test) split_input(test))
-    sapply(options, function(option) do.call(pvalues_, c(object, option, extras = extras)))
+    sapply(options, function(option) do.call(
+      pvalues_,
+      c(object, option, extras = extras, fiml.convention = fiml.convention)
+    ))
   }
+  provenance_fiml <- if (is_fiml(object)) fiml.convention else NA
   as_semtests(result, fit_provenance(object, nested = FALSE,
+                                     fiml.convention = provenance_fiml,
                                      df = unname(lavaan::fitmeasures(object, "df"))))
 }
 
@@ -171,9 +196,11 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
 #' @export
 pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
                            tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-                           A.method = c("exact", "delta")) {
+                           A.method = c("delta", "exact"),
+                           fiml.convention = c("observed", "lavaan")) {
   pvalues_nested_internal(m0, m1, method = method, tests = tests,
-                          A.method = A.method)
+                          A.method = A.method,
+                          fiml.convention = fiml.convention)
 }
 
 #' @keywords internal
@@ -182,9 +209,11 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
                                     eba = NULL, peba = NULL, pols = NULL,
                                     unbiased = 1, chisq = "ml",
                                     extras = FALSE,
-                                    A.method = c("exact", "delta")) {
+                                    A.method = c("delta", "exact"),
+                                    fiml.convention = c("observed", "lavaan")) {
   method <- match.arg(method)
   A.method <- match.arg(A.method)
+  fiml.convention <- match.arg(fiml.convention)
 
   # Class gate first: the df computation below reads m0@test / m1@test, which
   # would otherwise die on a cryptic S4 slot error for a non-lavaan argument.
@@ -208,42 +237,32 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
   df <- m0@test[[1]]$df - m1@test[[1]]$df
 
   check_supported_nested(m0, m1, method, A.method)
-  warn_fiml_information(m0)
-  warn_fiml_information(m1)
 
   result <- if (is.null(tests)) {
     pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba,
              peba = peba, pols = pols, chisq = chisq, extras = extras,
-             method = method, A.method = A.method)
+             method = method, A.method = A.method,
+             fiml.convention = fiml.convention)
   } else {
     options <- lapply(tests, function(test) split_input(test))
     sapply(options, function(option) {
       do.call(pvalues_, c(m0, m1, option, extras = extras, method = method,
-                          A.method = A.method))
+                          A.method = A.method,
+                          fiml.convention = fiml.convention))
     })
   }
-  provenance_A_method <- if (is_fiml(m0) || is_fiml(m1)) A.method else NA
+  provenance_A_method <- if (is_fiml(m0) || is_fiml(m1) ||
+                             isTRUE(m0@Model@categorical) ||
+                             isTRUE(m1@Model@categorical)) {
+    A.method
+  } else {
+    NA
+  }
+  provenance_fiml <- if (is_fiml(m0) || is_fiml(m1)) fiml.convention else NA
   as_semtests(result, fit_provenance(m0, nested = TRUE, method = method,
-                                     A.method = provenance_A_method, df = df))
-}
-
-#' Renormalise the eigenvalue spectrum under missing data.
-#'
-#' For complete data, lavaan's `UGamma` spectrum has mean equal to the robust
-#' scaling factor, so the reference law `sum lambda_j chi^2_1` has the right
-#' first moment. Under missing data (FIML) lavaan's `UGamma` is mis-scaled (its
-#' mean is off by a constant, ~1.8x in practice), which makes the eigenvalue
-#' p-values badly anti-conservative. The spectrum *shape* is correct, so we
-#' rescale it to mean = `chisq.scaling.factor`. This is a no-op for complete
-#' data (where the mean already equals the scaling factor) and requires a robust
-#' test, which FIML fits always have.
-#' @keywords internal
-rescale_missing <- function(lambdas_list, fit, df) {
-  if (identical(fit@Options$missing, "listwise")) return(lambdas_list)
-  sc <- tryCatch(as.numeric(lavaan::fitmeasures(fit, "chisq.scaling.factor")),
-                 error = function(e) NA_real_)
-  if (!is.finite(sc) || sc <= 0) return(lambdas_list)
-  lapply(lambdas_list, function(l) l * (sc * df / sum(l)))
+                                     A.method = provenance_A_method,
+                                     fiml.convention = provenance_fiml,
+                                     df = df))
 }
 
 #' Provenance of a `semTests_pvalues` object.
@@ -251,18 +270,30 @@ rescale_missing <- function(lambdas_list, fit, df) {
 #' Records the fit-level options actually used to compute the p-values, so the
 #' returned object is self-describing across estimators and data types.
 #' @keywords internal
-fit_provenance <- function(fit, nested, method = NA, A.method = NA, df = NULL) {
+fit_provenance <- function(fit, nested, method = NA, A.method = NA,
+                           fiml.convention = NA, df = NULL) {
+  estimator_requested <- fit@Options$estimator.orig
+  if (is.null(estimator_requested) || !length(estimator_requested) ||
+      is.na(estimator_requested[1])) {
+    estimator_requested <- fit@Options$estimator
+  }
   out <- list(
-    estimator   = fit@Options$estimator,
-    lavaan_test = names(fit@test),
-    information = fit@Options$information,
-    data_type   = if (isTRUE(fit@Model@categorical)) "categorical" else "continuous",
-    missing     = fit@Options$missing,
-    df          = if (is.null(df)) unname(lavaan::fitmeasures(fit, "df")) else df,
-    nested      = nested,
-    method      = method
+    estimator           = fit@Options$estimator,
+    estimator_requested = estimator_requested,
+    lavaan_test         = names(fit@test),
+    information         = fit@Options$information,
+    data_type           = if (isTRUE(fit@Model@categorical)) "categorical" else "continuous",
+    missing             = fit@Options$missing,
+    df                  = if (is.null(df)) unname(lavaan::fitmeasures(fit, "df")) else df,
+    nested              = nested,
+    method              = method
   )
+  if (isTRUE(fit@Model@categorical)) {
+    out$parameterization <- fit@Options$parameterization
+    out$spectrum_source <- "lavaan UGamma"
+  }
   if (!is.na(A.method[1])) out$A.method <- A.method
+  if (!is.na(fiml.convention[1])) out$fiml.convention <- fiml.convention
   out
 }
 
@@ -288,10 +319,21 @@ print.semTests_pvalues <- function(x, ...) {
   print.default(y, ...)
   if (!is.null(info)) {
     fiml <- !is.null(info$missing) && info$missing[1] %in% c("ml", "fiml")
+    requested <- if (!is.null(info$estimator_requested) &&
+                     info$estimator_requested[1] != info$estimator[1]) {
+      sprintf(" (%s)", info$estimator_requested[1])
+    } else {
+      ""
+    }
     # lavaan stores `information` as a length-2 vector; show the (single) choice.
-    cat(sprintf("estimator: %s%s | data: %s | information: %s | df: %s%s\n",
-                info$estimator[1], if (fiml) " (FIML)" else "",
+    cat(sprintf("estimator: %s%s%s | data: %s | information: %s | df: %s%s%s\n",
+                info$estimator[1], requested, if (fiml) " (FIML)" else "",
                 info$data_type[1], info$information[1], info$df[1],
+                if (!is.null(info$fiml.convention)) {
+                  sprintf(" | FIML convention: %s", info$fiml.convention[1])
+                } else {
+                  ""
+                },
                 if (isTRUE(info$nested)) {
                   a_method <- if (!is.null(info$A.method) &&
                                   !is.na(info$A.method[1])) {
@@ -347,7 +389,8 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "p
 #' @rdname pvalue_internal
 pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
                      chisq = c("ml", "rls"), extras = FALSE, method,
-                     A.method = "exact") {
+                     A.method = "delta",
+                     fiml.convention = "observed") {
   use_trad <- setdiff(trad, "std")
   bad_2001 <- FALSE
   if (missing(m1)) {
@@ -360,11 +403,20 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
              "See `?semTests-support`.",
              call. = FALSE)
       }
-      lambdas_list <- fiml_lambdas(m0, df)
+      lambdas_list <- fiml_lambdas(m0, df, fiml.convention)
+    } else if (unbiased == 1) {
+      # lavaan already exposes the biased single-model UGamma, including all
+      # threshold, group-weight, constraint, and pairwise-missingness details.
+      # Use it directly instead of rebuilding U %*% Gamma.
+      lambdas_list <- lavaan_lambdas(m0, df)
     } else {
       ug_list <- ugamma(m0, unbiased)
-      lambdas_list <- lapply(ug_list, function(ug) Re(eigen(ug, only.values = TRUE)$values)[seq(df)])
-      lambdas_list <- rescale_missing(lambdas_list, m0, df)
+      lambdas_list <- lapply(ug_list, function(ug) {
+        ugamma_eigenvalues(
+          ug, df,
+          context = "single-model unbiased UGamma"
+        )
+      })
     }
 
   } else {
@@ -382,7 +434,11 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
              "See `?semTests-support`.",
              call. = FALSE)
       }
-      lambdas_list <- fiml_lambdas_nested(m0, m1, df, A.method = A.method)
+      lambdas_list <- fiml_lambdas_nested(
+        m0, m1, df,
+        A.method = A.method,
+        fiml.convention = fiml.convention
+      )
     } else {
       lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
     }
@@ -390,7 +446,11 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
     if(min(unlist(lambdas_list)) < 0) {
       warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
       lambdas_list <- if (is_fiml(m0) || is_fiml(m1)) {
-        fiml_lambdas_nested(m0, m1, df, A.method = A.method)
+        fiml_lambdas_nested(
+          m0, m1, df,
+          A.method = A.method,
+          fiml.convention = fiml.convention
+        )
       } else {
         lambdas_nested(m0, m1, "2000", unbiased, df)
       }

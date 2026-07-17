@@ -4,7 +4,13 @@
 \alias{fiml_lambdas_nested}
 \title{FIML Satorra-2000 nested restriction eigenvalues.}
 \usage{
-fiml_lambdas_nested(m0, m1, df, A.method = c("exact", "delta"))
+fiml_lambdas_nested(
+  m0,
+  m1,
+  df,
+  A.method = c("delta", "exact"),
+  fiml.convention = c("observed", "lavaan")
+)
 }
 \description{
 FIML Satorra-2000 nested restriction eigenvalues.

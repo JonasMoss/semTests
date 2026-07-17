@@ -19,8 +19,10 @@ written against it.
    GLS \tab continuous \tab single or multi \tab complete \tab supported \cr
    ULS \tab continuous \tab single or multi \tab complete \tab supported \cr
    ML / MLR (FIML) \tab continuous \tab single only \tab FIML \tab supported \cr
-   WLSMV / DWLS \tab categorical \tab single or multi \tab complete \tab supported \cr
-   WLS (ADF) \tab continuous \tab single \tab complete \tab degenerate (no-op) \cr
+   DWLS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab experimental \cr
+   ULS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab experimental \cr
+   WLS (ADF) \tab continuous \tab single or multi \tab complete \tab degenerate (no-op) \cr
+   WLS (ADF) \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab degenerate (no-op) \cr
 }
 
 }
@@ -29,7 +31,7 @@ written against it.
    Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Status \cr
    ML/MLM/MLR, GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 or 2001 \tab -- \tab supported \cr
    ML / MLR (FIML) \tab continuous \tab single only \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab supported \cr
-   WLSMV / DWLS \tab categorical \tab any \tab any \tab -- \tab -- \tab rejected \cr
+   DWLS/ULS/WLS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab delta only \tab experimental \cr
    any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \cr
 }
 
@@ -39,8 +41,9 @@ written against it.
 
 The classical normal-theory ML path (continuous, complete data) is the mature,
 paper-backed core and is stable. Support for the other estimators (GLS, ULS,
-categorical WLSMV/DWLS), for FIML missing-data fits, and for nested comparison
-under FIML is \strong{experimental} as of 0.9.0: the methodology rests on the
+categorical DWLS/ULS/WLS fits, FIML missing-data fits, and nested comparison
+under FIML or categorical estimation) is \strong{experimental} as of 0.9.0: the
+methodology rests on the
 references but the implementation surface is newer and less Monte-Carlo-vetted,
 so the API and numerical details may change. Everything in the tables above is
 validated and tested; configurations outside them are refused at the entry
@@ -59,18 +62,27 @@ normal-theory ML: continuous, complete data, \code{estimator = "ML"}. Off that
 case they are undefined -- lavaan silently degrades RLS to ADF, and the
 Du-Bentler correction has no derivation -- so requesting them is refused.
 The standard statistic and the biased gamma are used instead.
+\item \strong{Categorical and mixed-indicator fits} use lavaan's biased inspected
+\code{UGamma} spectrum and unscaled estimator statistic directly. Supported
+estimator families are DWLS (including WLSMV/WLSM/WLSMVS), ULS (including
+ULSMV), and full WLS. Nested comparison is restricted to
+\code{method = "2000"} and \code{A.method = "delta"}.
+\item \strong{Pairwise categorical missingness} means support for lavaan's pairwise
+sample-statistic and \code{UGamma} calculation. It is not FIML and is not a
+claim of generally MAR-valid inference.
 \item \strong{FIML} (missing data) uses the biased gamma and the standard statistic
-only; \code{UG} and \code{RLS} are refused. The missing-data spectrum is renormalised
-(see \code{\link[=rescale_missing]{rescale_missing()}}). FIML requires a single group, continuous data,
-and no fixed exogenous covariates, and -- because the inference rests on
-the observed information under MAR -- a fit with \code{information = "expected"}
-triggers a warning (see \code{\link[=warn_fiml_information]{warn_fiml_information()}}).
+only; \code{UG} and \code{RLS} are refused. FIML requires a single group, continuous
+data, and no fixed exogenous covariates. \code{fiml.convention = "observed"}
+(the default) uses observed saturated and model information, independently
+validated against magmaan. \code{"lavaan"} reproduces lavaan 0.7-2's inspected
+robust-test spectrum, including its expected H1 weight.
 }
 }
 
 \subsection{Why ADF/WLS is degenerate}{
 
-For full WLS (ADF) the model test statistic already uses the
+For full WLS (ADF), with continuous or categorical sample statistics, the
+model test statistic already uses the
 asymptotically-correct weight matrix, so its null distribution is the exact
 chi-square and the eigenvalue correction collapses to the identity: every
 p-value equals the ordinary \code{1 - pchisq(chisq, df)}. It is accepted but adds

@@ -71,14 +71,15 @@ test_that("nested missing-data requires FIML for both fits", {
   expect_error(check_supported_nested(fiml, complete, "2000", "exact"), "FIML")
 })
 
-test_that("the FIML information warning fires through the public entry point", {
+test_that("the FIML convention is explicit and recorded", {
   HS  <- lavaan::HolzingerSwineford1939
   HSm <- HS; set.seed(12); HSm$x1[sample(nrow(HS), 60)] <- NA
   fiml_expected <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "ML",
                                information = "expected")
-  fiml_observed <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
 
-  expect_warning(pvalues(fiml_expected, "PEBA4"), "MCAR")
-  expect_no_warning(pvalues(fiml_observed, "PEBA4"))  # observed -> no MCAR warning
-  expect_no_warning(pvalues(object, "PEBA4_RLS"))     # complete data -> not FIML
+  observed <- pvalues(fiml_expected, "PEBA4")
+  lavaan <- pvalues(fiml_expected, "PEBA4", fiml.convention = "lavaan")
+  expect_equal(attr(observed, "semtests")$fiml.convention, "observed")
+  expect_equal(attr(lavaan, "semtests")$fiml.convention, "lavaan")
+  expect_null(attr(pvalues(object, "PEBA4_RLS"), "semtests")$fiml.convention)
 })

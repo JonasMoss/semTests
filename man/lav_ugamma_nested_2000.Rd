@@ -4,17 +4,15 @@
 \alias{lav_ugamma_nested_2000}
 \title{Calculate nested ugamma.}
 \usage{
-lav_ugamma_nested_2000(m0, m1, gamma, a = NULL, method = "delta")
+lav_ugamma_nested_2000(m0, m1, gamma, a = NULL)
 }
 \arguments{
 \item{m0, m1}{Two nested \code{lavaan} objects.}
 
 \item{gamma}{Gamma weighted by groups.}
 
-\item{a}{The \code{A} matrix. If if \code{NULL}, gets calculated by
-\code{lavaan:::lav_test_diff_A} with \code{method = method}.}
-
-\item{method}{Method passed to \code{lavaan:::lav_test_diff_A}.}
+\item{a}{The \code{A} restriction matrix. If \code{NULL}, it is calculated from the
+two models' public inspected delta matrices.}
 }
 \value{
 Ugamma for nested object.

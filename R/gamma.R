@@ -122,12 +122,11 @@ gamma_to_gamma_unbiased <- function(gammas, object) {
 #'
 #' @param m0,m1 Two nested `lavaan` objects.
 #' @param gamma Gamma weighted by groups.
-#' @param a The `A` matrix. If if `NULL`, gets calculated by
-#'    `lavaan:::lav_test_diff_A` with `method = method`.
-#' @param method Method passed to `lavaan:::lav_test_diff_A`.
+#' @param a The `A` restriction matrix. If `NULL`, it is calculated from the
+#'   two models' public inspected delta matrices.
 #' @keywords internal
 #' @return Ugamma for nested object.
-lav_ugamma_nested_2000 <- function(m0, m1, gamma, a = NULL, method = "delta") {
+lav_ugamma_nested_2000 <- function(m0, m1, gamma, a = NULL) {
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
 
@@ -174,6 +173,73 @@ ugamma <- function(object, unbiased = 1) {
   u0 <- lavaan::lavInspect(object, "U")
   gamma_list <- gamma(object, unbiased)
   lapply(gamma_list, function(gamma) u0 %*% gamma)
+}
+
+#' Extract a stable leading UGamma spectrum.
+#'
+#' The theoretical spectrum is real and non-negative. Small negative or
+#' imaginary components arise from the nonsymmetric numerical representation
+#' of a matrix that is similar to a symmetric positive-semidefinite product.
+#' Numerical negatives are truncated; a materially negative leading value is
+#' either retained for the method-2001 fallback or rejected.
+#' @keywords internal
+ugamma_eigenvalues <- function(ugamma, df, context = "UGamma",
+                               allow_negative = FALSE) {
+  ugamma <- as.matrix(ugamma)
+  if (!is.numeric(ugamma) || length(dim(ugamma)) != 2L ||
+      nrow(ugamma) != ncol(ugamma)) {
+    stop(context, " must be a square numeric matrix.", call. = FALSE)
+  }
+  if (df <= 0L) return(numeric(0L))
+  if (df > nrow(ugamma)) {
+    stop(context, " dimension is smaller than the model degrees of freedom.",
+         call. = FALSE)
+  }
+  if (any(!is.finite(ugamma))) {
+    stop(context, " contains non-finite entries.", call. = FALSE)
+  }
+
+  values <- eigen(ugamma, only.values = TRUE)$values
+  scale <- max(1, max(Mod(values)))
+  tolerance <- 1e-8 * scale
+  if (any(!is.finite(values))) {
+    stop(context, " contains non-finite eigenvalues.", call. = FALSE)
+  }
+  if (max(abs(Im(values))) > tolerance) {
+    stop(context, " has materially complex eigenvalues.", call. = FALSE)
+  }
+
+  lambdas <- sort(Re(values), decreasing = TRUE)[seq_len(df)]
+  numerical_negative <- lambdas < 0 & lambdas >= -tolerance
+  lambdas[numerical_negative] <- 0
+  if (!allow_negative && any(lambdas < -tolerance)) {
+    stop(context, " has materially negative leading eigenvalues; the fit may ",
+         "be numerically unstable or the requested models may not be nested.",
+         call. = FALSE)
+  }
+  if (!allow_negative && sum(lambdas > tolerance) < df) {
+    stop(context, " rank is smaller than the model degrees of freedom.",
+         call. = FALSE)
+  }
+  lambdas
+}
+
+#' Biased single-model spectrum exposed by lavaan.
+#' @keywords internal
+lavaan_lambdas <- function(object, df) {
+  ugamma <- tryCatch(
+    lavaan::lavInspect(object, "UGamma"),
+    error = function(e) {
+      stop("lavaan could not construct UGamma for this fit: ",
+           conditionMessage(e), call. = FALSE)
+    }
+  )
+  list(
+    ug_biased = ugamma_eigenvalues(
+      ugamma, df,
+      context = "lavaan's single-model UGamma"
+    )
+  )
 }
 
 #' Calculate nested gamma
@@ -247,15 +313,21 @@ lambdas_nested <- function(m0, m1, method = c("2000", "2001"), unbiased = 1, df)
   if (method == "2001") {
     du <- lavaan::lavInspect(m0, "U") - lavaan::lavInspect(m1, "U")
     lapply(gamma_list, function(g) {
-      ev <- Re(eigen(du %*% g, only.values = TRUE)$values)
-      sort(ev, decreasing = TRUE)[seq_len(df)]
+      ugamma_eigenvalues(
+        du %*% g, df,
+        context = "nested method-2001 UGamma",
+        allow_negative = TRUE
+      )
     })
   } else {
     factors <- nested_factor_2000(m0, m1)
     c_inv <- generalized_inverse(factors$C)
     lapply(gamma_list, function(g) {
       m_phi <- t(factors$D) %*% g %*% factors$D
-      sort(Re(eigen(c_inv %*% m_phi, only.values = TRUE)$values), decreasing = TRUE)
+      ugamma_eigenvalues(
+        c_inv %*% m_phi, df,
+        context = "nested method-2000 restriction UGamma"
+      )
     })
   }
 }

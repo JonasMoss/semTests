@@ -14,7 +14,12 @@ get_a_matrix <- function(m1, m0) {
       return(d %*% m@Model@eq.constraints.K)
     }
     if (methods::.hasSlot(m@Model, "ceq.simple.only") && m@Model@ceq.simple.only) {
-      return(d %*% t(m@Model@ceq.simple.K))
+      K <- as.matrix(m@Model@ceq.simple.K)
+      return(d %*% qr.Q(qr(K)))
+    }
+    if (methods::.hasSlot(m@Model, "ceq.JAC") && nrow(m@Model@ceq.JAC) > 0L) {
+      K <- get_orthogonal_complement(t(as.matrix(m@Model@ceq.JAC)))
+      return(d %*% K)
     }
     d
   }

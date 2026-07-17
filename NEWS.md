@@ -30,16 +30,39 @@ beyond normal-theory ML (see `?semTests-support`).
   built-in `HolzingerSwineford1939` data). `Imports` is now `lavaan` and
   `methods`.
 * Broadened the eigenvalue-based p-values beyond normal-theory ML. `pvalues()`
-  now supports GLS, ULS, and categorical WLSMV/DWLS in addition to ML/MLM/MLR,
+  now supports GLS, ULS, and categorical DWLS/ULS/WLS families in addition to ML/MLM/MLR,
   plus FIML missing-data fits (single-group, continuous); `pvalues_nested()`
-  supports the continuous estimators and nested FIML comparison
-  (`method = "2000"`). See `?semTests-support`. **This broadened support is
-  experimental**; the classical normal-theory ML path remains stable.
+  supports the continuous estimators, nested FIML comparison, and categorical
+  Satorra-2000 comparisons with the delta restriction map. See
+  `?semTests-support`. **This broadened support is experimental**; the
+  classical normal-theory ML path remains stable.
+* FIML now requires lavaan 0.7-2, whose corrected missing-data `Gamma` and
+  observed H1 information are used directly. The former hand-coded saturated
+  score and Hessian implementation has been removed.
+* Added `fiml.convention` to `pvalues()` and `pvalues_nested()`. The default,
+  `"observed"`, uses observed saturated and model information throughout and is
+  validated against an independent magmaan implementation. `"lavaan"`
+  reproduces lavaan 0.7-2's inspected single-model `UGamma` and public nested
+  Satorra-2000 scaled/scaled-shifted tests.
+* Biased single-model spectra now use lavaan's inspected `UGamma` directly.
+  Experimental categorical support covers DWLS/WLSMV, ULS/ULSMV, and full WLS
+  for ordered or mixed indicators, single or multiple groups, and listwise or
+  pairwise missingness. Nested categorical tests use Satorra 2000 with the
+  delta restriction map.
+* Fixed constrained FIML models: equality-constraint bases are now applied to
+  single-model spectra, general equality constraints mixed with inequalities
+  are handled, and nested tests support an already-constrained H1.
+* `A.method = "delta"` is now the nested FIML default. Exact restriction maps
+  align parameters by model identity rather than parameter-table row order and
+  fail clearly when the two models do not share a full parameter set.
+* Removed the unreachable missing-data rescaling and the expected-information
+  warning. The FIML information convention is now an explicit argument and is
+  recorded in result provenance.
 * Added entry-point validation with clear messages pointing at
   `?semTests-support`: non-`lavaan` objects, unsupported estimators, unsupported
   missing-data modes, multi-group / fixed-exogenous FIML, the normal-theory-only
   RLS statistic and the Du-Bentler `UG` gamma off the classical case, and
-  categorical nested tests are now refused up front.
+  incompatible categorical nested pairs are now refused up front.
 * The returned value is now a `semTests_pvalues` object that records the options
   actually used (estimator, statistic, information type, gamma type, data type,
   degrees of freedom) and prints a one-line provenance footer.

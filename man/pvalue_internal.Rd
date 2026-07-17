@@ -16,7 +16,8 @@ pvalues_(
   chisq = c("ml", "rls"),
   extras = FALSE,
   method,
-  A.method = "exact"
+  A.method = "delta",
+  fiml.convention = "observed"
 )
 }
 \value{

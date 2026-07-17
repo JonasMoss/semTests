@@ -19,9 +19,28 @@ values_groups <- list("SB_RLS" = pvalues(m0, "SB_RLS"),
 #saveRDS(values_no_groups, "values_no_groups.Rds")
 #saveRDS(values_groups, "values_groups.Rds")
 
+without_provenance <- function(x) {
+  lapply(x, function(value) {
+    attr(value, "semtests") <- NULL
+    value
+  })
+}
+
 test_that("testhat", {
-  expect_true(all.equal(readRDS("values_no_groups.Rds"),values_no_groups))
-  expect_true(all.equal(readRDS("values_groups.Rds"),values_groups))
-  expect_true(all.equal(readRDS("values_nested_no_groups.Rds"),values_nested_no_groups))
-  expect_true(all.equal(readRDS("values_nested_groups.Rds"),values_nested_groups))
+  expect_equal(
+    without_provenance(readRDS("values_no_groups.Rds")),
+    without_provenance(values_no_groups)
+  )
+  expect_equal(
+    without_provenance(readRDS("values_groups.Rds")),
+    without_provenance(values_groups)
+  )
+  expect_equal(
+    without_provenance(readRDS("values_nested_no_groups.Rds")),
+    without_provenance(values_nested_no_groups)
+  )
+  expect_equal(
+    without_provenance(readRDS("values_nested_groups.Rds")),
+    without_provenance(values_nested_groups)
+  )
 })

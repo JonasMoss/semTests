@@ -5,14 +5,19 @@
 \alias{pvalues_nested}
 \title{Calculate \emph{p}-values for one or two \code{lavaan} objects.}
 \usage{
-pvalues(object, tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4")
+pvalues(
+  object,
+  tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
+  fiml.convention = c("observed", "lavaan")
+)
 
 pvalues_nested(
   m0,
   m1,
   method = c("2000", "2001"),
   tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-  A.method = c("exact", "delta")
+  A.method = c("delta", "exact"),
+  fiml.convention = c("observed", "lavaan")
 )
 }
 \arguments{
@@ -22,16 +27,25 @@ pvalues_nested(
 \item{tests}{A list of tests to evaluate on the
 form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below. The defaults are the recommended options.}
 
-\item{method}{For nested models, choose between \code{2000} and \code{2001}. Note: \code{2001} and Satorra-Bentler will not correspond with the variant in the paper.}
+\item{fiml.convention}{For FIML fits, use the fully observed-information
+convention (\code{"observed"}, the default) or reproduce lavaan 0.7-2's
+inspected robust-test spectrum (\code{"lavaan"}).}
+
+\item{method}{For nested models, choose between \code{2000} and \code{2001}.
+Categorical nested models support \code{"2000"} only. Note: \code{2001} and
+Satorra-Bentler will not correspond with the variant in the paper.}
 
 \item{A.method}{For nested FIML models, choose \code{"exact"} for the literal
 parameter restriction map or \code{"delta"} for the local moment-tangent
-restriction map.}
+restriction map. \code{"delta"} is the default and applies to a wider range of
+equivalent model parameterizations. Categorical nested models support
+\code{"delta"} only.}
 }
 \value{
 A named numeric vector of p-values, of class \code{semTests_pvalues},
-carrying an \code{"semtests"} attribute that records the options used (estimator,
-statistic, information type, gamma type, data type, and degrees of freedom).
+carrying an \code{"semtests"} attribute that records the options used (requested
+and base estimator, statistic, information type, gamma type, data type,
+parameterization where applicable, and degrees of freedom).
 }
 \description{
 Calculate \emph{p}-values for a \code{lavaan} object using several methods,
@@ -99,9 +113,10 @@ configurations -- the matrix this function is validated against -- is
 The limiting null law of the test statistic is a weighted sum of
 chi-squares for any minimum-discrepancy estimator, so these tests are not
 specific to normal-theory ML. \code{pvalues()} supports ML/MLM/MLR, GLS, ULS,
-FIML (missing data), and categorical WLSMV/DWLS, with single- and
-multi-group continuous and categorical fits; \code{pvalues_nested()} supports
-the continuous estimators (nested categorical is not yet implemented). The
+FIML (missing data), and categorical DWLS/ULS/WLS families, with single- and
+multi-group continuous, ordered, and mixed-indicator fits;
+\code{pvalues_nested()} supports continuous estimators and categorical
+Satorra-2000 comparisons with a delta restriction map. The
 model must be fit so that lavaan exposes the asymptotic moment covariance --
 fit with a robust test such as \code{test = "satorra.bentler"}, or with
 \code{estimator = "MLM"/"MLR"/"DWLS"}. Off the classical continuous-complete-data
@@ -110,15 +125,25 @@ ML case, the RLS statistic (\code{browne.residual.nt.model}) and the unbiased
 and the biased gamma are used instead. ADF/WLS is the degenerate exception,
 where the test equals the ordinary chi-square and the correction adds nothing.
 
-Support beyond classical normal-theory ML -- GLS, ULS, categorical WLSMV/DWLS,
-FIML missing data, and nested FIML comparison -- is \strong{experimental} as of
-0.9.0; see the Stability note in \link{semTests-support}.
+Support beyond classical normal-theory ML -- GLS, ULS, categorical
+DWLS/ULS/WLS, FIML missing data, and nested FIML or categorical comparison --
+is \strong{experimental} as of 0.9.0; see the Stability note in
+\link{semTests-support}.
 
-The information matrix (expected vs observed) is taken from the fit; to
-control it, fit the lavaan model with \code{information = "expected"} or
-\code{"observed"}. The returned object records the estimator, statistic,
-information type, data type and degrees of freedom actually used; see its
-printed footer and \code{attr(x, "semtests")}.
+For FIML, \code{fiml.convention = "observed"} (the default) uses observed
+saturated and model information throughout. This is the convention
+independently implemented and validated in magmaan. The \code{"lavaan"} option
+instead reproduces lavaan 0.7-2's robust-test construction: for a single
+model it uses lavaan's inspected \code{UGamma}; for nested models it uses lavaan's
+expected H1 weight and selected model information. Thus the two options make
+a real inferential convention visible rather than silently inheriting a fit
+option. The returned object records the convention actually used.
+
+For a single FIML model, \code{"lavaan"} means the eigenvalue spectrum returned by
+\code{lavInspect(fit, "UGamma")}. It does not necessarily reproduce the scalar
+Yuan--Bentler--Mplus test stored by a default MLR fit, which is a different
+correction. For nested FIML models it reproduces
+\code{lavTestLRT(..., method = "satorra.2000")}.
 }
 }
 \examples{

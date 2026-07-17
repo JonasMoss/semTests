@@ -2,11 +2,13 @@
 % Please edit documentation in R/fiml_fmg.R
 \name{fiml_lambdas}
 \alias{fiml_lambdas}
-\title{FIML goodness-of-fit eigenvalues in saturated eta-space.}
+\title{FIML goodness-of-fit eigenvalues.}
 \usage{
-fiml_lambdas(fit, df)
+fiml_lambdas(fit, df, fiml.convention = c("observed", "lavaan"))
 }
 \description{
-FIML goodness-of-fit eigenvalues in saturated eta-space.
+The observed convention uses observed saturated information, matching the
+convention independently implemented and validated in magmaan. The lavaan
+convention returns lavaan's own inspected \code{UGamma} spectrum.
 }
 \keyword{internal}

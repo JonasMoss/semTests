@@ -21,8 +21,8 @@ nested model comparison in Foldnes, Grønneberg, & Moss (2026).
 The eigenvalue correction targets the limiting null law of the test
 statistic, a weighted sum of chi squares. This law holds for any minimum
 discrepancy estimator, so support now reaches beyond normal theory ML to
-GLS, ULS, categorical WLSMV/DWLS, and FIML missing data fits. See
-`?semTests-support` for the full validated matrix.
+GLS, ULS, categorical DWLS/ULS/WLS families, and FIML missing data fits.
+See `?semTests-support` for the full validated matrix.
 
 ## Installation
 
@@ -54,7 +54,7 @@ object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
 #>    peba4_rls 
 #> 5.165737e-07 
-#> estimator: ML | data: continuous | information: expected | df: 24
+#> estimator: ML (MLM) | data: continuous | information: expected | df: 24
 ```
 
 For nested model comparison, fit the constrained and unconstrained
@@ -69,18 +69,23 @@ m0 <- lavaan::cfa(constrained, lavaan::HolzingerSwineford1939, estimator = "MLM"
 pvalues_nested(m0, m1)
 #> pall_ug_ml 
 #>  0.0166158 
-#> estimator: ML | data: continuous | information: expected | df: 2 | nested (method 2000)
+#> estimator: ML (MLM) | data: continuous | information: expected | df: 2 | nested (method 2000)
 ```
 
 > **Note.** Support for estimators other than normal theory ML (GLS,
-> ULS, categorical WLSMV/DWLS, and FIML) and for nested comparison under
-> FIML is **experimental** in this release. The classical ML path is
-> stable. See `?semTests-support`.
+> ULS, categorical DWLS/ULS/WLS, and FIML) and for nested comparison
+> under FIML or categorical estimation is **experimental** in this
+> release. The classical ML path is stable. See `?semTests-support`.
 
 Missing data is handled through full information maximum likelihood. Fit
 the model with `missing = "fiml"` and pass it to `pvalues` as usual.
 FIML uses the biased gamma and the standard statistic, so the `UG`/`RLS`
-suffixes do not apply.
+suffixes do not apply. The default `fiml.convention = "observed"` uses
+observed saturated and model information throughout. Use
+`fiml.convention = "lavaan"` to reproduce lavaan 0.7-2’s inspected
+robust-test spectrum; the convention is printed with the result. The
+same option is available in `pvalues_nested()`, where
+`A.method = "delta"` is the default restriction map.
 
 ``` r
 HS <- lavaan::HolzingerSwineford1939
@@ -89,9 +94,40 @@ HS$x1[sample(nrow(HS), 60)] <- NA
 fit_fiml <- lavaan::cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
 #>     peba4_ml 
-#> 3.301171e-07 
-#> estimator: ML (FIML) | data: continuous | information: observed | df: 24
+#> 3.301168e-07
+#> estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed
 ```
+
+For a single FIML model, the lavaan convention reproduces
+`lavInspect(fit_fiml, "UGamma")`. It does not necessarily reproduce the
+scalar Yuan–Bentler–Mplus test stored by a default MLR fit. For nested
+FIML models, the lavaan convention reproduces the public Satorra-2000
+difference test.
+
+Categorical and mixed-indicator models use lavaan’s inspected `UGamma`
+directly. The DWLS, ULS, and full-WLS estimator families are supported
+experimentally, including single- and multigroup models and listwise or
+pairwise missingness. Pairwise support reproduces lavaan’s pairwise
+sample-statistic calculation; it is not FIML and is not a claim of
+generally MAR-valid inference.
+
+``` r
+HSord <- lavaan::HolzingerSwineford1939
+ordered_names <- paste0("x", 1:9)
+HSord[ordered_names] <- lapply(
+  HSord[ordered_names],
+  function(x) ordered(cut(x, 3))
+)
+fit_ordinal <- lavaan::cfa(model, HSord, ordered = ordered_names)
+pvalues(fit_ordinal)
+#>     peba4_ml
+#> 7.156389e-06
+#> estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24
+```
+
+Nested categorical models support the Satorra-2000 delta-map
+construction:
+`pvalues_nested(m0, m1, method = "2000", A.method = "delta")`.
 
 ## References
 

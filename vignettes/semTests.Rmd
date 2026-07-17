@@ -132,9 +132,49 @@ fit_fiml <- cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
 ```
 
-FIML inference rests on the observed information under MAR (lavaan's default for
-`missing = "fiml"`); a fit using expected information triggers a warning, since
-that is valid only under the stronger MCAR assumption.
+The default `fiml.convention = "observed"` uses observed saturated and model
+information throughout and is independently validated against magmaan. Use
+`fiml.convention = "lavaan"` when exact reproduction of lavaan 0.7-2's inspected
+single-model `UGamma` or nested Satorra-2000 correction is wanted:
+
+```{r fiml-conventions}
+pvalues(fit_fiml, fiml.convention = "observed")
+pvalues(fit_fiml, fiml.convention = "lavaan")
+```
+
+For nested FIML comparisons, `A.method = "delta"` is the default and works
+across a wider range of equivalent parameterizations. `"exact"` uses the
+literal parameter restriction map and requires the same underlying full free
+parameter set in both models.
+
+For a single FIML model, the lavaan convention is specifically
+`lavInspect(fit, "UGamma")`; it need not equal the scalar
+Yuan--Bentler--Mplus correction stored by a default MLR fit. For nested FIML
+models it reproduces the public Satorra-2000 difference test.
+
+### Ordered and mixed indicators
+
+Categorical support uses lavaan's inspected `UGamma` and unscaled estimator
+statistic directly. DWLS (including WLSMV/WLSM/WLSMVS), ULS (including ULSMV),
+and full WLS are supported experimentally for single- and multigroup ordered or
+mixed-indicator models.
+
+```{r categorical}
+HSord <- HolzingerSwineford1939
+ordered_names <- paste0("x", 1:9)
+HSord[ordered_names] <- lapply(
+  HSord[ordered_names],
+  function(x) ordered(cut(x, 3))
+)
+fit_ordinal <- cfa(model, HSord, ordered = ordered_names)
+pvalues(fit_ordinal, c("SB", "SS", "pEBA4"))
+```
+
+Categorical fits may use listwise or pairwise missingness. Pairwise support
+means that semTests uses lavaan's pairwise sample-statistic and `UGamma`
+calculation; it is not FIML and does not imply generally MAR-valid inference.
+Nested categorical comparison supports `method = "2000"` with
+`A.method = "delta"` only.
 
 ## References
 

@@ -3,7 +3,7 @@
 # exercise the broadened estimator / data-type support: single-model for all
 # estimators, nested for continuous estimators, and the guards that keep the
 # normal-theory-only pieces (RLS statistic, Du-Bentler unbiased gamma) and
-# categorical nesting from being used where they are not defined.
+# unsupported categorical nested variants from being used.
 
 hs  <- " visual =~ x1 + x2 + x3
          textual =~ x4 + x5 + x6
@@ -90,11 +90,15 @@ test_that("FIML constraints (single-group, no fixed exogenous covariates) are en
   expect_error(pvalues(fixed_x, "PEBA4"), "fixed exogenous")
 })
 
-test_that("nested categorical is deferred with a clear message", {
+test_that("nested categorical works through the 2000/delta path", {
   HSc <- ordinalize(lavaan::HolzingerSwineford1939)
   fc1 <- lavaan::cfa(hs,  HSc, ordered = paste0("x", 1:9))
   fc0 <- lavaan::cfa(hs0, HSc, ordered = paste0("x", 1:9))
-  expect_error(pvalues_nested(fc0, fc1), "categorical")
+  expect_true(valid_p(pvalues_nested(fc0, fc1)))
+  expect_error(pvalues_nested(fc0, fc1, method = "2001"),
+               "method = \"2000\"")
+  expect_error(pvalues_nested(fc0, fc1, A.method = "exact"),
+               "A.method = \"delta\"")
 })
 
 test_that("nested missing-data (FIML) works for continuous fits", {
@@ -102,24 +106,14 @@ test_that("nested missing-data (FIML) works for continuous fits", {
   set.seed(2); HS$x1[sample(nrow(HS), 40)] <- NA
   f1 <- lavaan::cfa(hs,  HS, missing = "fiml", estimator = "MLR")
   f0 <- lavaan::cfa(hs0, HS, missing = "fiml", estimator = "MLR")
-  p_exact <- pvalues_nested(f0, f1)
-  p_delta <- pvalues_nested(f0, f1, A.method = "delta")
+  p_delta <- pvalues_nested(f0, f1)
+  p_exact <- pvalues_nested(f0, f1, A.method = "exact")
   expect_true(valid_p(p_exact))
   expect_true(valid_p(p_delta))
+  expect_equal(attr(p_delta, "semtests")$A.method, "delta")
   expect_equal(attr(p_exact, "semtests")$A.method, "exact")
   expect_error(pvalues_nested(f0, f1, method = "2001"), "method = \"2000\"")
   expect_error(pvalues_nested(f0, f1, tests = "PALL_UG"), "unbiased")
-})
-
-test_that("rescale_missing is a no-op for complete data, active under missingness", {
-  HS <- lavaan::HolzingerSwineford1939
-  cm <- lavaan::cfa(hs, HS, estimator = "MLM")
-  expect_identical(rescale_missing(list(c(1, 2, 3)), cm, 3L), list(c(1, 2, 3)))
-  HSm <- HS; set.seed(4); HSm$x1[sample(nrow(HS), 50)] <- NA
-  fm <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
-  out <- rescale_missing(list(c(1, 2, 3)), fm, 3L)[[1]]
-  sc <- as.numeric(lavaan::fitmeasures(fm, "chisq.scaling.factor"))
-  expect_equal(mean(out), sc)                 # mean renormalised to scaling factor
 })
 
 test_that("the output object records the options it used", {
