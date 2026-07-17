@@ -183,3 +183,11 @@ Before interpreting the result:
 4. compare `SB` and `SS` with lavaan as a trace-level sanity check;
 5. treat pairwise missingness and the experimental estimator surface as
    analysis assumptions, not implementation details.
+
+## References
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+(pp. 233–247). Kluwer Academic.
+<https://doi.org/10.1007/978-1-4615-4603-0_17>

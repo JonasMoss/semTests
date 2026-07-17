@@ -10,7 +10,9 @@ fit_provenance(
   method = NA,
   A.method = NA,
   fiml.convention = NA,
-  df = NULL
+  df = NULL,
+  tests = NULL,
+  parsed_options = NULL
 )
 }
 \description{

@@ -31,7 +31,7 @@ moments. Because this holds for any minimum-discrepancy estimator, the tests are
 not specific to normal-theory maximum likelihood.
 
 The penalized eigenvalue block-averaging (`pEBA`) and penalized regression
-(`pOLS`) methods were introduced by Foldnes, Moss, & Grønneberg (2024) and
+(`pOLS`) methods were introduced by Foldnes, Moss, & Grønneberg (2025) and
 extended to nested model comparison by Foldnes, Grønneberg, & Moss (2026).
 
 ```{r setup}
@@ -73,7 +73,8 @@ actually used. The full option record is available with
 
 ### The test-name grammar
 
-Each requested test is a string of the form `(test)_(ug?)_(ml|rls)`:
+Each requested test uses one of `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`,
+`TEST_UG_ML`, or `TEST_UG_RLS`:
 
 * **test** — the family: `pEBA<j>` (penalized block-averaging, the recommended
   default; `j` is the number of blocks, typically 2–6), `pOLS<gamma>` (penalized
@@ -112,7 +113,11 @@ pvalues_nested(m0, m1)
 
 `pall` is the recommended default for nested comparison (Foldnes, Grønneberg, &
 Moss, 2026). The reduction `method` defaults to `"2000"` (Satorra 2000);
-`"2001"` is also available for complete-data fits.
+`"2001"` is also available for complete-data fits. Both fits must use the same
+estimator, fitting conventions, variables, groups, sample sizes, raw data, and
+missingness mask. Reversed inputs warn before being swapped. Method 2001 stops,
+rather than silently changing methods, if its leading spectrum is materially
+negative.
 
 ## Other estimators and missing data (experimental)
 
@@ -146,7 +151,9 @@ pvalues(fit_fiml)
 ```
 
 The default `fiml.convention = "observed"` uses observed saturated and model
-information throughout and is independently validated against magmaan. Use
+information throughout, following Kenward and Molenberghs' (1998)
+observed-information recommendation, and is independently validated against
+magmaan. Use
 `fiml.convention = "lavaan"` when exact reproduction of lavaan 0.7-2's inspected
 single-model `UGamma` or nested Satorra-2000 correction is wanted:
 
@@ -196,11 +203,22 @@ Estimator Reliably Improves SEM Statistics for Nonnormal Data. *Structural
 Equation Modeling*, 29(6), 872–887.
 <https://doi.org/10.1080/10705511.2022.2063870>
 
-Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
 procedures for structural equation models. *Structural Equation Modeling: A
-Multidisciplinary Journal*, 1–13.
+Multidisciplinary Journal*, 32(1), 1–13.
 <https://doi.org/10.1080/10705511.2024.2372028>
 
 Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
 averaging: Extension to nested model comparison and Monte Carlo evaluations.
-*Behavior Research Methods*. <https://doi.org/10.3758/s13428-026-02968-4>
+*Behavior Research Methods*, 58, article 107.
+<https://doi.org/10.3758/s13428-026-02968-4>
+
+Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
+inference when data are missing at random. *Statistical Science*, 13(3),
+236–247. <https://doi.org/10.1214/ss/1028905886>
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+(pp. 233–247). Kluwer Academic.
+<https://doi.org/10.1007/978-1-4615-4603-0_17>

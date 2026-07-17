@@ -5,11 +5,9 @@ with a minimal dependency footprint (`Imports` is just `lavaan` and the base
 `methods` package), and the eigenvalue-based p-values have been broadened well
 beyond normal-theory ML (see `?semTests-support`).
 
-* Fixed compatibility with lavaan 0.7-1, in which `lavaan::lavTest()` returns a
-  named list of test results rather than a single flat object (the reweighted
-  least squares chi-square statistic was previously read as `NULL`). The
-  statistic is now extracted in a way that works with both old and new lavaan
-  return structures.
+* Adapted statistic extraction to the named-list `lavaan::lavTest()` structure
+  introduced in lavaan 0.7-1 and used by the required lavaan 0.7-2 (the
+  reweighted least-squares statistic was previously read as `NULL`).
 * The eigenvalue-based p-values no longer depend on CompQuadForm. The upper tail
   of the quadratic form `sum lambda_j chi^2_1` is computed internally by
   `imhof_pvalue()`, which is more accurate in the tail, where CompQuadForm
@@ -62,9 +60,17 @@ beyond normal-theory ML (see `?semTests-support`).
   `?semTests-support`: non-`lavaan` objects, unsupported estimators, unsupported
   missing-data modes, multi-group / fixed-exogenous FIML, the normal-theory-only
   RLS statistic and the Du-Bentler `UG` gamma off the classical case, and
-  incompatible categorical nested pairs are now refused up front.
+  incompatible nested pairs are now refused up front. All nested families must
+  use the same estimator, fitting conventions, variables, groups, sample sizes,
+  raw data, and missingness mask.
+* Added typed public conditions for malformed test specifications,
+  nonconverged or inadmissible fits, reversed nested inputs, incompatible model
+  pairs, and unstable method-2001 spectra. Test names now enforce their grammar
+  and parameter domains. Reversed inputs warn before being swapped, and method
+  2001 never silently falls back to method 2000.
 * The returned value is now a `semTests_pvalues` object that records the options
-  actually used (estimator, statistic, information type, gamma type, data type,
-  degrees of freedom) and prints a one-line provenance footer.
+  actually used (requested and base estimator, requested tests, base statistic,
+  information type, gamma type, data type, and degrees of freedom) and prints a
+  one-line provenance footer.
 * Added a `semTests` vignette and an `inst/CITATION`.
 * Documentation fixes and a substantially expanded test suite.

@@ -135,6 +135,8 @@ curvature. Expected information averages curvature under the fitted model.
 They can be close under favorable conditions, but missingness and non-normality
 make it unwise to assume they are interchangeable. `semTests` therefore makes
 the convention visible in both the function call and the result provenance.
+Kenward and Molenberghs (1998) discuss this distinction for likelihood
+inference under MAR and recommend observed information.
 
 ## Nested FIML comparison
 
@@ -163,21 +165,22 @@ uses the literal parameter restriction and requires the same underlying full
 free-parameter set:
 
 ```{r nested-comparison}
+nested_tests <- c("SB", "SS", "PEBA2")
 nested <- cbind(
   observed_delta = as.numeric(pvalues_nested(
-    m0, m1, tests = tests,
+    m0, m1, tests = nested_tests,
     A.method = "delta", fiml.convention = "observed"
   )),
   observed_exact = as.numeric(pvalues_nested(
-    m0, m1, tests = tests,
+    m0, m1, tests = nested_tests,
     A.method = "exact", fiml.convention = "observed"
   )),
   lavaan_delta = as.numeric(pvalues_nested(
-    m0, m1, tests = tests,
+    m0, m1, tests = nested_tests,
     A.method = "delta", fiml.convention = "lavaan"
   ))
 )
-rownames(nested) <- tests
+rownames(nested) <- nested_tests
 format(nested, scientific = TRUE, digits = 4)
 ```
 
@@ -193,7 +196,19 @@ A reproducible FIML analysis should report:
 * lavaan's estimator and `information` option;
 * the semTests `fiml.convention`;
 * the nested `A.method`, when applicable;
-* the requested p-value method and the unscaled base statistic.
+* the requested p-value method and unscaled base-statistic choice.
 
 The provenance footer and `attr(result, "semtests")` retain these semTests
 choices with the returned p-values.
+
+## References
+
+Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
+inference when data are missing at random. *Statistical Science*, 13(3),
+236–247. <https://doi.org/10.1214/ss/1028905886>
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+(pp. 233–247). Kluwer Academic.
+<https://doi.org/10.1007/978-1-4615-4603-0_17>

@@ -1,9 +1,9 @@
 # Conformance tests for the documented support matrix (?semTests-support) and
 # the entry-level gate (check_supported / check_supported_nested). The matrix is
-# the source of truth: every supported row should compute, every rejected row
-# should stop, and the FIML information warning should fire through the public
-# entry point. setup.R supplies the multi-group fixtures (m0/m1 MLM, m0_/m1_
-# GLS, object, m1_no_groups/m0_no_groups).
+# the source of truth: every available row should compute, every rejected row
+# should stop, and each FIML information convention should be explicit through
+# the public entry point. setup.R supplies the multi-group fixtures (m0/m1 MLM,
+# m0_/m1_ GLS, object, m1_no_groups/m0_no_groups).
 
 hs <- " visual =~ x1 + x2 + x3
         textual =~ x4 + x5 + x6

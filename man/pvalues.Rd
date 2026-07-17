@@ -24,28 +24,35 @@ pvalues_nested(
 \item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does goodness-of-fit testing on one object,
 \code{pvalues_nested} does hypothesis testing on two nested models.}
 
-\item{tests}{A list of tests to evaluate on the
-form \code{"(test)_(ug?)_(rls?)"}; see the default arguments and details below. The defaults are the recommended options.}
+\item{tests}{A non-empty character vector of tests. Each element uses one of
+\code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or
+\code{TEST_UG_RLS}; the defaults are the recommended options. \code{EBA} and \code{pEBA}
+take a positive integer number of blocks (for example, \code{"pEBA4"}), no
+greater than the test df. \code{pOLS} takes a finite positive penalty (for
+example, \code{"pOLS2"}).}
 
 \item{fiml.convention}{For FIML fits, use the fully observed-information
 convention (\code{"observed"}, the default) or reproduce lavaan 0.7-2's
 inspected robust-test spectrum (\code{"lavaan"}).}
 
-\item{method}{For nested models, choose between \code{2000} and \code{2001}.
-Categorical nested models support \code{"2000"} only. Note: \code{2001} and
-Satorra-Bentler will not correspond with the variant in the paper.}
+\item{method}{For nested models, choose Satorra's \code{"2000"} construction (the
+paper-recommended default) or the Satorra--Bentler \code{"2001"} construction.
+FIML and categorical nested models support \code{"2000"} only. Method 2001
+stops rather than silently falling back if it produces materially negative
+leading eigenvalues.}
 
-\item{A.method}{For nested FIML models, choose \code{"exact"} for the literal
-parameter restriction map or \code{"delta"} for the local moment-tangent
-restriction map. \code{"delta"} is the default and applies to a wider range of
-equivalent model parameterizations. Categorical nested models support
-\code{"delta"} only.}
+\item{A.method}{For nested FIML or categorical models, choose \code{"exact"} for
+the literal parameter restriction map or \code{"delta"} for the local
+moment-tangent restriction map. \code{"delta"} is the default and applies to a
+wider range of equivalent model parameterizations. Categorical nested
+models support \code{"delta"} only.}
 }
 \value{
 A named numeric vector of p-values, of class \code{semTests_pvalues},
-carrying an \code{"semtests"} attribute that records the options used (requested
-and base estimator, statistic, information type, gamma type, data type,
-parameterization where applicable, and degrees of freedom).
+carrying an \code{"semtests"} attribute that records the requested tests,
+requested and base estimator, base-statistic and gamma choices,
+information type, data type, parameterization where applicable, nested
+method and restriction map where applicable, and degrees of freedom.
 }
 \description{
 Calculate \emph{p}-values for a \code{lavaan} object using several methods,
@@ -54,8 +61,9 @@ estimators. The recommended choices of \emph{p}-values are included as default
 values. Multiple \emph{p}-values can be returned simultaneously.
 }
 \details{
-The test argument is a list of character strings on the form
-(test)\emph{(ug?)}(ml?), for instance, \code{SB_UG_RLS}.
+The \code{tests} argument is a character vector. Each element has one of the forms
+\code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or \code{TEST_UG_RLS};
+for example, \code{SB_UG_RLS}.
 \itemize{
 \item The first part of the string specifies the desired test. The supported tests are listed below.
 \item If \code{UG} is included in the string the unbiased estimator of the
@@ -63,19 +71,19 @@ fourth order moment matrix (Du, Bentler, 2022) is used. If not, the
 standard biased matrix is used. There is no simple relationship between
 \emph{p}-value performance and the choice of \code{unbiased}.
 \item The final part specifies the chi square statistic. The \code{ML}
-choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
+choice uses the chi square based on the normal discrepancy function (Bollen, 1989).
 The \code{RLS} choice (default) uses the reweighted least squares statistic of Browne (1974).
 }
 
 The \code{peba} method is the recommended default. It partitions the eigenvalues
 into \code{j} equally sized sets (if not possible, the smallest set is incomplete),
 shrinks them towards their common mean, and averages within each set. Provide
-a list of integers \code{j} to partition with respect to; the best choices are
+a positive integer \code{j}, no greater than the test df; the best choices are
 typically about \code{2}--\code{6}. It was introduced by Foldnes, Moss, & Grønneberg
-(2024).
+(2025).
 
-\code{pols} is a penalized regression method with a penalization term ranging from
-0 to infinity. Foldnes, Moss, & Grønneberg (2024) studied \code{pols=2}, which has
+\code{pols} is a penalized regression method with a finite positive penalization
+term. Foldnes, Moss, & Grønneberg (2025) studied \code{pols=2}, which has
 good performance in a variety of contexts.
 
 \code{pall} penalizes all eigenvalues in ugamma, while \code{all} uses all eigenvalues
@@ -95,15 +103,6 @@ In addition, you may specify a
 \item \code{ss} The scaled and shifted \emph{p}-value proposed by Asparouhov & Muthén (2010).
 \item \code{sf} The scaled \emph{F} \emph{p}-value proposed by Wu and Lin (2016).
 }
-
-The \code{unbiased} argument is \code{TRUE} if the unbiased estimator of the
-fourth order moment matrix (Du, Bentler, 2022) is used. If \code{FALSE}, the
-standard biased matrix is used. There is no simple relationship between
-p-value performance and the choice of \code{unbiased}.
-
-The \code{chisq} argument controls which basic test statistic is used. The \code{ml}
-choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
-The \code{rls} choice uses the reweighted least squares statistic of Browne (1974).
 \subsection{Estimators and data types}{
 
 The authoritative list of supported estimators, data types, and
@@ -129,6 +128,12 @@ Support beyond classical normal-theory ML -- GLS, ULS, categorical
 DWLS/ULS/WLS, FIML missing data, and nested FIML or categorical comparison --
 is \strong{experimental} as of 0.9.0; see the Stability note in
 \link{semTests-support}.
+
+Both entry points require a converged fit and warn if lavaan reports an
+inadmissible solution. Nested comparisons require the same requested
+estimator, fitting conventions, variables, groups, sample sizes, raw data,
+and missingness mask. semTests checks comparability but cannot prove that two
+substantively different specifications are genuinely nested.
 
 For FIML, \code{fiml.convention = "observed"} (the default) uses observed
 saturated and model information throughout. This is the convention
@@ -168,13 +173,17 @@ pvalues_nested(m0, m1)
 
 }
 \references{
-Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1-13. https://doi.org/10.1080/10705511.2024.2372028
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit procedures for structural equation models. \emph{Structural Equation Modeling: A Multidisciplinary Journal}, 32(1), 1--13. \doi{10.1080/10705511.2024.2372028}
 
-Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. \emph{Behavior Research Methods}, 58, article 107. \doi{10.3758/s13428-026-02968-4}
 
-Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, & A. Satorra (Eds.), \emph{Innovations in Multivariate Statistical Analysis} (pp. 233--247). Kluwer Academic. \doi{10.1007/978-1-4615-4603-0_17}
 
-Asparouhov, & Muthén. (2010). Simple second order chi-square correction. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
+Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test statistic for moment structure analysis. \emph{Psychometrika}, 66(4), 507--514. \doi{10.1007/BF02296192}
+
+Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. In A. von Eye & C. C. Clogg (Eds.), \emph{Latent Variables Analysis: Applications for Developmental Research} (pp. 399--419). Sage.
+
+Asparouhov, T., & Muthén, B. O. (2010). \emph{Simple second order chi-square correction}. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
 
 Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the Distribution of Test Statistics in Covariance Structure Analysis. Structural Equation Modeling. https://doi.org/10.1080/10705511.2015.1057733
 
@@ -182,9 +191,11 @@ Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigen
 
 Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872-887. https://doi.org/10.1080/10705511.2022.2063870
 
-Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
+Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist inference when data are missing at random. \emph{Statistical Science}, 13(3), 236--247. \doi{10.1214/ss/1028905886}
 
-Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
+Bollen, K. A. (1989). \emph{Structural Equations with Latent Variables}. John Wiley & Sons. \doi{10.1002/9781118619179}
+
+Browne, M. W. (1974). Generalized least squares estimators in the analysis of covariance structures. \emph{South African Statistical Journal}, 8, 1--24. \doi{10.10520/AJA0038271X_175}
 }
 \seealso{
 \link{semTests-support} for the full list of supported configurations.

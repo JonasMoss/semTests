@@ -4,7 +4,7 @@
 \alias{check_supported}
 \title{Reject a fit whose configuration is outside the supported surface.}
 \usage{
-check_supported(fit)
+check_supported(fit, arg = "object")
 }
 \arguments{
 \item{fit}{A fitted \code{lavaan} object.}

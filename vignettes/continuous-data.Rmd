@@ -114,7 +114,9 @@ pvalues_nested(m0, m1, method = "2001", tests = c("SB_ML", "PALL_ML"))
 
 `PALL` is the recommended default for nested comparison. The two reductions
 need not agree in finite samples because they construct the restriction
-spectrum differently.
+spectrum differently. If the 2001 construction produces materially negative
+leading eigenvalues, semTests stops and asks you to inspect the fits or use
+method 2000; it never silently changes methods.
 
 ## GLS and ULS
 
@@ -141,12 +143,36 @@ classical ML case.
 
 For a complete-data analysis:
 
-1. verify that both lavaan fits converged and use the same data;
+1. inspect convergence and admissibility; semTests refuses nonconvergence and
+   warns when lavaan's post-estimation check fails;
 2. fit a robust test whenever lavaan does not otherwise expose `Gamma`;
 3. report the test name, base statistic, and gamma choice;
 4. retain the `semtests` provenance attribute with saved results;
-5. use the nested methods only for genuinely nested models.
+5. use nested methods only for genuinely nested models; semTests verifies fit
+   comparability but cannot prove substantive nesting.
 
 See `vignette("categorical-data", package = "semTests")` and
 `vignette("fiml-missing-data", package = "semTests")` before carrying this
 workflow to categorical or missing data.
+
+## References
+
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
+procedures for structural equation models. *Structural Equation Modeling: A
+Multidisciplinary Journal*, 32(1), 1–13.
+<https://doi.org/10.1080/10705511.2024.2372028>
+
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
+averaging: Extension to nested model comparison and Monte Carlo evaluations.
+*Behavior Research Methods*, 58, article 107.
+<https://doi.org/10.3758/s13428-026-02968-4>
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+(pp. 233–247). Kluwer Academic.
+<https://doi.org/10.1007/978-1-4615-4603-0_17>
+
+Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test
+statistic for moment structure analysis. *Psychometrika*, 66(4), 507–514.
+<https://doi.org/10.1007/BF02296192>

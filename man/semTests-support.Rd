@@ -13,26 +13,27 @@ refused at the entry point (see \code{\link[=check_supported]{check_supported()}
 written against it.
 }
 \details{
-\subsection{Single-model (\code{pvalues()})}{\tabular{lllll}{
-   Estimator \tab Data \tab Groups \tab Missing \tab Status \cr
-   ML / MLM / MLR \tab continuous \tab single or multi \tab complete \tab supported \cr
-   GLS \tab continuous \tab single or multi \tab complete \tab supported \cr
-   ULS \tab continuous \tab single or multi \tab complete \tab supported \cr
-   ML / MLR (FIML) \tab continuous \tab single only \tab FIML \tab supported \cr
-   DWLS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab experimental \cr
-   ULS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab experimental \cr
-   WLS (ADF) \tab continuous \tab single or multi \tab complete \tab degenerate (no-op) \cr
-   WLS (ADF) \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab degenerate (no-op) \cr
+\subsection{Single-model (\code{pvalues()})}{\tabular{llllll}{
+   Estimator \tab Data \tab Groups \tab Missing \tab Availability \tab Stability \cr
+   ML / MLM / MLR \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
+   GLS \tab continuous \tab single or multi \tab complete \tab available \tab experimental \cr
+   ULS \tab continuous \tab single or multi \tab complete \tab available \tab experimental \cr
+   ML / MLR (FIML) \tab continuous \tab single only \tab FIML \tab available \tab experimental \cr
+   DWLS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available \tab experimental \cr
+   ULS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available \tab experimental \cr
+   WLS (ADF) \tab continuous \tab single or multi \tab complete \tab available (no-op) \tab experimental \cr
+   WLS (ADF) \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available (no-op) \tab experimental \cr
 }
 
 }
 
-\subsection{Nested (\code{pvalues_nested()})}{\tabular{lllllll}{
-   Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Status \cr
-   ML/MLM/MLR, GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 or 2001 \tab -- \tab supported \cr
-   ML / MLR (FIML) \tab continuous \tab single only \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab supported \cr
-   DWLS/ULS/WLS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab delta only \tab experimental \cr
-   any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \cr
+\subsection{Nested (\code{pvalues_nested()})}{\tabular{llllllll}{
+   Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Availability \tab Stability \cr
+   ML/MLM/MLR \tab continuous \tab single or multi \tab complete \tab 2000 or 2001 \tab -- \tab available \tab stable \cr
+   GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 or 2001 \tab -- \tab available \tab experimental \cr
+   ML / MLR (FIML) \tab continuous \tab single only \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab available \tab experimental \cr
+   DWLS/ULS/WLS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab delta only \tab available \tab experimental \cr
+   any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \tab -- \cr
 }
 
 }
@@ -45,16 +46,32 @@ categorical DWLS/ULS/WLS fits, FIML missing-data fits, and nested comparison
 under FIML or categorical estimation) is \strong{experimental} as of 0.9.0: the
 methodology rests on the
 references but the implementation surface is newer and less Monte-Carlo-vetted,
-so the API and numerical details may change. Everything in the tables above is
-validated and tested; configurations outside them are refused at the entry
-point.
+so the API and numerical details may change. Available rows have deterministic
+implementation tests; the experimental rows have not received the same breadth
+of Monte Carlo evaluation as the paper-backed classical ML core. Configurations
+outside the tables are refused at the entry point.
+}
+
+\subsection{Fit quality and nested comparability}{
+
+Both entry points require converged lavaan fits and warn when lavaan's
+post-estimation check reports an inadmissible solution. Nested comparisons
+additionally require the same requested estimator, fitting conventions,
+observed variables, groups, sample sizes, raw data, and missingness mask.
+These checks establish comparability but cannot prove that two substantively
+different model specifications are genuinely nested.
+
+The constrained model belongs in \code{m0}. If the models are supplied in reverse
+df order, semTests warns and swaps them. For \code{method = "2001"}, materially
+negative leading eigenvalues produce an error with a recommendation to inspect
+the fits and use method 2000; semTests never silently changes the method.
 }
 
 \subsection{Statistic and gamma options}{
 
-Test names have the form \verb{(test)_(ug?)_(ml|rls?)} (e.g. \code{"SB_UG_RLS"}); see
-\code{\link[=pvalues]{pvalues()}} for the test families. Two of the options are defined only for the
-classical case:
+Test names use one of \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS},
+\code{TEST_UG_ML}, or \code{TEST_UG_RLS} (e.g. \code{"SB_UG_RLS"}); see \code{\link[=pvalues]{pvalues()}} for the
+test families. Two of the options are defined only for the classical case:
 \itemize{
 \item The \strong{RLS} statistic (\code{browne.residual.nt.model}, Browne 1974) and the
 \strong{\code{UG}} (Du-Bentler) unbiased gamma are available \strong{only} for classical
@@ -73,7 +90,8 @@ claim of generally MAR-valid inference.
 \item \strong{FIML} (missing data) uses the biased gamma and the standard statistic
 only; \code{UG} and \code{RLS} are refused. FIML requires a single group, continuous
 data, and no fixed exogenous covariates. \code{fiml.convention = "observed"}
-(the default) uses observed saturated and model information, independently
+(the default) uses observed saturated and model information, following the
+recommendation of Kenward and Molenberghs (1998), and is independently
 validated against magmaan. \code{"lavaan"} reproduces lavaan 0.7-2's inspected
 robust-test spectrum, including its expected H1 weight.
 }
@@ -89,7 +107,28 @@ p-value equals the ordinary \code{1 - pchisq(chisq, df)}. It is accepted but add
 nothing.
 }
 }
+\references{
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
+procedures for structural equation models. \emph{Structural Equation Modeling: A
+Multidisciplinary Journal}, 32(1), 1--13.
+\doi{10.1080/10705511.2024.2372028}
+
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
+averaging: Extension to nested model comparison and Monte Carlo evaluations.
+\emph{Behavior Research Methods}, 58, article 107.
+\doi{10.3758/s13428-026-02968-4}
+
+Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
+inference when data are missing at random. \emph{Statistical Science}, 13(3),
+236--247. \doi{10.1214/ss/1028905886}
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), \emph{Innovations in Multivariate Statistical Analysis}
+(pp. 233--247). Kluwer Academic.
+\doi{10.1007/978-1-4615-4603-0_17}
+}
 \seealso{
 \code{\link[=pvalues]{pvalues()}}, \code{\link[=pvalues_nested]{pvalues_nested()}}
 }
-\keyword{internal}
+\keyword{models}

@@ -5,8 +5,9 @@
 #' estimators. The recommended choices of *p*-values are included as default
 #' values. Multiple *p*-values can be returned simultaneously.
 #'
-#' The test argument is a list of character strings on the form
-#' (test)_(ug?)_(ml?), for instance, `SB_UG_RLS`.
+#' The `tests` argument is a character vector. Each element has one of the forms
+#' `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`, `TEST_UG_ML`, or `TEST_UG_RLS`;
+#' for example, `SB_UG_RLS`.
 #'
 #' * The first part of the string specifies the desired test. The supported tests are listed below.
 #' * If `UG` is included in the string the unbiased estimator of the
@@ -14,18 +15,18 @@
 #' standard biased matrix is used. There is no simple relationship between
 #' *p*-value performance and the choice of `unbiased`.
 #' * The final part specifies the chi square statistic. The `ML`
-#' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
+#' choice uses the chi square based on the normal discrepancy function (Bollen, 1989).
 #' The `RLS` choice (default) uses the reweighted least squares statistic of Browne (1974).
 #'
 #' The `peba` method is the recommended default. It partitions the eigenvalues
 #' into `j` equally sized sets (if not possible, the smallest set is incomplete),
 #' shrinks them towards their common mean, and averages within each set. Provide
-#' a list of integers `j` to partition with respect to; the best choices are
+#' a positive integer `j`, no greater than the test df; the best choices are
 #' typically about `2`--`6`. It was introduced by Foldnes, Moss, & Grønneberg
-#' (2024).
+#' (2025).
 #'
-#' `pols` is a penalized regression method with a penalization term ranging from
-#' 0 to infinity. Foldnes, Moss, & Grønneberg (2024) studied `pols=2`, which has
+#' `pols` is a penalized regression method with a finite positive penalization
+#' term. Foldnes, Moss, & Grønneberg (2025) studied `pols=2`, which has
 #' good performance in a variety of contexts.
 #'
 #' `pall` penalizes all eigenvalues in ugamma, while `all` uses all eigenvalues
@@ -43,15 +44,6 @@
 #' * `sb` Satorra-Bentler *p*-value. The *p*-value proposed by Satorra and Bentler (1994).
 #' * `ss` The scaled and shifted *p*-value proposed by Asparouhov & Muthén (2010).
 #' * `sf` The scaled *F* *p*-value proposed by Wu and Lin (2016).
-#'
-#' The `unbiased` argument is `TRUE` if the unbiased estimator of the
-#' fourth order moment matrix (Du, Bentler, 2022) is used. If `FALSE`, the
-#' standard biased matrix is used. There is no simple relationship between
-#' p-value performance and the choice of `unbiased`.
-#'
-#' The `chisq` argument controls which basic test statistic is used. The `ml`
-#' choice uses the chi square based on the normal discrepancy function (Bollen, 2014).
-#' The `rls` choice uses the reweighted least squares statistic of Browne (1974).
 #'
 #' ## Estimators and data types
 #'
@@ -79,6 +71,12 @@
 #' is **experimental** as of 0.9.0; see the Stability note in
 #' [semTests-support].
 #'
+#' Both entry points require a converged fit and warn if lavaan reports an
+#' inadmissible solution. Nested comparisons require the same requested
+#' estimator, fitting conventions, variables, groups, sample sizes, raw data,
+#' and missingness mask. semTests checks comparability but cannot prove that two
+#' substantively different specifications are genuinely nested.
+#'
 #' For FIML, `fiml.convention = "observed"` (the default) uses observed
 #' saturated and model information throughout. This is the convention
 #' independently implemented and validated in magmaan. The `"lavaan"` option
@@ -96,16 +94,22 @@
 #'
 #' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does goodness-of-fit testing on one object,
 #'    `pvalues_nested` does hypothesis testing on two nested models.
-#' @param tests A list of tests to evaluate on the
-#'    form `"(test)_(ug?)_(rls?)"`; see the default arguments and details below. The defaults are the recommended options.
-#' @param method For nested models, choose between `2000` and `2001`.
-#'   Categorical nested models support `"2000"` only. Note: `2001` and
-#'   Satorra-Bentler will not correspond with the variant in the paper.
-#' @param A.method For nested FIML models, choose `"exact"` for the literal
-#'   parameter restriction map or `"delta"` for the local moment-tangent
-#'   restriction map. `"delta"` is the default and applies to a wider range of
-#'   equivalent model parameterizations. Categorical nested models support
-#'   `"delta"` only.
+#' @param tests A non-empty character vector of tests. Each element uses one of
+#'   `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`, `TEST_UG_ML`, or
+#'   `TEST_UG_RLS`; the defaults are the recommended options. `EBA` and `pEBA`
+#'   take a positive integer number of blocks (for example, `"pEBA4"`), no
+#'   greater than the test df. `pOLS` takes a finite positive penalty (for
+#'   example, `"pOLS2"`).
+#' @param method For nested models, choose Satorra's `"2000"` construction (the
+#'   paper-recommended default) or the Satorra--Bentler `"2001"` construction.
+#'   FIML and categorical nested models support `"2000"` only. Method 2001
+#'   stops rather than silently falling back if it produces materially negative
+#'   leading eigenvalues.
+#' @param A.method For nested FIML or categorical models, choose `"exact"` for
+#'   the literal parameter restriction map or `"delta"` for the local
+#'   moment-tangent restriction map. `"delta"` is the default and applies to a
+#'   wider range of equivalent model parameterizations. Categorical nested
+#'   models support `"delta"` only.
 #' @param fiml.convention For FIML fits, use the fully observed-information
 #'   convention (`"observed"`, the default) or reproduce lavaan 0.7-2's
 #'   inspected robust-test spectrum (`"lavaan"`).
@@ -132,21 +136,26 @@
 #' pvalues_nested(m0, m1)
 #'
 #' @return A named numeric vector of p-values, of class `semTests_pvalues`,
-#'   carrying an `"semtests"` attribute that records the options used (requested
-#'   and base estimator, statistic, information type, gamma type, data type,
-#'   parameterization where applicable, and degrees of freedom).
+#'   carrying an `"semtests"` attribute that records the requested tests,
+#'   requested and base estimator, base-statistic and gamma choices,
+#'   information type, data type, parameterization where applicable, nested
+#'   method and restriction map where applicable, and degrees of freedom.
 #'
 #' @seealso [semTests-support] for the full list of supported configurations.
 #'
 #' @references
 #'
-#' Foldnes, N., Moss, J., & Grønneberg, S. (2024). Improved goodness of fit procedures for structural equation models. Structural Equation Modeling: A Multidisciplinary Journal, 1-13. https://doi.org/10.1080/10705511.2024.2372028
+#' Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit procedures for structural equation models. *Structural Equation Modeling: A Multidisciplinary Journal*, 32(1), 1--13. \doi{10.1080/10705511.2024.2372028}
 #'
-#' Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. Behavior Research Methods. https://doi.org/10.3758/s13428-026-02968-4
+#' Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. *Behavior Research Methods*, 58, article 107. \doi{10.3758/s13428-026-02968-4}
 #'
-#' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. https://psycnet.apa.org/record/1996-97111-016
+#' Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, & A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis* (pp. 233--247). Kluwer Academic. \doi{10.1007/978-1-4615-4603-0_17}
 #'
-#' Asparouhov, & Muthén. (2010). Simple second order chi-square correction. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
+#' Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test statistic for moment structure analysis. *Psychometrika*, 66(4), 507--514. \doi{10.1007/BF02296192}
+#'
+#' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. In A. von Eye & C. C. Clogg (Eds.), *Latent Variables Analysis: Applications for Developmental Research* (pp. 399--419). Sage.
+#'
+#' Asparouhov, T., & Muthén, B. O. (2010). *Simple second order chi-square correction*. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
 #'
 #' Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the Distribution of Test Statistics in Covariance Structure Analysis. Structural Equation Modeling. https://doi.org/10.1080/10705511.2015.1057733
 #'
@@ -154,9 +163,11 @@
 #'
 #' Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872-887. https://doi.org/10.1080/10705511.2022.2063870
 #'
-#' Bollen, K. A. (2014). Structural Equations with Latent Variables (Vol. 210). John Wiley & Sons. https://doi.org/10.1002/9781118619179
+#' Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist inference when data are missing at random. *Statistical Science*, 13(3), 236--247. \doi{10.1214/ss/1028905886}
 #'
-#' Browne. (1974). Generalized least squares estimators in the analysis of covariance structures. South African Statistical Journal. https://doi.org/10.10520/aja0038271x_175
+#' Bollen, K. A. (1989). *Structural Equations with Latent Variables*. John Wiley & Sons. \doi{10.1002/9781118619179}
+#'
+#' Browne, M. W. (1974). Generalized least squares estimators in the analysis of covariance structures. *South African Statistical Journal*, 8, 1--24. \doi{10.10520/AJA0038271X_175}
 pvalues <- function(object,
                     tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
                     fiml.convention = c("observed", "lavaan")) {

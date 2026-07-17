@@ -77,6 +77,13 @@ check_converged <- function(label, ...) {
 
 tests <- c("SB", "SS", "PEBA4")
 
+tests_for_df <- function(df) {
+  if (length(df) != 1L || !is.finite(df) || df < 1L) {
+    stop("Nested validation requires a positive df difference.", call. = FALSE)
+  }
+  c("SB", "SS", paste0("PEBA", min(4L, as.integer(df))))
+}
+
 fiml_data <- function() {
   data <- lavaan::HolzingerSwineford1939
   for (j in seq_len(9L)) {
@@ -138,6 +145,7 @@ validate_fiml <- function() {
     lavaan::fitmeasures(lavaan_h0, "df") -
       lavaan::fitmeasures(lavaan_h1, "df")
   )
+  nested_tests <- tests_for_df(nested_df)
   for (A.method in c("delta", "exact")) {
     semtests_nested <- semtests_internal("fiml_lambdas_nested")(
       lavaan_h0, lavaan_h1, nested_df,
@@ -146,7 +154,7 @@ validate_fiml <- function() {
     )$ug_biased
     magmaan_nested <- magmaan::fmg_nested(
       magmaan_h1, magmaan_h0,
-      tests = tests, A.method = A.method
+      tests = nested_tests, A.method = A.method
     )
     check_close(
       paste("FIML nested spectrum,", A.method),
@@ -157,7 +165,7 @@ validate_fiml <- function() {
     check_close(
       paste("FIML nested p-values,", A.method),
       semTests::pvalues_nested(
-        lavaan_h0, lavaan_h1, tests = tests,
+        lavaan_h0, lavaan_h1, tests = nested_tests,
         A.method = A.method,
         fiml.convention = "observed"
       ),
@@ -265,13 +273,14 @@ validate_categorical <- function(pairwise) {
     lavaan::fitmeasures(lavaan_h0, "df") -
       lavaan::fitmeasures(lavaan_h1, "df")
   )
+  nested_tests <- tests_for_df(nested_df)
   semtests_nested <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
     method = "2000", unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaan::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
-    tests = tests, weight = "DWLS", A.method = "delta"
+    tests = nested_tests, weight = "DWLS", A.method = "delta"
   )
   check_close(
     paste("Categorical nested spectrum,", label),
@@ -283,7 +292,7 @@ validate_categorical <- function(pairwise) {
     paste("Categorical nested p-values,", label),
     semTests::pvalues_nested(
       lavaan_h0, lavaan_h1,
-      tests = tests, method = "2000", A.method = "delta"
+      tests = nested_tests, method = "2000", A.method = "delta"
     ),
     magmaan_nested$p_value,
     pvalue_tolerance

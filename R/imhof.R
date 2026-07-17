@@ -169,6 +169,20 @@
 #' @param q Numeric scalar (or vector) of thresholds; the observed chi-square.
 #' @param lambda Numeric vector of eigenvalues (may be mixed sign).
 #' @return Numeric vector of upper-tail probabilities, length `length(q)`.
+#' @references
+#'
+#' Imhof, J. P. (1961). Computing the distribution of quadratic forms in normal
+#' variables. *Biometrika*, 48(3/4), 419--426.
+#' \doi{10.1093/biomet/48.3-4.419}
+#'
+#' Lugannani, R., & Rice, S. O. (1980). Saddle point approximation for the
+#' distribution of the sum of independent random variables. *Advances in
+#' Applied Probability*, 12(2), 475--490. \doi{10.2307/1426607}
+#'
+#' Ruben, H. (1962). Probability content of regions under spherical normal
+#' distributions, IV: The distribution of homogeneous and non-homogeneous
+#' quadratic functions of normal variables. *The Annals of Mathematical
+#' Statistics*, 33(2), 542--570. \doi{10.1214/aoms/1177704580}
 #' @keywords internal
 imhof_pvalue <- function(q, lambda) {
   lambda <- lambda[is.finite(lambda)]

@@ -23,7 +23,7 @@ test_that("pvalues_nested default (penalized, all eigenvalues) is valid", {
 })
 
 test_that("nested p-values can be requested via direct method arguments", {
-  p <- pvalues_nested_internal(m0_no_groups, m1_no_groups, tests = NULL, peba = 4)
+  p <- pvalues_nested_internal(m0_no_groups, m1_no_groups, tests = NULL, peba = 2)
   expect_true(all(p >= 0 & p <= 1))
 })
 

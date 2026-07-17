@@ -21,4 +21,18 @@ independent \eqn{Z_j \sim N(0,1)}. Drop-in replacement for
 distribution, a Lugannani-Rice saddlepoint in the far tail where the integral
 degrades.
 }
+\references{
+Imhof, J. P. (1961). Computing the distribution of quadratic forms in normal
+variables. \emph{Biometrika}, 48(3/4), 419--426.
+\doi{10.1093/biomet/48.3-4.419}
+
+Lugannani, R., & Rice, S. O. (1980). Saddle point approximation for the
+distribution of the sum of independent random variables. \emph{Advances in
+Applied Probability}, 12(2), 475--490. \doi{10.2307/1426607}
+
+Ruben, H. (1962). Probability content of regions under spherical normal
+distributions, IV: The distribution of homogeneous and non-homogeneous
+quadratic functions of normal variables. \emph{The Annals of Mathematical
+Statistics}, 33(2), 542--570. \doi{10.1214/aoms/1177704580}
+}
 \keyword{internal}

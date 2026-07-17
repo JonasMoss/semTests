@@ -2,16 +2,17 @@ Package: semTests
 Type: Package
 Title: Robust Test Statistics for Structural Equation Models
 Description: Supports penalized eigenvalue block-averaging and penalized
-    regression p-values (Foldnes, Moss, Grønneberg, 2024)
+    regression p-values (Foldnes, Moss, Grønneberg, 2025)
     <doi:10.1080/10705511.2024.2372028>, including their extension to nested
     model comparison (Foldnes, Grønneberg, Moss, 2026)
     <doi:10.3758/s13428-026-02968-4>, as well as traditional p-values such as
-    Satorra-Bentler. All p-values can be calculated using unbiased or biased
-    gamma estimates (Du, Bentler, 2022) <doi:10.1080/10705511.2022.2063870> and
-    two choices of chi square statistics. The tests apply to any
-    minimum-discrepancy estimator -- ML, GLS, ULS, and categorical
-    DWLS/ULS/WLS families -- with experimental support for categorical nested
-    comparison, categorical pairwise missingness, and full-information
+    Satorra-Bentler. For classical continuous, complete-data maximum likelihood,
+    variants can use biased or unbiased gamma estimates (Du, Bentler, 2022)
+    <doi:10.1080/10705511.2022.2063870> and either the standard or reweighted
+    least-squares statistic. The weighted chi-square framework also supports
+    minimum-discrepancy GLS, ULS, and categorical DWLS/ULS/WLS families, with
+    experimental implementation support for non-ML estimators, categorical
+    nested comparison, categorical pairwise missingness, and full-information
     maximum-likelihood (FIML) fits under missing data.
 Version: 0.9.0
 Authors@R: c(
