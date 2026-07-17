@@ -19,6 +19,33 @@ if (!requireNamespace("magmaan", quietly = TRUE)) {
     call. = FALSE
   )
 }
+required_magmaan_exports <- c(
+  "df_to_data", "fmg_tests", "fmg_nested_mixed_ordinal"
+)
+missing_magmaan_exports <- required_magmaan_exports[
+  !vapply(
+    required_magmaan_exports,
+    exists, logical(1), envir = asNamespace("magmaan"), inherits = FALSE
+  )
+]
+fmg_formals <- if (!length(missing_magmaan_exports)) {
+  names(formals(get("fmg_tests", envir = asNamespace("magmaan"))))
+} else {
+  character()
+}
+if (length(missing_magmaan_exports) || !"gamma" %in% fmg_formals) {
+  detail <- if (length(missing_magmaan_exports)) {
+    paste0(" Missing: ", paste(missing_magmaan_exports, collapse = ", "), ".")
+  } else {
+    " `fmg_tests()` has no `gamma` argument."
+  }
+  stop(
+    "The installed magmaan predates the parity R API used by this script.",
+    detail,
+    " Install the current magmaan r-package/ source and retry.",
+    call. = FALSE
+  )
+}
 
 suppressPackageStartupMessages({
   pkgload::load_all(".", quiet = TRUE, export_all = FALSE)
@@ -369,6 +396,59 @@ validate_classical_ml <- function() {
   )
 }
 
+validate_continuous_ls <- function(estimator) {
+  data <- lavaan::HolzingerSwineford1939
+  lavaan_args <- list(
+    model = fiml_h1, data = data, estimator = estimator
+  )
+  if (identical(estimator, "ULS")) {
+    lavaan_args$test <- "satorra.bentler"
+  }
+  lavaan_fit <- do.call(lavaan::cfa, lavaan_args)
+  magmaan_spec <- magmaan::model_spec(fiml_h1)
+  # lavaan's continuous LS sample covariance uses the N-1 convention. Magmaan
+  # defaults to N for data-frame fits, so request the matching public data
+  # convention explicitly instead of treating the scaling difference as an
+  # implementation discrepancy.
+  magmaan_data <- magmaan::df_to_data(
+    data, magmaan_spec, scaling = "n-1"
+  )
+  magmaan_fit <- magmaan::magmaan(
+    magmaan_spec, magmaan_data, estimator = estimator
+  )
+  check_converged(paste("Continuous", estimator), magmaan_fit)
+
+  df <- as.integer(lavaan::fitmeasures(lavaan_fit, "df"))
+  tests <- tests_for_df(df)
+  semtests_spectrum <- semtests_internal("lavaan_lambdas")(
+    lavaan_fit, df
+  )$ug_biased
+  # lavaan's ULS family defaults to robust.sem.nt (normal-theory Gamma);
+  # GLS uses empirical Gamma. Exercise both public magmaan routes.
+  gamma <- if (identical(estimator, "ULS")) "normal" else "empirical"
+  magmaan_tests <- magmaan::fmg_tests(
+    magmaan_fit, tests = tests, gamma = gamma
+  )
+  check_close(
+    paste("Continuous single spectrum,", estimator),
+    sort(semtests_spectrum),
+    sort(magmaan_tests$eigenvalues[[1L]]),
+    spectrum_tolerance, layer = "spectrum"
+  )
+  check_close(
+    paste("Continuous single p-values,", estimator),
+    semTests::pvalues(lavaan_fit, tests),
+    magmaan_tests$p_value,
+    endpoint_pvalue_tolerance, layer = "optimizer endpoint"
+  )
+  check_close(
+    paste("Continuous single base statistic,", estimator),
+    semtests_internal("make_chisqs")("ml", lavaan_fit),
+    magmaan_tests$base_statistic[1L],
+    endpoint_statistic_tolerance, layer = "optimizer endpoint"
+  )
+}
+
 validate_fiml <- function() {
   data <- fiml_data()
   lavaan_h1 <- lavaan::cfa(
@@ -573,13 +653,6 @@ validate_categorical <- function(pairwise,
       lavaan::fitmeasures(lavaan_h1, "df")
   )
   nested_tests <- tests_for_df(nested_df)
-  # magmaan 0.0.1's scaled-F transform has a one-df roundoff defect for some
-  # ULS spectra (a near-zero denominator is treated as positive and the tail
-  # collapses to one). Keep ULS/SF explicitly outside the certified surface
-  # until magmaan handles the limiting denominator with a tolerance.
-  if (identical(magmaan_estimator, "ULS") && nested_df == 1L) {
-    nested_tests <- nested_tests[!startsWith(nested_tests, "SF")]
-  }
   semtests_nested <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
     method = "2000", unbiased = 1L, df = nested_df
@@ -627,32 +700,44 @@ validate_mixed_categorical <- function() {
     ))
   }
 
-  lavaan_fit <- lavaan::cfa(
+  lavaan_h1 <- lavaan::cfa(
     categorical_h1, data,
     ordered = ordered_names, estimator = "WLSMV",
     meanstructure = TRUE
   )
-  magmaan_spec <- magmaan::model_spec(
+  lavaan_h0 <- lavaan::cfa(
+    categorical_h0, data,
+    ordered = ordered_names, estimator = "WLSMV",
+    meanstructure = TRUE
+  )
+  magmaan_spec_h1 <- magmaan::model_spec(
     categorical_h1,
     ordered = ordered_names, meanstructure = TRUE
   )
+  magmaan_spec_h0 <- magmaan::model_spec(
+    categorical_h0,
+    ordered = ordered_names, meanstructure = TRUE
+  )
   magmaan_stats <- magmaan::magmaan_core$data_mixed_ordinal_stats_from_df(
-    data, magmaan_spec,
+    data, magmaan_spec_h1,
     ordered = ordered_names, missing = "listwise",
     full_wls_weight = FALSE
   )
-  magmaan_fit <- magmaan::magmaan(
-    magmaan_spec, magmaan_stats, estimator = "DWLS"
+  magmaan_h1 <- magmaan::magmaan(
+    magmaan_spec_h1, magmaan_stats, estimator = "DWLS"
   )
-  check_converged("Mixed categorical DWLS", magmaan_fit)
+  magmaan_h0 <- magmaan::magmaan(
+    magmaan_spec_h0, magmaan_stats, estimator = "DWLS"
+  )
+  check_converged("Mixed categorical DWLS", magmaan_h1, magmaan_h0)
 
-  df <- as.integer(lavaan::fitmeasures(lavaan_fit, "df"))
+  df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
   tests <- tests_for_df(df)
   semtests_spectrum <- semtests_internal("lavaan_lambdas")(
-    lavaan_fit, df
+    lavaan_h1, df
   )$ug_biased
   magmaan_tests <- magmaan::fmg_tests_mixed_ordinal(
-    magmaan_fit, magmaan_stats,
+    magmaan_h1, magmaan_stats,
     tests = tests, weight = "DWLS"
   )
   check_close(
@@ -663,14 +748,49 @@ validate_mixed_categorical <- function() {
   )
   check_close(
     "Mixed categorical single p-values, DWLS",
-    semTests::pvalues(lavaan_fit, tests),
+    semTests::pvalues(lavaan_h1, tests),
     magmaan_tests$p_value,
     endpoint_pvalue_tolerance, layer = "optimizer endpoint"
   )
   check_close(
     "Mixed categorical base statistic, DWLS",
-    semtests_internal("make_chisqs")("ml", lavaan_fit),
+    semtests_internal("make_chisqs")("ml", lavaan_h1),
     magmaan_tests$base_statistic[1L],
+    endpoint_statistic_tolerance, layer = "optimizer endpoint"
+  )
+
+  nested_df <- as.integer(
+    lavaan::fitmeasures(lavaan_h0, "df") -
+      lavaan::fitmeasures(lavaan_h1, "df")
+  )
+  nested_tests <- tests_for_df(nested_df)
+  semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
+    lavaan_h0, lavaan_h1,
+    method = "2000", unbiased = 1L, df = nested_df
+  )$ug_biased
+  magmaan_nested <- magmaan::fmg_nested_mixed_ordinal(
+    magmaan_h1, magmaan_h0, magmaan_stats,
+    tests = nested_tests, weight = "DWLS", A.method = "delta"
+  )
+  check_close(
+    "Mixed categorical nested spectrum, DWLS",
+    sort(semtests_nested_spectrum),
+    sort(magmaan_nested$eigenvalues[[1L]]),
+    spectrum_tolerance, layer = "spectrum"
+  )
+  check_close(
+    "Mixed categorical nested p-values, DWLS",
+    semTests::pvalues_nested(
+      lavaan_h0, lavaan_h1,
+      tests = nested_tests, method = "2000", A.method = "delta"
+    ),
+    magmaan_nested$p_value,
+    endpoint_pvalue_tolerance, layer = "optimizer endpoint"
+  )
+  check_close(
+    "Mixed categorical nested statistic, DWLS",
+    semtests_internal("make_chisqs")("ml", lavaan_h0, lavaan_h1),
+    magmaan_nested$base_statistic[1L],
     endpoint_statistic_tolerance, layer = "optimizer endpoint"
   )
 }
@@ -817,6 +937,8 @@ cat(sprintf(
 
 validate_transforms()
 validate_classical_ml()
+validate_continuous_ls("GLS")
+validate_continuous_ls("ULS")
 validate_fiml()
 validate_categorical(
   pairwise = FALSE,
@@ -833,6 +955,14 @@ validate_categorical(
 validate_categorical(
   pairwise = TRUE,
   lavaan_estimator = "ULSMV", magmaan_estimator = "ULS"
+)
+validate_categorical(
+  pairwise = FALSE,
+  lavaan_estimator = "WLS", magmaan_estimator = "WLS"
+)
+validate_categorical(
+  pairwise = TRUE,
+  lavaan_estimator = "WLS", magmaan_estimator = "WLS"
 )
 validate_mixed_categorical()
 validate_multigroup_categorical()

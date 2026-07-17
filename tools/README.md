@@ -18,10 +18,13 @@ magmaan's independent C++23 implementation. It covers:
   ML and RLS base statistics, and the full shared test family;
 - classical nested method 2000 with the delta restriction map, biased gamma,
   and both ML and RLS base statistics;
+- continuous GLS and ULS single-model spectra, with lavaan's explicit
+  `N-1` covariance scaling and estimator-specific empirical/normal-theory
+  gamma convention;
 - observed-information FIML, single-model and nested (`delta` and `exact`);
-- all-ordinal DWLS and ULS, single-model and nested, with complete and
+- all-ordinal DWLS, ULS, and full WLS, single-model and nested, with complete and
   pairwise-missing data;
-- mixed continuous/ordinal single-model DWLS;
+- mixed continuous/ordinal DWLS, single-model and nested;
 - multigroup all-ordinal DWLS, single-model and nested.
 
 The fixed-spectrum layer isolates formula parity from model fitting and uses a
@@ -54,10 +57,9 @@ Passing the script certifies only the combinations above. In particular:
   spectrum;
 - semTests' FIML parity target is `fiml.convention = "observed"`, not its
   lavaan-compatibility convention;
-- mixed-ordinal nested FMG has no public magmaan wrapper yet;
-- magmaan 0.0.1's scaled-F transform has a one-df roundoff defect for some ULS
-  spectra, so `SF` is excluded from the one-df nested ULS check;
-- continuous GLS/ULS and categorical full-WLS parity are not yet certified.
+- continuous GLS/ULS is certified only for single-model tests; magmaan's
+  continuous-LS profile LRT is not the Satorra-2000 restriction-map spectrum
+  needed for nested semTests parity.
 
 High-throughput magmaan simulations can replace semTests only inside this
 boundary. Treat an omitted combination as unverified, not as implicitly
