@@ -16,11 +16,12 @@ magmaan's independent C++23 implementation. It covers:
   `EBA`, `pEBA`, and several `pOLS` penalties) on identical fixed spectra;
 - classical complete-data ML, including biased and Du--Bentler unbiased gamma,
   ML and RLS base statistics, and the full shared test family;
-- classical nested method 2000 with the delta restriction map, biased gamma,
-  and both ML and RLS base statistics;
-- continuous GLS and ULS single-model spectra, with lavaan's explicit
-  `N-1` covariance scaling and estimator-specific empirical/normal-theory
-  gamma convention;
+- classical nested method 2000 with the delta restriction map, biased and
+  Du--Bentler unbiased gamma, both ML and RLS base statistics, and a
+  multigroup mean-structure check;
+- continuous GLS, ULS, and full WLS single-model and nested spectra, with
+  lavaan's explicit `N-1` covariance scaling, estimator-specific
+  empirical/normal-theory gamma convention, and the exact WLS fitting weight;
 - observed-information FIML, single-model and nested (`delta` and `exact`);
 - all-ordinal DWLS, ULS, and full WLS, single-model and nested, with complete and
   pairwise-missing data;
@@ -52,14 +53,10 @@ Passing the script certifies only the combinations above. In particular:
 - complete-data nested parity requires `method = "2000"` and magmaan
   `A.method = "delta"`; magmaan's `"exact"` default is a different restriction
   construction;
-- magmaan does not yet implement semTests' nested Du--Bentler `UG` spectrum;
 - magmaan does not yet expose the complete-data method-2001 difference
   spectrum;
 - semTests' FIML parity target is `fiml.convention = "observed"`, not its
-  lavaan-compatibility convention;
-- continuous GLS/ULS is certified only for single-model tests; magmaan's
-  continuous-LS profile LRT is not the Satorra-2000 restriction-map spectrum
-  needed for nested semTests parity.
+  lavaan-compatibility convention.
 
 High-throughput magmaan simulations can replace semTests only inside this
 boundary. Treat an omitted combination as unverified, not as implicitly

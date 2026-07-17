@@ -79,8 +79,10 @@ beyond normal-theory ML (see `?semTests-support`).
   pairwise missingness, and multigroup ordinal models; fingerprints the
   installed magmaan code; and can emit a machine-readable result table. The
   developer documentation records the exact certified boundary and known gaps.
-* Extended that gate to continuous GLS/ULS, categorical full WLS, and nested
-  mixed-ordinal models. The current gate runs 73 checks over 708 values; it also
+* Extended that gate to continuous GLS/ULS/full WLS, categorical full WLS, and
+  nested mixed-ordinal models. It now also covers nested Du--Bentler unbiased
+  gamma (including a multigroup mean structure) and continuous GLS/ULS/WLS
+  restriction maps. The current gate runs 89 checks over 824 values; it
   exercises magmaan's explicit delta restriction map, continuous-LS gamma
   convention, and corrected one-df scaled-F limit.
 * Documentation fixes and a substantially expanded test suite.
