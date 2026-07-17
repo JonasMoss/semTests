@@ -53,3 +53,6 @@ rsconnect/
 .Rproj.user
 .Rdata
 .DS_Store
+
+# Local analyses, participant files, and generated discrepancy reports
+/workspace/
