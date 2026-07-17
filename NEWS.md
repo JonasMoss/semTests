@@ -73,4 +73,10 @@ beyond normal-theory ML (see `?semTests-support`).
   information type, gamma type, data type, and degrees of freedom) and prints a
   one-line provenance footer.
 * Added a `semTests` vignette and an `inst/CITATION`.
+* Expanded the opt-in magmaan parity harness into a simulation gate. It now
+  separates strict fixed-spectrum transform checks from independently optimized
+  end-to-end checks; covers classical ML, FIML, DWLS/ULS, mixed indicators,
+  pairwise missingness, and multigroup ordinal models; fingerprints the
+  installed magmaan code; and can emit a machine-readable result table. The
+  developer documentation records the exact certified boundary and known gaps.
 * Documentation fixes and a substantially expanded test suite.
