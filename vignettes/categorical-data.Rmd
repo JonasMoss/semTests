@@ -1,0 +1,185 @@
+---
+title: "Categorical and mixed-indicator models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Categorical and mixed-indicator models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Scope
+
+Categorical support is experimental. It covers lavaan's DWLS, ULS, and full-WLS
+families for ordered or mixed indicators, with one or several groups and with
+listwise or pairwise missingness.
+
+The correction uses the unscaled estimator statistic and the biased spectrum
+that lavaan exposes through `lavInspect(fit, "UGamma")`. The Du--Bentler `UG`
+gamma and the continuous-data `RLS` statistic do not apply.
+
+```{r setup}
+library("semTests")
+library("lavaan")
+
+model <- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+
+ordered_names <- paste0("x", 1:9)
+ordinal_data <- HolzingerSwineford1939
+ordinal_data[ordered_names] <- lapply(
+  ordinal_data[ordered_names],
+  function(x) ordered(cut(
+    x,
+    breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+    include.lowest = TRUE
+  ))
+)
+```
+
+## Overall goodness of fit
+
+lavaan's `WLSMV` shortcut fits the DWLS family and requests a
+mean-and-variance-adjusted test:
+
+```{r ordinal-fit}
+fit_ordinal <- cfa(
+  model, ordinal_data,
+  ordered = ordered_names,
+  estimator = "WLSMV"
+)
+
+pvalues(fit_ordinal, c("STD", "SB", "SS", "ALL", "PEBA4"))
+```
+
+The output provenance records both the base estimator (`DWLS`) and the
+requested estimator (`WLSMV`), together with the categorical parameterization.
+
+```{r ordinal-provenance}
+attr(pvalues(fit_ordinal, "PEBA4"), "semtests")
+```
+
+For `SB` and `SS`, the result can be sanity-checked against lavaan's public
+robust corrections. The other methods use more of the spectrum than the trace
+and squared trace used by these classical corrections.
+
+## Estimator families
+
+The accepted shortcuts include:
+
+* DWLS, WLSM, WLSMV, and WLSMVS;
+* ULS, ULSM, and ULSMV;
+* full WLS.
+
+Full WLS is a useful edge case: its weight is already the inverse asymptotic
+moment covariance, so the spectrum is the identity and every correction reduces
+to the ordinary chi-square test.
+
+## Mixed indicators
+
+Only variables named in `ordered` are treated as categorical. The remaining
+indicators stay continuous:
+
+```{r mixed-fit}
+mixed_names <- paste0("x", 1:6)
+mixed_data <- HolzingerSwineford1939
+mixed_data[mixed_names] <- lapply(
+  mixed_data[mixed_names],
+  function(x) ordered(cut(
+    x,
+    breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+    include.lowest = TRUE
+  ))
+)
+
+fit_mixed <- cfa(
+  model, mixed_data,
+  ordered = mixed_names,
+  estimator = "WLSMV"
+)
+pvalues(fit_mixed, "PEBA4")
+```
+
+The threshold, covariance, and mean components of mixed sample statistics make
+the moment space larger than in a continuous covariance-only analysis. Using
+lavaan's inspected spectrum avoids reconstructing these conventions inside
+`semTests`.
+
+## Pairwise missingness
+
+Pairwise categorical estimation is not FIML. It tells lavaan to estimate each
+sample statistic from the observations available for that pair:
+
+```{r pairwise-fit}
+pairwise_data <- ordinal_data
+set.seed(314)
+for (variable in ordered_names) {
+  pairwise_data[sample(nrow(pairwise_data), 35), variable] <- NA
+}
+
+fit_pairwise <- cfa(
+  model, pairwise_data,
+  ordered = ordered_names,
+  estimator = "WLSMV",
+  missing = "pairwise"
+)
+pvalues(fit_pairwise, c("SB", "SS", "PEBA4"))
+```
+
+This support reproduces lavaan's pairwise sample-statistic and `UGamma`
+calculation. It is not a claim that pairwise deletion is generally valid under
+MAR. Missingness assumptions should be justified separately.
+
+## Nested categorical models
+
+Categorical comparison uses Satorra's 2000 restriction-map construction with
+the delta method:
+
+```{r categorical-nested}
+constrained <- "
+  visual  =~ x1 + a*x2 + a*x3
+  textual =~ x4 + b*x5 + b*x6
+  speed   =~ x7 + x8 + x9
+"
+
+m1 <- cfa(
+  model, ordinal_data,
+  ordered = ordered_names, estimator = "WLSMV"
+)
+m0 <- cfa(
+  constrained, ordinal_data,
+  ordered = ordered_names, estimator = "WLSMV"
+)
+
+pvalues_nested(
+  m0, m1,
+  method = "2000", A.method = "delta",
+  tests = c("SB", "SS", "PALL")
+)
+```
+
+Both fits must use the same requested estimator, parameterization, variables,
+groups, raw data, and missingness mask. Method 2001 and the exact restriction
+map are intentionally rejected for this family.
+
+## Practical checks
+
+Before interpreting the result:
+
+1. verify convergence and adequate category counts;
+2. inspect sparse thresholds and pairwise observation counts;
+3. confirm that the two nested fits use identical data and options;
+4. compare `SB` and `SS` with lavaan as a trace-level sanity check;
+5. treat pairwise missingness and the experimental estimator surface as
+   analysis assumptions, not implementation details.

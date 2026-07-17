@@ -1,0 +1,199 @@
+---
+title: "FIML models and information conventions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{FIML models and information conventions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Scope
+
+`semTests` supports continuous, single-group FIML models without fixed
+exogenous covariates. FIML uses the standard likelihood-ratio statistic and the
+biased gamma estimate. The complete-data `RLS` and Du--Bentler `UG` choices are
+not defined for this family.
+
+```{r setup}
+library("semTests")
+library("lavaan")
+
+model <- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+```
+
+## A reproducible MAR-like example
+
+To make the information choice visible, missingness in `x1` and `x5` is made
+dependent on `x9`, which remains observed. This is an illustrative mechanism,
+not a missingness diagnosis for the original data.
+
+```{r missing-data}
+fiml_data <- HolzingerSwineford1939
+set.seed(20260717)
+driver <- as.numeric(scale(fiml_data$x9))
+
+missing_x1 <- runif(nrow(fiml_data)) <
+  plogis(qlogis(.20) + .8 * driver)
+missing_x5 <- runif(nrow(fiml_data)) <
+  plogis(qlogis(.20) - .8 * driver)
+
+fiml_data$x1[missing_x1] <- NA
+fiml_data$x5[missing_x5] <- NA
+colMeans(is.na(fiml_data[paste0("x", 1:9)]))
+```
+
+Fit the model using FIML:
+
+```{r fiml-fit}
+fit_observed <- cfa(
+  model, fiml_data,
+  missing = "fiml",
+  estimator = "MLR"
+)
+
+pvalues(fit_observed, c("SB", "SS", "PEBA4"))
+```
+
+## Two information choices that should not be conflated
+
+There are two related but distinct controls:
+
+1. lavaan's `information` fit option selects the model information stored and
+   used by lavaan's own inference machinery;
+2. `fiml.convention` selects the matrices used to construct the semTests
+   reference spectrum.
+
+The semTests default, `"observed"`, uses observed saturated and observed model
+information throughout. It requests these matrices explicitly, so its result
+does not silently change because the lavaan fit was created with expected
+information.
+
+The `"lavaan"` convention is a compatibility construction. For a single model
+it reproduces `lavInspect(fit, "UGamma")`; for a nested model it reproduces
+lavaan's public Satorra-2000 construction. That construction uses lavaan's H1
+weight convention and the model information selected in the fit. It is
+therefore not simply another spelling of `information = "expected"`.
+
+## Comparing observed and expected model information
+
+Fit the same model again, changing only lavaan's model-information option:
+
+```{r expected-fit}
+fit_expected <- cfa(
+  model, fiml_data,
+  missing = "fiml",
+  estimator = "MLR",
+  information = "expected"
+)
+
+max(abs(coef(fit_observed) - coef(fit_expected)))
+```
+
+The option does not change the fitted parameters here. It can change the
+reference spectrum:
+
+```{r convention-table}
+tests <- c("SB", "SS", "PEBA4")
+
+comparison <- cbind(
+  observed_fit__observed_convention = as.numeric(
+    pvalues(fit_observed, tests, fiml.convention = "observed")
+  ),
+  observed_fit__lavaan_convention = as.numeric(
+    pvalues(fit_observed, tests, fiml.convention = "lavaan")
+  ),
+  expected_fit__observed_convention = as.numeric(
+    pvalues(fit_expected, tests, fiml.convention = "observed")
+  ),
+  expected_fit__lavaan_convention = as.numeric(
+    pvalues(fit_expected, tests, fiml.convention = "lavaan")
+  )
+)
+rownames(comparison) <- tests
+format(comparison, scientific = TRUE, digits = 4)
+```
+
+The two observed-convention columns agree: semTests explicitly uses observed
+information. The lavaan-convention columns can differ because the compatibility
+path honors the model-information choice stored in the fit.
+
+Observed information reflects the realized missingness patterns and sample
+curvature. Expected information averages curvature under the fitted model.
+They can be close under favorable conditions, but missingness and non-normality
+make it unwise to assume they are interchangeable. `semTests` therefore makes
+the convention visible in both the function call and the result provenance.
+
+## Nested FIML comparison
+
+For nested models, both fits must use the same raw observations and missingness
+mask:
+
+```{r nested-fits}
+constrained <- "
+  visual  =~ x1 + a*x2 + a*x3
+  textual =~ x4 + b*x5 + b*x6
+  speed   =~ x7 + x8 + x9
+"
+
+m1 <- cfa(
+  model, fiml_data,
+  missing = "fiml", estimator = "MLR"
+)
+m0 <- cfa(
+  constrained, fiml_data,
+  missing = "fiml", estimator = "MLR"
+)
+```
+
+The default delta map compares the local moment-tangent spaces. The exact map
+uses the literal parameter restriction and requires the same underlying full
+free-parameter set:
+
+```{r nested-comparison}
+nested <- cbind(
+  observed_delta = as.numeric(pvalues_nested(
+    m0, m1, tests = tests,
+    A.method = "delta", fiml.convention = "observed"
+  )),
+  observed_exact = as.numeric(pvalues_nested(
+    m0, m1, tests = tests,
+    A.method = "exact", fiml.convention = "observed"
+  )),
+  lavaan_delta = as.numeric(pvalues_nested(
+    m0, m1, tests = tests,
+    A.method = "delta", fiml.convention = "lavaan"
+  ))
+)
+rownames(nested) <- tests
+format(nested, scientific = TRUE, digits = 4)
+```
+
+Use the delta default when equivalent models have different parameter-table
+representations. Use exact when the scientific hypothesis is naturally a
+literal restriction on a shared free-parameter set.
+
+## What to report
+
+A reproducible FIML analysis should report:
+
+* the missingness pattern and its substantive justification;
+* lavaan's estimator and `information` option;
+* the semTests `fiml.convention`;
+* the nested `A.method`, when applicable;
+* the requested p-value method and the unscaled base statistic.
+
+The provenance footer and `attr(result, "semtests")` retain these semTests
+choices with the returned p-values.

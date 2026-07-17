@@ -1,0 +1,152 @@
+---
+title: "Complete continuous-data models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete continuous-data models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Scope
+
+This vignette covers models with continuous, complete data. Normal-theory
+maximum likelihood is the mature, paper-backed core of `semTests`. Complete-data
+GLS and ULS use the same minimum-discrepancy framework but remain experimental
+in this release.
+
+```{r setup}
+library("semTests")
+library("lavaan")
+
+model <- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+data <- HolzingerSwineford1939
+```
+
+## Overall goodness of fit
+
+Fit with a robust lavaan test so the fitted object contains the asymptotic
+moment covariance needed by the eigenvalue corrections.
+
+```{r ml-fit}
+fit_ml <- cfa(model, data, estimator = "MLM")
+pvalues(fit_ml)
+```
+
+The default uses penalized eigenvalue block averaging. Several corrections can
+be requested together:
+
+```{r ml-battery}
+pvalues(
+  fit_ml,
+  c("STD_ML", "SB_ML", "SS_ML", "ALL_ML", "PEBA4_ML")
+)
+```
+
+The suffixes select three separate ingredients:
+
+* the approximation to the weighted chi-square law (`SB`, `SS`, `ALL`,
+  `PEBA4`, and others);
+* biased gamma or the unbiased Du--Bentler estimate (`UG`);
+* the standard discrepancy statistic (`ML`) or Browne's reweighted statistic
+  (`RLS`).
+
+The unbiased gamma and RLS statistic are specific to this classical
+complete-data ML setting:
+
+```{r classical-options}
+pvalues(
+  fit_ml,
+  c("SB_UG_ML", "PEBA4_UG_ML", "PEBA4_RLS", "PEBA4_UG_RLS")
+)
+```
+
+## Reading the result
+
+The printed footer records what was actually used. The same information is
+available programmatically:
+
+```{r provenance}
+result <- pvalues(fit_ml, "PEBA4_ML")
+attr(result, "semtests")
+```
+
+This is useful when results from several estimator families are collected in
+one analysis.
+
+## Nested comparison
+
+The constrained model goes first. Here two loading equalities are tested
+jointly:
+
+```{r nested-fit}
+constrained <- "
+  visual  =~ x1 + a*x2 + a*x3
+  textual =~ x4 + b*x5 + b*x6
+  speed   =~ x7 + x8 + x9
+"
+
+m1 <- cfa(model, data, estimator = "MLM")
+m0 <- cfa(constrained, data, estimator = "MLM")
+
+pvalues_nested(m0, m1)
+```
+
+Satorra's 2000 reduction is the default. The complete-data family also supports
+the 2001 construction:
+
+```{r nested-methods}
+pvalues_nested(m0, m1, method = "2000", tests = c("SB_ML", "PALL_ML"))
+pvalues_nested(m0, m1, method = "2001", tests = c("SB_ML", "PALL_ML"))
+```
+
+`PALL` is the recommended default for nested comparison. The two reductions
+need not agree in finite samples because they construct the restriction
+spectrum differently.
+
+## GLS and ULS
+
+The limiting weighted chi-square argument is not unique to ML. GLS supplies
+the required covariance directly; ULS should be fit with a robust test so
+lavaan computes it:
+
+```{r least-squares}
+fit_gls <- cfa(model, data, estimator = "GLS")
+fit_uls <- cfa(
+  model, data,
+  estimator = "ULS", test = "satorra.bentler"
+)
+
+pvalues(fit_gls, "PEBA4")
+pvalues(fit_uls, "PEBA4")
+```
+
+For GLS and ULS, use the standard statistic and biased gamma. Requests for
+`RLS` or `UG` are rejected because their current derivations belong to the
+classical ML case.
+
+## Practical checks
+
+For a complete-data analysis:
+
+1. verify that both lavaan fits converged and use the same data;
+2. fit a robust test whenever lavaan does not otherwise expose `Gamma`;
+3. report the test name, base statistic, and gamma choice;
+4. retain the `semtests` provenance attribute with saved results;
+5. use the nested methods only for genuinely nested models.
+
+See `vignette("categorical-data", package = "semTests")` and
+`vignette("fiml-missing-data", package = "semTests")` before carrying this
+workflow to categorical or missing data.
