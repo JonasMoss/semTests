@@ -173,10 +173,15 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
   # is_classic_nt(object), which dereferences object@Options) and check_supported.
   check_lavaan(object, "object")
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
-    stop("Please provide some p-values to calculate.")
+    semtests_abort(
+      "`tests` must request at least one p-value; see `?pvalues` for valid names.",
+      "semTests_error_invalid_tests"
+    )
   }
+  if (!is.null(tests)) validate_tests(tests)
   check_supported(object)
   fiml.convention <- match.arg(fiml.convention)
+  options <- NULL
   result <- if (is.null(tests)) {
     pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, fiml.convention = fiml.convention)
   } else {
@@ -189,7 +194,9 @@ pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEB
   provenance_fiml <- if (is_fiml(object)) fiml.convention else NA
   as_semtests(result, fit_provenance(object, nested = FALSE,
                                      fiml.convention = provenance_fiml,
-                                     df = unname(lavaan::fitmeasures(object, "df"))))
+                                     df = unname(lavaan::fitmeasures(object, "df")),
+                                     tests = tests,
+                                     parsed_options = options))
 }
 
 #' @rdname pvalues
@@ -221,15 +228,26 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
   check_lavaan(m1, "m1")
 
   if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
-    stop("Please provide some p-values to calculate.")
+    semtests_abort(
+      "`tests` must request at least one p-value; see `?pvalues` for valid names.",
+      "semTests_error_invalid_tests"
+    )
   }
+  if (!is.null(tests)) validate_tests(tests)
 
   m <- m0@test[[1]]$df - m1@test[[1]]$df
 
   # Check for identical df setting
   if (m == 0L) {
-    stop("Cannot test models with the same degree of freedom.")
+    semtests_abort(
+      "Nested models must have different degrees of freedom.",
+      "semTests_error_incompatible_models"
+    )
   } else if (m < 0) {
+    semtests_warn(
+      "`m0` has fewer degrees of freedom than `m1`; treating `m1` as the constrained model and swapping the inputs.",
+      "semTests_warning_model_order"
+    )
     tmp <- m1
     m1 <- m0
     m0 <- tmp
@@ -238,6 +256,7 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
 
   check_supported_nested(m0, m1, method, A.method)
 
+  options <- NULL
   result <- if (is.null(tests)) {
     pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba,
              peba = peba, pols = pols, chisq = chisq, extras = extras,
@@ -262,7 +281,8 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
   as_semtests(result, fit_provenance(m0, nested = TRUE, method = method,
                                      A.method = provenance_A_method,
                                      fiml.convention = provenance_fiml,
-                                     df = df))
+                                     df = df, tests = tests,
+                                     parsed_options = options))
 }
 
 #' Provenance of a `semTests_pvalues` object.
@@ -271,7 +291,8 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
 #' returned object is self-describing across estimators and data types.
 #' @keywords internal
 fit_provenance <- function(fit, nested, method = NA, A.method = NA,
-                           fiml.convention = NA, df = NULL) {
+                           fiml.convention = NA, df = NULL, tests = NULL,
+                           parsed_options = NULL) {
   estimator_requested <- fit@Options$estimator.orig
   if (is.null(estimator_requested) || !length(estimator_requested) ||
       is.na(estimator_requested[1])) {
@@ -294,6 +315,27 @@ fit_provenance <- function(fit, nested, method = NA, A.method = NA,
   }
   if (!is.na(A.method[1])) out$A.method <- A.method
   if (!is.na(fiml.convention[1])) out$fiml.convention <- fiml.convention
+  if (!is.null(tests) && !is.null(parsed_options)) {
+    resolved_statistic <- vapply(parsed_options, function(option) {
+      if (option$chisq == "auto") {
+        if (is_classic_nt(fit)) "rls" else "ml"
+      } else {
+        option$chisq
+      }
+    }, character(1))
+    gamma_type <- vapply(parsed_options, function(option) {
+      if (identical(option$trad, "std")) {
+        "not used"
+      } else if (option$unbiased == 2L) {
+        "unbiased"
+      } else {
+        "biased"
+      }
+    }, character(1))
+    out$requested_tests <- as.character(tests)
+    out$statistic <- stats::setNames(resolved_statistic, tests)
+    out$gamma <- stats::setNames(gamma_type, tests)
+  }
   out
 }
 
@@ -392,7 +434,6 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
                      A.method = "delta",
                      fiml.convention = "observed") {
   use_trad <- setdiff(trad, "std")
-  bad_2001 <- FALSE
   if (missing(m1)) {
     df <- lavaan::fitmeasures(m0, "df")
     chisqs <- make_chisqs(chisq, m0)
@@ -443,21 +484,27 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
       lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
     }
 
-    if(min(unlist(lambdas_list)) < 0) {
-      warning("Negative eigenvalues encountered in the first df eigenvalues of UGamma, defaulting to method = '2000'.")
-      lambdas_list <- if (is_fiml(m0) || is_fiml(m1)) {
-        fiml_lambdas_nested(
-          m0, m1, df,
-          A.method = A.method,
-          fiml.convention = fiml.convention
-        )
-      } else {
-        lambdas_nested(m0, m1, "2000", unbiased, df)
-      }
-      bad_2001 <- TRUE
+    if (min(unlist(lambdas_list)) < 0) {
+      semtests_abort(
+        paste0("Nested method 2001 produced materially negative leading ",
+               "eigenvalues. The fits may be unstable or not genuinely nested; ",
+               "inspect them and retry with `method = \"2000\"`."),
+        "semTests_error_unstable_spectrum"
+      )
     }
   }
 
+  block_options <- list(EBA = eba, pEBA = peba)
+  for (label in names(block_options)) {
+    blocks <- block_options[[label]]
+    if (!is.null(blocks) && any(blocks > df)) {
+      semtests_abort(
+        paste0(label, " cannot use more blocks than the test degrees ",
+               "of freedom (", df, ")."),
+        "semTests_error_invalid_tests"
+      )
+    }
+  }
 
   return_value <- c()
   for (i in seq_along(chisqs)) {
@@ -489,7 +536,7 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
       ptrad <- sapply(use_trad, function(x) trad_pvalue(df, chisq, lambdas, x))
       names(ptrad) <- use_trad
 
-      out <- pmax(c(ptrad, peba, ppeba, ppols), 0)
+      out <- pmin(pmax(c(ptrad, peba, ppeba, ppols), 0), 1)
       name <- if (names(lambdas_list)[[j]] == "ug_biased") "" else "_ug"
       name <- paste0(name, "_", names(chisqs)[i])
 
@@ -506,11 +553,6 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
     }
 
     return_value <- c(return_value, result)
-  }
-
-  if(!missing(m1)) {
-    attr(return_value, "bad_2001") = bad_2001
-    attr(return_value, method) = method
   }
 
   if (extras) {

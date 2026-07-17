@@ -12,7 +12,21 @@ test_that("split_input parses the two-part chi-square form", {
 })
 
 test_that("split_input rejects unrecognised test strings", {
-  expect_error(split_input("garbage"), "Invalid")
+  expect_error(
+    split_input("garbage"),
+    "Unknown test family",
+    class = "semTests_error_invalid_tests"
+  )
+  expect_error(
+    split_input("sb_nope"),
+    "Invalid test specification",
+    class = "semTests_error_invalid_tests"
+  )
+  expect_error(
+    split_input("peba0"),
+    "positive integer",
+    class = "semTests_error_invalid_tests"
+  )
 })
 
 test_that("default() returns 2 for empty input and the number otherwise", {

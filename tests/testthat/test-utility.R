@@ -13,7 +13,12 @@ test_that("split_input applied to p_values gives correct names", {
 })
 
 test_that("using 'tests' in pvalues yield the correct results.", {
-  expect_equal(
+  expect_same_pvalues <- function(actual, expected) {
+    expect_equal(as.numeric(actual), as.numeric(expected))
+    expect_equal(names(actual), names(expected))
+  }
+
+  expect_same_pvalues(
     pvalues(object, tests[1]),
     pvalues_internal(object,
       tests = NULL,
@@ -27,7 +32,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
   )
 
 
-  expect_equal(
+  expect_same_pvalues(
     pvalues(object, tests[2]),
     pvalues_internal(object,
       tests = NULL,
@@ -41,7 +46,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
   )
 
 
-  expect_equal(
+  expect_same_pvalues(
     pvalues(object, tests[3]),
     pvalues_internal(object,
       tests = NULL,
@@ -55,7 +60,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
   )
 
 
-  expect_equal(
+  expect_same_pvalues(
     pvalues(object, tests[4]),
     pvalues_internal(object,
       tests = NULL,
@@ -68,7 +73,7 @@ test_that("using 'tests' in pvalues yield the correct results.", {
     )
   )
 
-  expect_equal(
+  expect_same_pvalues(
     pvalues(object, tests[5]),
     pvalues_internal(object,
       tests = NULL,

@@ -118,11 +118,14 @@ test_that("nested missing-data (FIML) works for continuous fits", {
 
 test_that("the output object records the options it used", {
   fit  <- lavaan::cfa(hs, lavaan::HolzingerSwineford1939, estimator = "MLM")
-  info <- attr(pvalues(fit, "PEBA4_RLS"), "semtests")
+  info <- attr(pvalues(fit, c("PEBA4_RLS", "SB_UG_ML")), "semtests")
   expect_equal(info$estimator, "ML")
   expect_equal(info$data_type, "continuous")
   expect_false(info$nested)
   expect_true(is.numeric(info$df))
+  expect_equal(info$requested_tests, c("PEBA4_RLS", "SB_UG_ML"))
+  expect_equal(unname(info$statistic), c("rls", "ml"))
+  expect_equal(unname(info$gamma), c("biased", "unbiased"))
 })
 
 test_that("non-lavaan objects are rejected with a clear message", {

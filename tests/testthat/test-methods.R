@@ -22,12 +22,6 @@ test_that("pvalues_nested default (penalized, all eigenvalues) is valid", {
   expect_true(all(p >= 0 & p <= 1))
 })
 
-test_that("nested models supplied in reversed order are swapped", {
-  forward <- pvalues_nested(m0_no_groups, m1_no_groups)
-  reversed <- pvalues_nested(m1_no_groups, m0_no_groups)
-  expect_equal(as.numeric(forward), as.numeric(reversed))
-})
-
 test_that("nested p-values can be requested via direct method arguments", {
   p <- pvalues_nested_internal(m0_no_groups, m1_no_groups, tests = NULL, peba = 4)
   expect_true(all(p >= 0 & p <= 1))

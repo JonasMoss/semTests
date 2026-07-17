@@ -45,16 +45,34 @@ gamma_rescale <- function(gamma_list, m1) {
 
 #' @keywords internal
 gamma_from_lavaan <- function(m1, m0 = NULL) {
-  gamma_biased <- lavaan::lavInspect(m1, "gamma")
+  inspect_gamma <- function(fit) {
+    tryCatch(
+      lavaan::lavInspect(fit, "gamma"),
+      error = function(e) NULL
+    )
+  }
+  gamma_biased <- inspect_gamma(m1)
 
   if(is.null(gamma_biased)) {
     if (!is.null(m0)) {
-      gamma_biased <- lavaan::lavInspect(m0, "gamma")
+      gamma_biased <- inspect_gamma(m0)
       if (is.null(gamma_biased)) {
-        stop("Could not calculate the gamma matrix from `m0` or `m1`. Use either `estimator = \"MLM\"' or `test=\"satorra.bentler\"' when fitting your lavaan model.")
+        semtests_abort(
+          paste0("lavaan did not expose a Gamma/NACOV matrix for `m0` or `m1`. ",
+                 "Refit both models with a compatible robust test or estimator ",
+                 "(for example, `estimator = \"MLM\"` for ML, or ",
+                 "`test = \"satorra.bentler\"` where supported)."),
+          "semTests_error_missing_gamma"
+        )
       }
     } else {
-      stop("Could not calculate the gamma matrix from the lavaan object. Use either `estimator = \"MLM\"' or `test=\"satorra.bentler\"' when fitting your lavaan model.")
+      semtests_abort(
+        paste0("lavaan did not expose a Gamma/NACOV matrix for `object`. Refit ",
+               "the model with a compatible robust test or estimator (for ",
+               "example, `estimator = \"MLM\"` for ML, or ",
+               "`test = \"satorra.bentler\"` where supported)."),
+        "semTests_error_missing_gamma"
+      )
     }
   }
 

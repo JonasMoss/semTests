@@ -64,14 +64,52 @@ default <- function(x) {
   if (x != "") as.numeric(x) else 2
 }
 
+#' Validate public test specifications.
+#'
+#' @param tests Character vector supplied to the public `tests` argument.
+#' @return `tests`, invisibly.
+#' @keywords internal
+validate_tests <- function(tests) {
+  if (!is.character(tests) || !length(tests) || anyNA(tests) ||
+      any(!nzchar(tests))) {
+    semtests_abort(
+      "`tests` must be a non-empty character vector with no missing or empty values.",
+      "semTests_error_invalid_tests"
+    )
+  }
+  invisible(tests)
+}
+
 #' Split string into options.
 #' @param string Input string
 #' @keywords internal
 
 split_input <- function(string) {
-
+  validate_tests(string)
+  if (length(string) != 1L) {
+    semtests_abort(
+      "`split_input()` requires exactly one test specification.",
+      "semTests_error_invalid_tests"
+    )
+  }
   string <- tolower(string)
-  splitted <- strsplit(string, "_")[[1]]
+  splitted <- strsplit(string, "_", fixed = TRUE)[[1]]
+  valid_suffix <- length(splitted) == 1L ||
+    (length(splitted) == 2L &&
+       splitted[2L] %in% c("ug", "ml", "rls")) ||
+    (length(splitted) == 3L &&
+       splitted[2L] == "ug" &&
+       splitted[3L] %in% c("ml", "rls"))
+  if (!valid_suffix) {
+    semtests_abort(
+      paste0(
+        "Invalid test specification `", string, "`. Use ",
+        "`TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`, `TEST_UG_ML`, or ",
+        "`TEST_UG_RLS`; see `?pvalues`."
+      ),
+      "semTests_error_invalid_tests"
+    )
+  }
   trad <- peba <- eba <- pols <- NULL
   unbiased <- 1
   chisq <- "auto"   # resolved per fit in make_chisqs (rls if classical NT, else ml)
@@ -88,16 +126,38 @@ split_input <- function(string) {
     }
   }
 
+  numeric_parameter <- function(prefix, integer = FALSE) {
+    value_string <- substring(type, nchar(prefix) + 1L)
+    value <- if (value_string == "") 2 else suppressWarnings(as.numeric(value_string))
+    valid <- length(value) == 1L && is.finite(value) && value > 0
+    if (integer) {
+      valid <- valid && value == floor(value) && value <= .Machine$integer.max
+    }
+    if (!valid) {
+      requirement <- if (integer) "a positive integer" else "a finite positive number"
+      semtests_abort(
+        paste0("Invalid test specification `", string, "`: `", prefix,
+               "` requires ", requirement, "."),
+        "semTests_error_invalid_tests"
+      )
+    }
+    if (integer) as.integer(value) else value
+  }
+
   if (startsWith(type, "peba")) {
-    peba <- default(substring(type, 5))
+    peba <- numeric_parameter("peba", integer = TRUE)
   } else if (startsWith(type, "eba")) {
-    eba <- default(substring(type, 4))
+    eba <- numeric_parameter("eba", integer = TRUE)
   } else if (startsWith(type, "pols")) {
-    pols <- default(substring(type, 5))
+    pols <- numeric_parameter("pols")
   } else if (type %in% c("std", "sb", "sf", "ss", "all", "pall")) {
     trad <- type
   } else {
-    stop("Invalid input string in `test`.")
+    semtests_abort(
+      paste0("Unknown test family in `", string,
+             "`. See `?pvalues` for the supported test names."),
+      "semTests_error_invalid_tests"
+    )
   }
 
   list(
