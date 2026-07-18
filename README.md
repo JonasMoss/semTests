@@ -46,7 +46,10 @@ model <- "visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9"
 object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
-pvalues(object)
+pvalues(object, tests = c("SB", "SS", "PEBA4"))
+#>       sb_rls       ss_rls    peba4_rls
+#> 1.726558e-07 9.251198e-07 5.165737e-07
+#> estimator: ML (MLM) | data: continuous | information: expected | df: 24
 ```
 
 For a nested comparison, pass the constrained model first:
@@ -57,7 +60,10 @@ constrained <- "visual  =~ x1 + x2 + x3
                 speed   =~ x7 + x8 + x9"
 m1 <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 m0 <- lavaan::cfa(constrained, lavaan::HolzingerSwineford1939, estimator = "MLM")
-pvalues_nested(m0, m1)
+pvalues_nested(m0, m1, tests = c("SB", "SS", "PEBA2"))
+#>     sb_rls     ss_rls  peba2_rls
+#> 0.01023556 0.01092401 0.01051737
+#> estimator: ML (MLM) | data: continuous | information: expected | df: 2 | nested (method 2000)
 ```
 
 The fits need to use the same data, estimator, and fitting choices. If
@@ -75,6 +81,9 @@ set.seed(313)
 HS$x1[sample(nrow(HS), 60)] <- NA
 fit_fiml <- lavaan::cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
+#>     peba4_ml
+#> 3.301168e-07
+#> estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed
 ```
 
 Ordered indicators work in much the same way:
@@ -88,6 +97,9 @@ HSord[ordered_names] <- lapply(
 )
 fit_ordinal <- lavaan::cfa(model, HSord, ordered = ordered_names)
 pvalues(fit_ordinal)
+#>     peba4_ml
+#> 7.156389e-06
+#> estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24
 ```
 
 ## More examples
