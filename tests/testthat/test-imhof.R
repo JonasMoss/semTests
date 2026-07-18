@@ -206,6 +206,33 @@ test_that(".saddle_one handles the removable singularity at the mean", {
   expect_true(is.finite(.saddle_root(10, c(3, 2, 1))))
 })
 
+test_that("numerical helpers fail cleanly outside the distribution support", {
+  failed_integral <- .imhof_one(
+    1, c(2, -1),
+    subdivisions = -1L
+  )
+  expect_false(failed_integral$ok)
+  expect_true(is.na(failed_integral$prob))
+
+  positive <- c(3, 2, 1)
+  negative <- -positive
+  expect_true(is.na(.saddle_root(-1, positive)))
+  expect_true(is.na(.saddle_root(1, negative)))
+  expect_true(is.na(.saddle_one(-1, positive)))
+})
+
+test_that("imhof_pvalue uses and bounds the saddlepoint fallback", {
+  testthat::local_mocked_bindings(
+    .imhof_one = function(...) list(prob = 0.25, ok = FALSE),
+    .saddle_one = function(q, ...) if (q == 1) 1.2 else NA_real_,
+    .package = "semTests"
+  )
+  expect_equal(
+    imhof_pvalue(c(1, 2), c(2, -1)),
+    c(1, 0.25)
+  )
+})
+
 test_that(".imhof_integrand has the correct u -> 0 limit", {
   lambda <- c(2, 1, 0.5); q <- 1.5
   v <- .imhof_integrand(c(0, 0.3), q, lambda)

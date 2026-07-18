@@ -213,7 +213,10 @@ imhof_pvalue <- function(q, lambda) {
     im <- .imhof_one(qi, lambda)
     if (im$ok) return(im$prob)
     sp <- .saddle_one(qi, lambda)
-    if (is.finite(sp)) min(max(sp, 0), 1) else im$prob
+    if (is.finite(sp)) {
+      return(min(max(sp, 0), 1))
+    }
+    im$prob
   }
   vapply(q, one, numeric(1))
 }
