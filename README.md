@@ -7,43 +7,38 @@
 [![R-CMD-check](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/JonasMoss/semTests/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JonasMoss/semTests?branch=main)
-[![Project Status: Active – The project has reached a stable, usable
-state and is being actively
-developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Project Status:
+Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-An R package for robust test statistics in structural equation models,
-covering both overall goodness of fit testing and nested model
-comparison. Built on top of `lavaan`. It implements the penalized
-eigenvalue block averaging and penalized regression *p* values of
-Foldnes, Moss, & Grønneberg (2025), together with their extension to
-nested model comparison in Foldnes, Grønneberg, & Moss (2026).
+An R package for robust tests of overall fit and nested model
+comparisons in structural equation models. It works with `lavaan` and
+implements the penalized eigenvalue block averaging and penalized
+regression *p* values of Foldnes, Moss, and Grønneberg (2025), along
+with their extension to nested model comparison in Foldnes, Grønneberg,
+and Moss (2026).
 
-The eigenvalue correction targets the limiting null law of the test
-statistic, a weighted sum of chi squares. This law holds for any minimum
-discrepancy estimator, so support now reaches beyond normal theory ML to
-GLS, ULS, categorical DWLS/ULS/WLS families, and FIML missing data fits.
-See `?semTests-support` for the full validated matrix.
+**News.** You can now use `semTests` with GLS and ULS, categorical DWLS,
+ULS, or WLS models, and continuous FIML fits. Nested comparisons are
+included too. See `?semTests-support` for the details.
 
 ## Installation
 
-Either install from `CRAN`,
+Install the released version from CRAN:
 
 ``` r
 install.packages("semTests")
 ```
 
-Or install the development version using the following command inside
-`R`.
+Or try the development version:
 
 ``` r
 # install.packages("remotes")
 remotes::install_github("JonasMoss/semTests")
 ```
 
-## Usage
+## Examples
 
-Call the `library` function, create a `lavaan` model, and run the
-`pvalues` function.
+Here is a quick CFA:
 
 ``` r
 library("semTests")
@@ -52,13 +47,9 @@ model <- "visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9"
 object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues(object)
-#>    peba4_rls
-#> 5.165737e-07
-#> estimator: ML (MLM) | data: continuous | information: expected | df: 24
 ```
 
-For nested model comparison, fit the constrained and unconstrained
-models and pass both to `pvalues_nested`, the constrained model first.
+For a nested comparison, pass the constrained model first:
 
 ``` r
 constrained <- "visual  =~ x1 + x2 + x3
@@ -67,52 +58,16 @@ constrained <- "visual  =~ x1 + x2 + x3
 m1 <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 m0 <- lavaan::cfa(constrained, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues_nested(m0, m1)
-#> pall_ug_ml
-#>  0.0166158
-#> estimator: ML (MLM) | data: continuous | information: expected | df: 2 | nested (method 2000)
 ```
 
-Nested fits must use the same estimator, fitting conventions, variables,
-groups, sample sizes, raw data, and missingness mask. Reversed inputs
-produce a warning before semTests swaps them; these checks establish
-comparability but cannot prove substantive nesting.
+The fits need to use the same data, estimator, and fitting choices. If
+they arrive in the wrong order, `semTests` lets you know and swaps them.
 
-## Supported analysis families
-
-| Family | Single-model | Nested | Stability |
-|:---|:---|:---|:---|
-| Continuous, complete-data ML/MLM/MLR | yes | methods 2000/2001 | stable |
-| Continuous, complete-data GLS/ULS | yes | methods 2000/2001 | experimental |
-| Continuous single-group FIML | yes | method 2000; delta/exact map | experimental |
-| Ordered/mixed DWLS/ULS/WLS | yes | method 2000; delta map | experimental |
-
-All fits must be converged. FIML excludes fixed exogenous covariates;
-categorical fits may use listwise or pairwise missingness. The `RLS`
-statistic and unbiased `UG` gamma are available only for classical
-continuous, complete-data ML. See `?semTests-support` for the
-authoritative matrix and the ADF/WLS no-op case.
-
-Missing data is handled through full information maximum likelihood. Fit
-the model with `missing = "fiml"` and pass it to `pvalues` as usual.
-FIML uses the biased gamma and the standard statistic, so the `UG`/`RLS`
-suffixes do not apply. The default `fiml.convention = "observed"` uses
-observed saturated and model information throughout, following the
-observed-information recommendation for likelihood inference under MAR
-in Kenward and Molenberghs (1998) and Savalei (2010; see also Savalei
-and Rosseel, 2022). In a focused 48-cell study with 200,000 replications
-per cell, the full observed Hessian with empirical-score sandwich
-covariance had the smallest mean coverage error under correct
-specification and was clearly better under nonnormality and
-misspecification (Yuan and Bentler, 2000). This parameter-inference
-study supports the observed-information building block; it is not itself
-a calibration study of the semTests goodness-of-fit p-values. See the
-[FIML vignette](vignettes/fiml-missing-data.Rmd) for the design,
-coverage table, and caveats.
-
-Use `fiml.convention = "lavaan"` to reproduce lavaan 0.7-2’s inspected
-robust-test spectrum; the convention is printed with the result. The
-same option is available in `pvalues_nested()`, where
-`A.method = "delta"` is the default restriction map.
+Missing values are fine too. Fit the model with `missing = "fiml"` and
+call `pvalues()` as usual. `semTests` uses observed information by
+default, following Savalei (2010). The [FIML
+vignette](vignettes/fiml-missing-data.Rmd) explains this choice and
+shows the other options.
 
 ``` r
 HS <- lavaan::HolzingerSwineford1939
@@ -120,23 +75,9 @@ set.seed(313)
 HS$x1[sample(nrow(HS), 60)] <- NA
 fit_fiml <- lavaan::cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
-#>     peba4_ml
-#> 3.301168e-07
-#> estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed
 ```
 
-For a single FIML model, the lavaan convention reproduces
-`lavInspect(fit_fiml, "UGamma")`. It does not necessarily reproduce the
-scalar Yuan–Bentler–Mplus test stored by a default MLR fit. For nested
-FIML models, the lavaan convention reproduces the public Satorra-2000
-difference test.
-
-Categorical and mixed-indicator models use lavaan’s inspected `UGamma`
-directly. The DWLS, ULS, and full-WLS estimator families are supported
-experimentally, including single- and multigroup models and listwise or
-pairwise missingness. Pairwise support reproduces lavaan’s pairwise
-sample-statistic calculation; it is not FIML and is not a claim of
-generally MAR-valid inference.
+Ordered indicators work in much the same way:
 
 ``` r
 HSord <- lavaan::HolzingerSwineford1939
@@ -147,32 +88,17 @@ HSord[ordered_names] <- lapply(
 )
 fit_ordinal <- lavaan::cfa(model, HSord, ordered = ordered_names)
 pvalues(fit_ordinal)
-#>     peba4_ml
-#> 7.156389e-06
-#> estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24
 ```
 
-Nested categorical models support the Satorra-2000 delta-map
-construction:
-
-``` r
-fit_ordinal1 <- lavaan::cfa(model, HSord, ordered = ordered_names)
-fit_ordinal0 <- lavaan::cfa(constrained, HSord, ordered = ordered_names)
-pvalues_nested(
-  fit_ordinal0, fit_ordinal1,
-  method = "2000", A.method = "delta"
-)
-#>   pall_ml
-#> 0.1812666
-#> estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 2 | nested (method 2000, A.method delta)
-```
-
-## Vignettes
+## More examples
 
 - `vignette("continuous-data", package = "semTests")`
 - `vignette("categorical-data", package = "semTests")`
 - `vignette("fiml-missing-data", package = "semTests")`
-- `vignette("semTests", package = "semTests")` for the compact overview
+- `vignette("semTests", package = "semTests")`
+
+The help page `?semTests-support` gives the exact supported
+combinations.
 
 ## References
 
@@ -186,49 +112,12 @@ block averaging: Extension to nested model comparison and Monte Carlo
 evaluations. Behavior Research Methods, 58, article 107.
 <https://doi.org/10.3758/s13428-026-02968-4>
 
-Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics
-Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1),
-101–114. <https://doi.org/10.1080/10705511.2017.1373021>
-
-Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free
-Estimator Reliably Improves SEM Statistics for Nonnormal Data.
-Structural Equation Modeling: A Multidisciplinary Journal, 29(6),
-872–887. <https://doi.org/10.1080/10705511.2022.2063870>
-
-Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
-inference when data are missing at random. Statistical Science, 13(3),
-236–247. <https://doi.org/10.1214/ss/1028905886>
-
 Savalei, V. (2010). Expected versus observed information in SEM with
 incomplete normal and nonnormal data. Psychological Methods, 15(4),
 352–367. <https://doi.org/10.1037/a0020143>
 
-Savalei, V., & Rosseel, Y. (2022). Computational options for standard
-errors and test statistics with incomplete normal and nonnormal data in
-SEM. Structural Equation Modeling, 29(2), 163–181.
-<https://doi.org/10.1080/10705511.2021.1877548>
-
-Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
-analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
-A. Satorra (Eds.), Innovations in Multivariate Statistical Analysis
-(pp. 233–247). Kluwer Academic.
-<https://doi.org/10.1007/978-1-4615-4603-0_17>
-
-Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square
-test statistic for moment structure analysis. Psychometrika, 66(4),
-507–514. <https://doi.org/10.1007/BF02296192>
-
-Rosseel, Y. (2012). lavaan: An R package for structural equation
-modeling. Journal of Statistical Software, 48(2), 1–36.
-<https://doi.org/10.18637/jss.v048.i02>
-
-Yuan, K.-H., & Bentler, P. M. (2000). Three likelihood-based methods for
-mean and covariance structure analysis with nonnormal missing data.
-Sociological Methodology, 30, 165–200.
-<https://doi.org/10.1111/0081-1750.00078>
-
 ## How to Contribute or Get Help
 
-If you encounter a bug, have a feature request, or need help, open a
-[GitHub issue](https://github.com/JonasMoss/semTests/issues). Create a
-pull request to contribute.
+Found a bug or have an idea? Open a [GitHub
+issue](https://github.com/JonasMoss/semTests/issues). Pull requests are
+welcome too.
