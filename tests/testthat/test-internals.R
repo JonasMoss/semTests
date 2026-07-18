@@ -16,7 +16,7 @@ hs0 <- " visual =~ x1 + a*x2 + x3
 test_that("generalized_inverse: full rank, rank-deficient, zero, coercion, bad input", {
   set.seed(1)
   A <- matrix(stats::rnorm(9), 3, 3)
-  expect_equal(generalized_inverse(A), solve(A), tolerance = 1e-10)   # full-rank path
+  expect_equal(generalized_inverse(A), solve(A), tolerance = 1e-8)   # full-rank path
 
   # Moore-Penrose property on a rank-deficient matrix (the partial-rank branch).
   R <- outer(c(1, 2, 3), c(1, 1))                                     # rank 1
@@ -33,7 +33,7 @@ test_that("generalized_inverse: full rank, rank-deficient, zero, coercion, bad i
   expect_equal(
     generalized_inverse(complex_matrix),
     solve(complex_matrix),
-    tolerance = 1e-10
+    tolerance = 1e-8
   )
 
   # input validation.

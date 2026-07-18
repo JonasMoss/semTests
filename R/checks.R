@@ -67,8 +67,8 @@ check_fit_quality <- function(fit, arg = "object") {
 # valid for. lavaan reports the *base* estimator here, so the MLM/MLR/WLSMV
 # shortcuts all collapse to ML/DWLS; the supported surface is documented in
 # `?semTests-support`.
-.supported_estimators <- c("ML", "GLS", "ULS", "DWLS", "WLS")
-.supported_categorical_estimators <- c("DWLS", "ULS", "WLS")
+.supported_estimators <- c("ML", "GLS", "ULS", "DWLS")
+.supported_categorical_estimators <- c("DWLS", "ULS")
 
 #' Reject a fit whose configuration is outside the supported surface.
 #'
@@ -77,8 +77,8 @@ check_fit_quality <- function(fit, arg = "object") {
 #' and categorical estimators, complete data, and single-group FIML -- and stops
 #' with a pointer to `?semTests-support` otherwise. Statistic- and gamma-specific
 #' rejections (the normal-theory-only RLS statistic and `UG` gamma) depend on the
-#' parsed test string and stay with the code that consumes them (`make_chisqs()`,
-#' [gamma()]); this gate is purely fit-shape.
+#' parsed test string and stay with the code that consumes them (`make_chisqs()`
+#' and [gamma()]). This gate checks the shape of the fit.
 #'
 #' @param fit A fitted `lavaan` object.
 #' @return `fit`, invisibly.
@@ -87,15 +87,24 @@ check_supported <- function(fit, arg = "object") {
   check_lavaan(fit, arg)
   check_fit_quality(fit, arg)
   est <- fit@Options$estimator
+  if (identical(est, "WLS")) {
+    stop("Estimator 'WLS' (full weighted least squares / ADF) is not supported. ",
+         "Its weight matrix is already the inverse of the asymptotic covariance ",
+         "of the sample statistics, so the eigenvalue correction is exactly the ",
+         "identity and every robust p-value would equal the ordinary ",
+         "1 - pchisq(chisq, df). Fit a DWLS/ULS family (for example ",
+         "estimator = \"WLSMV\") for a non-degenerate robust test, or read the ",
+         "standard chi-square off the fit directly. See `?semTests-support`.",
+         call. = FALSE)
+  }
   if (!est %in% .supported_estimators) {
     stop("Estimator '", est, "' is not supported. The supported estimators are ",
-         "ML/MLM/MLR, GLS, ULS, and categorical DWLS/ULS/WLS families ",
-         "(ADF/WLS is a ",
-         "degenerate exception). See `?semTests-support`.", call. = FALSE)
+         "ML/MLM/MLR, GLS, ULS, and the categorical DWLS/ULS families. ",
+         "See `?semTests-support`.", call. = FALSE)
   }
   if (isTRUE(fit@Model@categorical)) {
     if (!est %in% .supported_categorical_estimators) {
-      stop("Categorical fits currently support lavaan's DWLS, ULS, and WLS ",
+      stop("Categorical fits currently support lavaan's DWLS and ULS ",
            "estimator families; this fit uses '", est,
            "'. See `?semTests-support`.", call. = FALSE)
     }
@@ -120,9 +129,9 @@ check_supported <- function(fit, arg = "object") {
 #' Verify that two fits describe one comparable nested problem.
 #'
 #' This gate checks fit-level compatibility that is required regardless of data
-#' type. It cannot prove substantive nesting, but it prevents a difference test
-#' across different samples, variables, groups, estimators, or information
-#' conventions.
+#' type. It prevents a difference test across different samples, variables,
+#' groups, estimators, or information conventions. Substantive nesting still
+#' needs an argument based on the model specifications.
 #' @keywords internal
 check_nested_pair <- function(m0, m1) {
   same <- function(x, y) {
@@ -209,8 +218,8 @@ check_categorical_nested_pair <- function(m0, m1) {
 #'
 #' @param m0,m1 Two nested `lavaan` objects (canonical order: `m0` constrained).
 #' @param method The nested reduction method, `"2000"` or `"2001"`.
-#' @param A.method The FIML restriction map, `"exact"` or `"delta"` (validated
-#'   upstream; accepted here for signature completeness).
+#' @param A.method The FIML restriction map, `"exact"` or `"delta"`. It is
+#'   validated upstream and accepted here for signature completeness.
 #' @return `TRUE`, invisibly.
 #' @keywords internal
 check_supported_nested <- function(m0, m1, method, A.method = "delta") {
@@ -258,6 +267,13 @@ check_supported_nested <- function(m0, m1, method, A.method = "delta") {
       stop("Nested FIML tests support method = \"2000\" only. ",
            "See `?semTests-support`.", call. = FALSE)
     }
+  } else if (method != "2000") {
+    # Continuous complete-data nesting: method 2001 is hidden in this release
+    # (it cannot yet be cross-validated against magmaan). The internal reduction
+    # in gamma.R still understands it, so reinstating is a one-line change.
+    stop("Nested method \"2001\" is not available in this release. Use ",
+         "method = \"2000\" (the paper-recommended default). ",
+         "See `?semTests-support`.", call. = FALSE)
   }
   check_nested_pair(m0, m1)
   invisible(TRUE)

@@ -8,8 +8,8 @@ check_nested_pair(m0, m1)
 }
 \description{
 This gate checks fit-level compatibility that is required regardless of data
-type. It cannot prove substantive nesting, but it prevents a difference test
-across different samples, variables, groups, estimators, or information
-conventions.
+type. It prevents a difference test across different samples, variables,
+groups, estimators, or information conventions. Substantive nesting still
+needs an argument based on the model specifications.
 }
 \keyword{internal}

@@ -150,7 +150,7 @@ test_that("reversed nested inputs are swapped with an explicit warning", {
   expect_equal(as.numeric(forward), as.numeric(reversed))
 })
 
-test_that("method 2001 never silently falls back to method 2000", {
+test_that("a materially negative nested spectrum is rejected", {
   testthat::local_mocked_bindings(
     lambdas_nested = function(...) list(ug_biased = c(1, -0.1)),
     .package = "semTests"
@@ -158,9 +158,9 @@ test_that("method 2001 never silently falls back to method 2000", {
   expect_error(
     pvalues_nested(
       m0_no_groups, m1_no_groups,
-      method = "2001", tests = "SB_ML"
+      method = "2000", tests = "SB_ML"
     ),
-    "retry with `method = \"2000\"`",
+    "materially negative",
     class = "semTests_error_unstable_spectrum"
   )
 })

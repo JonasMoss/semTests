@@ -8,7 +8,7 @@ is_classic_nt(fit)
 }
 \description{
 The Du-Bentler unbiased gamma and the RLS (\code{browne.residual.nt.model})
-statistic are only defined here; off this case the eigenvalue machinery uses
-the biased gamma and the estimator's own (uncorrected) statistic.
+statistic are defined here. Other families use the biased gamma and the
+estimator's own uncorrected statistic.
 }
 \keyword{internal}

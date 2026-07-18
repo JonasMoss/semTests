@@ -18,10 +18,11 @@ knitr::opts_chunk$set(
 
 ## Scope
 
-This vignette covers models with continuous, complete data. Normal-theory
-maximum likelihood is the mature, paper-backed core of `semTests`. Complete-data
-GLS and ULS use the same minimum-discrepancy framework but remain experimental
-in this release.
+This guide covers models with continuous, complete data. Normal-theory maximum
+likelihood is the mature, paper-backed core of `semTests`. Complete-data GLS and
+ULS use the same minimum-discrepancy framework and are validated against an
+independent implementation.
+We begin with ML because it offers the richest set of options.
 
 ```{r setup}
 library("semTests")
@@ -58,10 +59,10 @@ pvalues(
 The suffixes select three separate ingredients:
 
 * the approximation to the weighted chi-square law (`SB`, `SS`, `ALL`,
-  `PEBA4`, and others);
-* biased gamma or the unbiased Du--Bentler estimate (`UG`);
+  `PEBA4`, and others)
+* biased gamma or the unbiased Du--Bentler estimate (`UG`)
 * the standard discrepancy statistic (`ML`) or Browne's reweighted statistic
-  (`RLS`).
+  (`RLS`)
 
 The unbiased gamma and RLS statistic are specific to this classical
 complete-data ML setting:
@@ -104,24 +105,20 @@ m0 <- cfa(constrained, data, estimator = "MLM")
 pvalues_nested(m0, m1)
 ```
 
-Satorra's 2000 reduction is the default. The complete-data family also supports
-the 2001 construction:
+Satorra's 2000 reduction is the method used for nested comparison:
 
 ```{r nested-methods}
 pvalues_nested(m0, m1, method = "2000", tests = c("SB_ML", "PALL_ML"))
-pvalues_nested(m0, m1, method = "2001", tests = c("SB_ML", "PALL_ML"))
 ```
 
-`PALL` is the recommended default for nested comparison. The two reductions
-need not agree in finite samples because they construct the restriction
-spectrum differently. If the 2001 construction produces materially negative
-leading eigenvalues, semTests stops and asks you to inspect the fits or use
-method 2000; it never silently changes methods.
+`PALL` is the recommended default for nested comparison. (The Satorra--Bentler
+2001 construction is temporarily unavailable in this release pending further
+validation; `method = "2001"` is refused with a pointer to `"2000"`.)
 
 ## GLS and ULS
 
-The limiting weighted chi-square argument is not unique to ML. GLS supplies
-the required covariance directly; ULS should be fit with a robust test so
+The limiting weighted chi-square argument also applies beyond ML. GLS supplies
+the required covariance directly. ULS should be fit with a robust test so
 lavaan computes it:
 
 ```{r least-squares}
@@ -141,15 +138,15 @@ classical ML case.
 
 ## Practical checks
 
-For a complete-data analysis:
+A little housekeeping goes a long way in a complete-data analysis:
 
-1. inspect convergence and admissibility; semTests refuses nonconvergence and
-   warns when lavaan's post-estimation check fails;
-2. fit a robust test whenever lavaan does not otherwise expose `Gamma`;
-3. report the test name, base statistic, and gamma choice;
-4. retain the `semtests` provenance attribute with saved results;
-5. use nested methods only for genuinely nested models; semTests verifies fit
-   comparability but cannot prove substantive nesting.
+1. Inspect convergence and admissibility. `semTests` refuses nonconvergence and
+   warns when lavaan's post-estimation check fails.
+2. Request a robust lavaan test whenever the fit would otherwise omit `Gamma`.
+3. Report the test name, base statistic, and gamma choice.
+4. Keep the `semtests` provenance attribute with saved results.
+5. Use nested methods for genuinely nested models. `semTests` verifies fit
+   comparability, while substantive nesting remains part of the model argument.
 
 See `vignette("categorical-data", package = "semTests")` and
 `vignette("fiml-missing-data", package = "semTests")` before carrying this

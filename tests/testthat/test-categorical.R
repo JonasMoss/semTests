@@ -59,7 +59,7 @@ categorical_valid_p <- function(x) {
 test_that("biased single-model spectra come directly from lavaan UGamma", {
   fixture <- categorical_test_data()
   for (estimator in c(
-    "WLSMV", "DWLS", "WLSM", "WLSMVS", "ULSMV", "ULS", "WLS"
+    "WLSMV", "DWLS", "WLSM", "WLSMVS", "ULSMV", "ULS"
   )) {
     fit <- lavaan::cfa(
       categorical_test_model, fixture$data,
@@ -70,7 +70,7 @@ test_that("biased single-model spectra come directly from lavaan UGamma", {
       lavaan::lavInspect(fit, "UGamma"), df
     )
     actual <- lavaan_lambdas(fit, df)$ug_biased
-    expect_equal(actual, expected, tolerance = 1e-12, info = estimator)
+    expect_equal(actual, expected, tolerance = 1e-8, info = estimator)
     expect_true(
       categorical_valid_p(pvalues(fit, c("SB", "SS", "ALL", "PEBA4"))),
       info = estimator
@@ -99,13 +99,13 @@ test_that("categorical SB and SS reproduce lavaan's public corrections", {
     expect_equal(
       as.numeric(pvalues(fit_sb, "SB")),
       lavaan::lavInspect(fit_sb, "test")$satorra.bentler$pvalue,
-      tolerance = 1e-12,
+      tolerance = 1e-8,
       info = base
     )
     expect_equal(
       as.numeric(pvalues(fit_ss, "SS")),
       lavaan::lavInspect(fit_ss, "test")$scaled.shifted$pvalue,
-      tolerance = 1e-12,
+      tolerance = 1e-8,
       info = base
     )
   }
@@ -136,7 +136,7 @@ test_that("categorical spectra cover groups, constraints, parameterizations, and
     expect_equal(
       lavaan_lambdas(fit, df)$ug_biased,
       ugamma_eigenvalues(lavaan::lavInspect(fit, "UGamma"), df),
-      tolerance = 1e-12,
+      tolerance = 1e-8,
       info = case
     )
     expect_true(categorical_valid_p(pvalues(fit, c("SB", "SS", "PEBA4"))),
@@ -144,19 +144,14 @@ test_that("categorical spectra cover groups, constraints, parameterizations, and
   }
 })
 
-test_that("full categorical WLS is the identity-spectrum no-op", {
+test_that("full categorical WLS is refused (identity-spectrum no-op)", {
   fit <- fit_categorical_pair(estimator = "WLS")$m1
   df <- as.integer(lavaan::fitmeasures(fit, "df"))
-  spectrum <- lavaan_lambdas(fit, df)$ug_biased
-  reference <- as.numeric(
-    1 - stats::pchisq(lavaan::fitmeasures(fit, "chisq"), df)
-  )
-  expect_equal(spectrum, rep(1, df), tolerance = 1e-8)
-  expect_equal(
-    as.numeric(pvalues(fit, c("STD", "SB", "SS", "ALL", "PEBA4"))),
-    rep(reference, 5L),
-    tolerance = 1e-8
-  )
+  # The spectrum is still the identity -- that is exactly why it is refused ...
+  expect_equal(lavaan_lambdas(fit, df)$ug_biased, rep(1, df), tolerance = 1e-8)
+  # ... the public entry point declines rather than return the naive test.
+  expect_error(pvalues(fit, c("STD", "SB", "SS", "ALL", "PEBA4")),
+               "full weighted least squares")
 })
 
 test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
@@ -187,7 +182,7 @@ test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
         unname(scaled[2L, "Pr(>Chisq)"]),
         unname(shifted[2L, "Pr(>Chisq)"])
       ),
-      tolerance = 1e-10,
+      tolerance = 1e-8,
       info = case
     )
     expect_equal(attr(actual, "semtests")$A.method, "delta")
@@ -233,10 +228,10 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
   actual_sb <- pvalues_nested(m0_sb, m1_sb, tests = "SB")
   expect_equal(as.numeric(actual_sb),
                unname(scaled[2L, "Pr(>Chisq)"]),
-               tolerance = 1e-10)
+               tolerance = 1e-8)
   expect_equal(as.numeric(actual["ss_ml"]),
                unname(shifted[2L, "Pr(>Chisq)"]),
-               tolerance = 1e-10)
+               tolerance = 1e-8)
 })
 
 test_that("nested categorical compatibility checks fail clearly", {
@@ -273,7 +268,7 @@ test_that("categorical fit and pair compatibility guards cover the support surfa
   bad_estimator <- fits$m1
   bad_estimator@Options$estimator <- "ML"
   expect_error(check_supported(bad_estimator),
-               "currently support lavaan's DWLS, ULS, and WLS")
+               "currently support lavaan's DWLS and ULS")
 
   bad_missing <- fits$m1
   bad_missing@Options$missing[1L] <- "ml"

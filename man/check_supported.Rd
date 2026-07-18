@@ -18,7 +18,7 @@ configurations documented in \link{semTests-support} -- the supported continuous
 and categorical estimators, complete data, and single-group FIML -- and stops
 with a pointer to \code{?semTests-support} otherwise. Statistic- and gamma-specific
 rejections (the normal-theory-only RLS statistic and \code{UG} gamma) depend on the
-parsed test string and stay with the code that consumes them (\code{make_chisqs()},
-\code{\link[=gamma]{gamma()}}); this gate is purely fit-shape.
+parsed test string and stay with the code that consumes them (\code{make_chisqs()}
+and \code{\link[=gamma]{gamma()}}). This gate checks the shape of the fit.
 }
 \keyword{internal}

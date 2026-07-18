@@ -18,9 +18,9 @@ knitr::opts_chunk$set(
 
 ## Scope
 
-Categorical support is experimental. It covers lavaan's DWLS, ULS, and full-WLS
-families for ordered or mixed indicators, with one or several groups and with
-listwise or pairwise missingness.
+This guide covers ordered and mixed indicators. The implementation covers
+lavaan's DWLS and ULS families, one or several groups, and listwise or pairwise
+missingness, and is validated against an independent implementation.
 
 The correction uses the unscaled estimator statistic and the biased spectrum
 that lavaan exposes through `lavInspect(fit, "UGamma")`. The Du--Bentler `UG`
@@ -78,13 +78,13 @@ and squared trace used by these classical corrections.
 
 The accepted shortcuts include:
 
-* DWLS, WLSM, WLSMV, and WLSMVS;
-* ULS, ULSM, and ULSMV;
-* full WLS.
+* DWLS, WLSM, WLSMV, and WLSMVS
+* ULS, ULSM, and ULSMV
 
-Full WLS is a useful edge case: its weight is already the inverse asymptotic
-moment covariance, so the spectrum is the identity and every correction reduces
-to the ordinary chi-square test.
+Full WLS/ADF is *refused*. Its weight is already the inverse asymptotic moment
+covariance, so the spectrum is the identity and every correction would reduce to
+the ordinary chi-square -- the robust p-values add nothing, so semTests declines
+the fit rather than return a naive test in robust clothing.
 
 ## Mixed indicators
 
@@ -118,8 +118,8 @@ lavaan's inspected spectrum avoids reconstructing these conventions inside
 
 ## Pairwise missingness
 
-Pairwise categorical estimation is not FIML. It tells lavaan to estimate each
-sample statistic from the observations available for that pair:
+With pairwise categorical estimation, lavaan estimates each sample statistic
+from the observations available for that pair:
 
 ```{r pairwise-fit}
 pairwise_data <- ordinal_data
@@ -137,9 +137,10 @@ fit_pairwise <- cfa(
 pvalues(fit_pairwise, c("SB", "SS", "PEBA4"))
 ```
 
-This support reproduces lavaan's pairwise sample-statistic and `UGamma`
-calculation. It is not a claim that pairwise deletion is generally valid under
-MAR. Missingness assumptions should be justified separately.
+`semTests` follows lavaan's pairwise sample-statistic and `UGamma`
+calculation. The validity of pairwise deletion depends on the missingness
+process, so its assumptions deserve a separate justification. Pairwise
+estimation does not provide FIML inference.
 
 ## Nested categorical models
 
@@ -175,14 +176,14 @@ map are intentionally rejected for this family.
 
 ## Practical checks
 
-Before interpreting the result:
+Before interpreting the result, give the fit a quick check:
 
-1. verify convergence and adequate category counts;
-2. inspect sparse thresholds and pairwise observation counts;
-3. confirm that the two nested fits use identical data and options;
-4. compare `SB` and `SS` with lavaan as a trace-level sanity check;
-5. treat pairwise missingness and the experimental estimator surface as
-   analysis assumptions, not implementation details.
+1. Verify convergence and adequate category counts.
+2. Inspect sparse thresholds and pairwise observation counts.
+3. Confirm that the two nested fits use identical data and options.
+4. Compare `SB` and `SS` with lavaan as a trace-level sanity check.
+5. Report pairwise missingness and the categorical estimator choice as
+   analysis assumptions.
 
 ## References
 

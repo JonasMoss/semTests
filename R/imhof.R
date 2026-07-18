@@ -166,7 +166,8 @@
 #' distribution, a Lugannani-Rice saddlepoint in the far tail where the integral
 #' degrades.
 #'
-#' @param q Numeric scalar (or vector) of thresholds; the observed chi-square.
+#' @param q Numeric scalar or vector of thresholds representing the observed
+#'   chi-square.
 #' @param lambda Numeric vector of eigenvalues (may be mixed sign).
 #' @return Numeric vector of upper-tail probabilities, length `length(q)`.
 #' @references

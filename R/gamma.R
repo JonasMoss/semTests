@@ -198,8 +198,8 @@ ugamma <- function(object, unbiased = 1) {
 #' The theoretical spectrum is real and non-negative. Small negative or
 #' imaginary components arise from the nonsymmetric numerical representation
 #' of a matrix that is similar to a symmetric positive-semidefinite product.
-#' Numerical negatives are truncated; a materially negative leading value is
-#' either retained for the method-2001 fallback or rejected.
+#' Numerical negatives are truncated. A materially negative leading value is
+#' retained for method 2001 when requested and rejected otherwise.
 #' @keywords internal
 ugamma_eigenvalues <- function(ugamma, df, context = "UGamma",
                                allow_negative = FALSE) {
@@ -315,9 +315,10 @@ nested_factor_2000 <- function(m0, m1, a = NULL) {
 #' Reference spectrum of the nested test, without forming the full UGamma.
 #'
 #' For Satorra's (2000) method the nonzero eigenvalues are those of the `m x m`
-#' matrix `C^{-1} D' Gamma D` (see [nested_factor_2000]); the `q x q` UGamma and
-#' its eigendecomposition are avoided. The (2001) method has no such reduction,
-#' so the top-`df` eigenvalues of the full `(U0 - U1) Gamma` are returned.
+#' matrix `C^{-1} D' Gamma D` (see [nested_factor_2000]). This avoids the
+#' `q x q` UGamma and its eigendecomposition. The (2001) method has no such
+#' reduction, so the top-`df` eigenvalues of the full `(U0 - U1) Gamma` are
+#' returned.
 #' @param m0,m1 Two nested `lavaan` objects.
 #' @param method Either `"2000"` or `"2001"`.
 #' @param unbiased Biased (1), unbiased (2), or both (3) gamma.

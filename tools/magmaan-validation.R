@@ -1066,7 +1066,6 @@ validate_classical_ml()
 validate_classical_nested_multigroup()
 validate_continuous_ls("GLS")
 validate_continuous_ls("ULS")
-validate_continuous_ls("WLS")
 validate_fiml()
 validate_categorical(
   pairwise = FALSE,
@@ -1083,14 +1082,6 @@ validate_categorical(
 validate_categorical(
   pairwise = TRUE,
   lavaan_estimator = "ULSMV", magmaan_estimator = "ULS"
-)
-validate_categorical(
-  pairwise = FALSE,
-  lavaan_estimator = "WLS", magmaan_estimator = "WLS"
-)
-validate_categorical(
-  pairwise = TRUE,
-  lavaan_estimator = "WLS", magmaan_estimator = "WLS"
 )
 validate_mixed_categorical()
 validate_multigroup_categorical()

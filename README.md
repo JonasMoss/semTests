@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# semTests <img src="man/figures/logo.png" align="right" width="210" height="130" />
+# semTests
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/semTests)](https://cran.r-project.org/package=semTests)
 [![R-CMD-check](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JonasMoss/semTests/actions/workflows/R-CMD-check.yaml)
@@ -13,9 +13,10 @@ Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repost
 An R package for robust tests of overall fit and nested model
 comparisons in structural equation models. It works with `lavaan` and
 implements the penalized eigenvalue block averaging and penalized
-regression *p* values of Foldnes, Moss, and Grønneberg (2025), along
-with their extension to nested model comparison in Foldnes, Grønneberg,
-and Moss (2026).
+regression *p* values of [Foldnes, Moss, and Grønneberg
+(2025)](https://doi.org/10.1080/10705511.2024.2372028), along with their
+extension to nested model comparison in [Foldnes, Grønneberg, and Moss
+(2026)](https://doi.org/10.3758/s13428-026-02968-4).
 
 **News.** You can now use `semTests` with GLS and ULS, categorical DWLS,
 ULS, or WLS models, and continuous FIML fits. Nested comparisons are
@@ -71,9 +72,9 @@ they arrive in the wrong order, `semTests` lets you know and swaps them.
 
 Missing values are fine too. Fit the model with `missing = "fiml"` and
 call `pvalues()` as usual. `semTests` uses observed information by
-default, following Savalei (2010). The [FIML
-vignette](vignettes/fiml-missing-data.Rmd) explains this choice and
-shows the other options.
+default, following [Savalei (2010)](https://doi.org/10.1037/a0020143).
+The [FIML vignette](vignettes/fiml-missing-data.Rmd) explains this
+choice and shows the other options.
 
 ``` r
 HS <- lavaan::HolzingerSwineford1939
@@ -114,19 +115,19 @@ combinations.
 
 ## References
 
-Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
-procedures for structural equation models. Structural Equation Modeling:
-A Multidisciplinary Journal, 32(1), 1–13.
-<https://doi.org/10.1080/10705511.2024.2372028>
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). [Improved goodness of
+fit procedures for structural equation
+models](https://doi.org/10.1080/10705511.2024.2372028). *Structural
+Equation Modeling: A Multidisciplinary Journal*, 32(1), 1–13.
 
-Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). [Penalized eigenvalue
 block averaging: Extension to nested model comparison and Monte Carlo
-evaluations. Behavior Research Methods, 58, article 107.
-<https://doi.org/10.3758/s13428-026-02968-4>
+evaluations](https://doi.org/10.3758/s13428-026-02968-4). *Behavior
+Research Methods*, 58, article 107.
 
-Savalei, V. (2010). Expected versus observed information in SEM with
-incomplete normal and nonnormal data. Psychological Methods, 15(4),
-352–367. <https://doi.org/10.1037/a0020143>
+Savalei, V. (2010). [Expected versus observed information in SEM with
+incomplete normal and nonnormal data](https://doi.org/10.1037/a0020143).
+*Psychological Methods*, 15(4), 352–367.
 
 ## How to Contribute or Get Help
 

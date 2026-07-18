@@ -1,5 +1,6 @@
 # The eigenvalue-based p-values are valid for any minimum-discrepancy estimator
-# (ADF excepted, where they reduce to the exact chi-square). These tests
+# (full WLS/ADF excepted and refused, since the correction there is the
+# identity). These tests
 # exercise the broadened estimator / data-type support: single-model for all
 # estimators, nested for continuous estimators, and the guards that keep the
 # normal-theory-only pieces (RLS statistic, Du-Bentler unbiased gamma) and

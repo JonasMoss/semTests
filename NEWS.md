@@ -5,6 +5,20 @@ with a minimal dependency footprint (`Imports` is just `lavaan` and the base
 `methods` package), and the eigenvalue-based p-values have been broadened well
 beyond normal-theory ML (see `?semTests-support`).
 
+* Full WLS/ADF is now refused at the entry point. Its weight is already the
+  inverse asymptotic moment covariance, so the eigenvalue correction is exactly
+  the identity and every robust p-value equals the ordinary chi-square; rather
+  than return a naive test in robust clothing, `pvalues()` / `pvalues_nested()`
+  now stop and point to a DWLS/ULS family. See `?semTests-support`.
+* The GLS, ULS, categorical DWLS/ULS (complete and pairwise), mixed-indicator,
+  and single-group FIML estimators -- single-model and nested -- are now marked
+  **stable**, having been validated to numerical tolerance against the
+  independent magmaan implementation across a simulation battery.
+* Nested `method = "2001"` (Satorra-Bentler) is temporarily unavailable and is
+  refused with a pointer to `method = "2000"`. It cannot yet be cross-validated
+  against magmaan and will return once it can.
+* Added vignettes on measurement invariance with ordinal indicators and on
+  latent growth models fitted under FIML.
 * Adapted statistic extraction to the named-list `lavaan::lavTest()` structure
   introduced in lavaan 0.7-1 and used by the required lavaan 0.7-2 (the
   reweighted least-squares statistic was previously read as `NULL`).

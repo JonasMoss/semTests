@@ -3,7 +3,7 @@
 \name{pvalues}
 \alias{pvalues}
 \alias{pvalues_nested}
-\title{Calculate \emph{p}-values for one or two \code{lavaan} objects.}
+\title{Compute robust \emph{p}-values for one or two \code{lavaan} objects}
 \usage{
 pvalues(
   object,
@@ -26,7 +26,7 @@ pvalues_nested(
 
 \item{tests}{A non-empty character vector of tests. Each element uses one of
 \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or
-\code{TEST_UG_RLS}; the defaults are the recommended options. \code{EBA} and \code{pEBA}
+\code{TEST_UG_RLS}. The defaults are the recommended options. \code{EBA} and \code{pEBA}
 take a positive integer number of blocks (for example, \code{"pEBA4"}), no
 greater than the test df. \code{pOLS} takes a finite positive penalty (for
 example, \code{"pOLS2"}).}
@@ -35,11 +35,10 @@ example, \code{"pOLS2"}).}
 convention (\code{"observed"}, the default) or reproduce lavaan 0.7-2's
 inspected robust-test spectrum (\code{"lavaan"}).}
 
-\item{method}{For nested models, choose Satorra's \code{"2000"} construction (the
-paper-recommended default) or the Satorra--Bentler \code{"2001"} construction.
-FIML and categorical nested models support \code{"2000"} only. Method 2001
-stops rather than silently falling back if it produces materially negative
-leading eigenvalues.}
+\item{method}{Nested reduction method. Only Satorra's \code{"2000"} construction
+(the paper-recommended default) is available in this release; the
+Satorra--Bentler \code{"2001"} construction is temporarily refused pending
+further validation, with a pointer to \code{"2000"}.}
 
 \item{A.method}{For nested FIML or categorical models, choose \code{"exact"} for
 the literal parameter restriction map or \code{"delta"} for the local
@@ -55,99 +54,100 @@ information type, data type, parameterization where applicable, nested
 method and restriction map where applicable, and degrees of freedom.
 }
 \description{
-Calculate \emph{p}-values for a \code{lavaan} object using several methods,
-including penalized eigenvalue block-averaging and penalized regression
-estimators. The recommended choices of \emph{p}-values are included as default
-values. Multiple \emph{p}-values can be returned simultaneously.
+Compute one or several \emph{p}-values for a fitted \code{lavaan} model. Available
+methods include penalized eigenvalue block averaging, penalized regression,
+and familiar robust corrections. The defaults select the recommended method
+for the fitted model.
 }
 \details{
 The \code{tests} argument is a character vector. Each element has one of the forms
-\code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or \code{TEST_UG_RLS};
-for example, \code{SB_UG_RLS}.
+\code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or \code{TEST_UG_RLS}.
+For example, \code{SB_UG_RLS}.
 \itemize{
-\item The first part of the string specifies the desired test. The supported tests are listed below.
-\item If \code{UG} is included in the string the unbiased estimator of the
-fourth order moment matrix (Du, Bentler, 2022) is used. If not, the
-standard biased matrix is used. There is no simple relationship between
-\emph{p}-value performance and the choice of \code{unbiased}.
-\item The final part specifies the chi square statistic. The \code{ML}
-choice uses the chi square based on the normal discrepancy function (Bollen, 1989).
-The \code{RLS} choice (default) uses the reweighted least squares statistic of Browne (1974).
+\item The first part names the test. The available names are listed below.
+\item Add \code{UG} to use the unbiased estimator of the fourth-order moment matrix
+from Du and Bentler (2022). Leave it out to use the standard biased matrix.
+Performance depends on the data-generating process, so neither gamma choice
+dominates in every setting.
+\item The final part chooses the chi-square statistic. \code{ML} uses the
+normal-discrepancy statistic (Bollen, 1989). \code{RLS} uses Browne's (1974)
+reweighted least squares statistic.
 }
 
 The \code{peba} method is the recommended default. It partitions the eigenvalues
 into \code{j} equally sized sets (if not possible, the smallest set is incomplete),
 shrinks them towards their common mean, and averages within each set. Provide
-a positive integer \code{j}, no greater than the test df; the best choices are
-typically about \code{2}--\code{6}. It was introduced by Foldnes, Moss, & Grønneberg
+a positive integer \code{j} no greater than the test df. Values from \code{2} through
+\code{6} are usually good candidates. The method was introduced by Foldnes, Moss,
+and Grønneberg
 (2025).
 
 \code{pols} is a penalized regression method with a finite positive penalization
-term. Foldnes, Moss, & Grønneberg (2025) studied \code{pols=2}, which has
+term. Foldnes, Moss, and Grønneberg (2025) studied \code{pols=2}, which has
 good performance in a variety of contexts.
 
 \code{pall} penalizes all eigenvalues in ugamma, while \code{all} uses all eigenvalues
 without penalization. \code{pall} is the recommended option for nested models, for
 which the penalized methods were extended and evaluated by Foldnes,
-Grønneberg, & Moss (2026).
+Grønneberg, and Moss (2026).
 
-The \code{eba} method is the unpenalized predecessor of \code{peba} (Foldnes &
-Grønneberg, 2018): it averages within the eigenvalue blocks without shrinkage.
-It is generally outperformed by \code{peba} and is kept mainly for comparison;
-\code{eba} with \code{j=2} -- \code{j=4} tends to work best.
+The \code{eba} method is the unpenalized predecessor of \code{peba} (Foldnes and
+Grønneberg, 2018). It averages within the eigenvalue blocks without
+shrinkage. \code{peba} usually performs better. \code{eba} remains available for
+comparisons, and values from \code{j=2} through \code{j=4} tend to work best.
 
-In addition, you may specify a
+Familiar corrections are available too:
 \itemize{
-\item \code{std} the standard \emph{p}-value where the choice of \code{chisq} is approximated by a chi square distribution.
-\item \code{sb} Satorra-Bentler \emph{p}-value. The \emph{p}-value proposed by Satorra and Bentler (1994).
-\item \code{ss} The scaled and shifted \emph{p}-value proposed by Asparouhov & Muthén (2010).
-\item \code{sf} The scaled \emph{F} \emph{p}-value proposed by Wu and Lin (2016).
+\item \code{std} uses the ordinary chi-square reference distribution.
+\item \code{sb} gives the Satorra--Bentler \emph{p}-value (Satorra and Bentler, 1994).
+\item \code{ss} gives the scaled and shifted \emph{p}-value (Asparouhov and Muthén, 2010).
+\item \code{sf} gives the scaled \emph{F} \emph{p}-value (Wu and Lin, 2016).
 }
 \subsection{Estimators and data types}{
 
-The authoritative list of supported estimators, data types, and
-configurations -- the matrix this function is validated against -- is
-\link{semTests-support} (\code{?semTests-support}). In brief:
+\link{semTests-support} (\code{?semTests-support}) gives the complete matrix of
+supported estimators, data types, and configurations. Here is the short
+version.
 
 The limiting null law of the test statistic is a weighted sum of
-chi-squares for any minimum-discrepancy estimator, so these tests are not
-specific to normal-theory ML. \code{pvalues()} supports ML/MLM/MLR, GLS, ULS,
-FIML (missing data), and categorical DWLS/ULS/WLS families, with single- and
-multi-group continuous, ordered, and mixed-indicator fits;
+chi-squares for any minimum-discrepancy estimator. \code{pvalues()} supports
+ML/MLM/MLR, GLS, ULS,
+FIML (missing data), and categorical DWLS/ULS families, with single- and
+multi-group continuous, ordered, and mixed-indicator fits.
 \code{pvalues_nested()} supports continuous estimators and categorical
-Satorra-2000 comparisons with a delta restriction map. The
-model must be fit so that lavaan exposes the asymptotic moment covariance --
-fit with a robust test such as \code{test = "satorra.bentler"}, or with
-\code{estimator = "MLM"/"MLR"/"DWLS"}. Off the classical continuous-complete-data
-ML case, the RLS statistic (\code{browne.residual.nt.model}) and the unbiased
-(\code{UG}) Du-Bentler gamma are undefined and are refused; the standard statistic
-and the biased gamma are used instead. ADF/WLS is the degenerate exception,
-where the test equals the ordinary chi-square and the correction adds nothing.
+Satorra-2000 comparisons with a delta restriction map. The fitted model must
+expose the asymptotic moment covariance. Robust choices such as
+\code{test = "satorra.bentler"} or \code{estimator = "MLM"}, \code{"MLR"}, or \code{"DWLS"}
+provide it. The RLS statistic (\code{browne.residual.nt.model}) and the unbiased
+(\code{UG}) Du-Bentler gamma are defined for the classical continuous,
+complete-data ML case. Other families use the standard statistic and biased
+gamma. Full WLS/ADF is refused outright: its weight is already the inverse
+moment covariance, so the correction is exactly the identity and every test
+would equal the ordinary chi-square.
 
-Support beyond classical normal-theory ML -- GLS, ULS, categorical
-DWLS/ULS/WLS, FIML missing data, and nested FIML or categorical comparison --
-is \strong{experimental} as of 0.9.0; see the Stability note in
-\link{semTests-support}.
+GLS, ULS, categorical DWLS/ULS, FIML missing data, and nested FIML or
+categorical comparison are validated to numerical tolerance against an
+independent implementation and are marked stable; see the Stability section
+in \link{semTests-support}.
 
 Both entry points require a converged fit and warn if lavaan reports an
 inadmissible solution. Nested comparisons require the same requested
 estimator, fitting conventions, variables, groups, sample sizes, raw data,
-and missingness mask. semTests checks comparability but cannot prove that two
-substantively different specifications are genuinely nested.
+and missingness mask. \code{semTests} checks comparability. The substantive
+nesting argument remains part of the analysis.
 
 For FIML, \code{fiml.convention = "observed"} (the default) uses observed
-saturated and model information throughout. This is the convention
-independently implemented and validated in magmaan. The \code{"lavaan"} option
-instead reproduces lavaan 0.7-2's robust-test construction: for a single
-model it uses lavaan's inspected \code{UGamma}; for nested models it uses lavaan's
-expected H1 weight and selected model information. Thus the two options make
-a real inferential convention visible rather than silently inheriting a fit
-option. The returned object records the convention actually used.
+saturated and model information throughout. An independent implementation
+validates this construction. The \code{"lavaan"} option reproduces lavaan
+0.7-2's robust-test construction. For a single model it uses lavaan's
+inspected \code{UGamma}. For nested models it uses lavaan's H1 weight convention
+and selected model information. The returned object records the convention,
+which keeps this inferential choice visible in saved results.
 
 For a single FIML model, \code{"lavaan"} means the eigenvalue spectrum returned by
-\code{lavInspect(fit, "UGamma")}. It does not necessarily reproduce the scalar
-Yuan--Bentler--Mplus test stored by a default MLR fit, which is a different
-correction. For nested FIML models it reproduces
+\code{lavInspect(fit, "UGamma")}. The scalar Yuan--Bentler--Mplus test stored by a
+default MLR fit is a different correction and may give a different result.
+For nested FIML models, \code{"lavaan"} reproduces
 \code{lavTestLRT(..., method = "satorra.2000")}.
 }
 }
@@ -195,7 +195,7 @@ Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist inference
 
 Bollen, K. A. (1989). \emph{Structural Equations with Latent Variables}. John Wiley & Sons. \doi{10.1002/9781118619179}
 
-Browne, M. W. (1974). Generalized least squares estimators in the analysis of covariance structures. \emph{South African Statistical Journal}, 8, 1--24. \doi{10.10520/AJA0038271X_175}
+Browne, M. W. (1974). Generalized least squares estimators in the analysis of covariance structures. \emph{South African Statistical Journal}, 8, 1--24.
 }
 \seealso{
 \link{semTests-support} for the full list of supported configurations.

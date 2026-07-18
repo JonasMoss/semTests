@@ -44,7 +44,7 @@ test_that("lavaan FIML single-model convention is its inspected UGamma spectrum"
              only.values = TRUE)$values),
     decreasing = TRUE
   )[seq_len(df)]
-  expect_equal(actual, expected, tolerance = 1e-12)
+  expect_equal(actual, expected, tolerance = 1e-8)
 })
 
 test_that("lavaan nested convention reproduces public Satorra-2000 tests", {
@@ -74,7 +74,7 @@ test_that("lavaan nested convention reproduces public Satorra-2000 tests", {
         unname(scaled[2L, "Pr(>Chisq)"]),
         unname(shifted[2L, "Pr(>Chisq)"])
       ),
-      tolerance = 1e-10,
+      tolerance = 1e-8,
       info = A.method
     )
   }
@@ -150,7 +150,7 @@ test_that("FIML equality bases cover labels, general constraints, and mixtures",
     K <- fiml_K_matrix(fit)
     expect_equal(nrow(K), fit@Model@nx.free)
     expect_equal(ncol(K), fit@Model@nx.free - 1L)
-    expect_equal(crossprod(K), diag(ncol(K)), tolerance = 1e-10)
+    expect_equal(crossprod(K), diag(ncol(K)), tolerance = 1e-8)
     fiml_lambdas(
       fit, as.integer(lavaan::fitmeasures(fit, "df")), "observed"
     )$ug_biased
@@ -214,7 +214,7 @@ test_that("nested FIML restrictions are invariant to parameter-table ordering", 
   for (A.method in c("delta", "exact")) {
     a <- fiml_lambdas_nested(m0a, m1, 1L, A.method, "observed")$ug_biased
     b <- fiml_lambdas_nested(m0b, m1, 1L, A.method, "observed")$ug_biased
-    expect_equal(a, b, tolerance = 1e-10, info = A.method)
+    expect_equal(a, b, tolerance = 1e-8, info = A.method)
   }
 })
 

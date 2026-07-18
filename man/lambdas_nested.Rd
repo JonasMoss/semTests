@@ -20,8 +20,9 @@ A list of eigenvalue vectors, one per gamma estimate.
 }
 \description{
 For Satorra's (2000) method the nonzero eigenvalues are those of the \verb{m x m}
-matrix \verb{C^\{-1\} D' Gamma D} (see \link{nested_factor_2000}); the \verb{q x q} UGamma and
-its eigendecomposition are avoided. The (2001) method has no such reduction,
-so the top-\code{df} eigenvalues of the full \verb{(U0 - U1) Gamma} are returned.
+matrix \verb{C^\{-1\} D' Gamma D} (see \link{nested_factor_2000}). This avoids the
+\verb{q x q} UGamma and its eigendecomposition. The (2001) method has no such
+reduction, so the top-\code{df} eigenvalues of the full \verb{(U0 - U1) Gamma} are
+returned.
 }
 \keyword{internal}

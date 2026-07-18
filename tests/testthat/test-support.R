@@ -25,9 +25,9 @@ test_that("multi-group continuous single-model p-values are supported", {
   expect_equal(attr(p_mlm, "semtests")$data_type, "continuous")
 })
 
-test_that("multi-group continuous nested p-values are supported (both methods)", {
+test_that("multi-group continuous nested p-values are supported (method 2000)", {
   expect_true(valid_p(pvalues_nested(m0,  m1)))                    # MLM, 2000
-  expect_true(valid_p(pvalues_nested(m0,  m1, method = "2001")))   # MLM, 2001
+  expect_error(pvalues_nested(m0, m1, method = "2001"), "not available")  # hidden
   expect_true(valid_p(pvalues_nested(m0_, m1_)))                   # GLS, 2000
 })
 
@@ -39,16 +39,13 @@ test_that("multi-group categorical single-model is supported", {
   expect_equal(attr(p, "semtests")$data_type, "categorical")
 })
 
-test_that("ADF/WLS is degenerate: every p-value equals the ordinary chi-square", {
+test_that("full WLS/ADF is refused (degenerate: correction is the identity)", {
   skip_on_cran()
   set.seed(2024)
   dat <- lavaan::simulateData(hs, sample.nobs = 600)
   wls <- lavaan::cfa(hs, dat, estimator = "WLS")
-  ref <- as.numeric(1 - stats::pchisq(lavaan::fitmeasures(wls, "chisq"),
-                                       lavaan::fitmeasures(wls, "df")))
-  p <- pvalues(wls, c("STD", "PEBA4", "SB", "POLS"))
-  expect_true(valid_p(p))
-  expect_equal(unname(as.numeric(p)), rep(ref, length(p)), tolerance = 1e-8)
+  expect_error(pvalues(wls, c("STD", "PEBA4", "SB", "POLS")),
+               "full weighted least squares")
 })
 
 test_that("check_supported rejects estimators outside the supported set", {

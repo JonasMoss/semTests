@@ -47,3 +47,23 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
+
+  # "no long double" build: not in the matrix above and the one CRAN flavor a
+  # pure-R numeric package can still trip. Confirms the tests survive reduced
+  # floating-point precision. Runs in the R-hub noLD container.
+  noLD:
+    runs-on: ubuntu-latest
+    name: noLD (no long double)
+    container: ghcr.io/r-hub/containers/nold:latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: install.packages(c("lavaan", "testthat", "knitr", "rmarkdown", "xml2", "rcmdcheck"))
+        shell: Rscript {0}
+
+      - name: R CMD check (no long double)
+        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--ignore-vignettes"), error_on = "warning")
+        shell: Rscript {0}

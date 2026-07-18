@@ -1,0 +1,86 @@
+---
+title: "Latent growth models with missing data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Latent growth models with missing data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Scope
+
+A latent growth curve model describes change across repeated measurements with
+latent intercept and slope factors. It is an ordinary continuous SEM, so the
+`semTests` robust p-values apply -- including under full-information maximum
+likelihood (FIML) when the repeated measures are incomplete. This vignette fits
+a linear growth model to incomplete data, reports its robust goodness of fit,
+and then tests whether the growth is really linear.
+
+```{r setup}
+library("semTests")
+library("lavaan")
+
+growth_data <- Demo.growth
+```
+
+## A reproducible missing-data mechanism
+
+`Demo.growth` is complete. To exercise FIML, missingness in the later waves `t3`
+and `t4` is made dependent on the first wave `t1`. This is a reproducible
+MAR-like mechanism for the example and says nothing about any real process.
+
+```{r missing}
+set.seed(20260718)
+driver <- as.numeric(scale(growth_data$t1))
+growth_data$t3[runif(nrow(growth_data)) < plogis(qlogis(.20) + .8 * driver)] <- NA
+growth_data$t4[runif(nrow(growth_data)) < plogis(qlogis(.20) + .8 * driver)] <- NA
+colMeans(is.na(growth_data[paste0("t", 1:4)]))
+```
+
+## Linear growth under FIML
+
+The linear model fixes the slope loadings to `0, 1, 2, 3`:
+
+```{r linear}
+linear <- growth(
+  "i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
+   s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4",
+  growth_data, missing = "fiml", estimator = "MLR"
+)
+
+pvalues(linear, c("SB", "SS", "ALL", "PEBA4"))
+```
+
+FIML uses the standard likelihood-ratio statistic and the observed-information
+convention by default; the provenance footer records both.
+
+## Is the growth linear?
+
+A latent-basis model frees the last two slope loadings and lets the data choose
+the shape of change. Linear growth is the special case with those loadings fixed
+to `2` and `3`, so it is nested in the latent-basis model. The linear model is
+the constrained one and goes in `m0`:
+
+```{r basis}
+basis <- growth(
+  "i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
+   s =~ 0*t1 + 1*t2 + t3 + t4",
+  growth_data, missing = "fiml", estimator = "MLR"
+)
+
+pvalues_nested(linear, basis, tests = c("SB", "SS", "ALL", "PEBA2"))
+```
+
+A large p-value supports the linear form; a small one says the shape of change
+departs from linear. The two freed loadings give a two-degree-of-freedom test,
+so the block-averaged method uses `PEBA2` -- a penalized method cannot use more
+blocks than the test has degrees of freedom.

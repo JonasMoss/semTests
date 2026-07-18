@@ -2,11 +2,11 @@
 % Please edit documentation in R/utility.R
 \name{nanull}
 \alias{nanull}
-\title{Returns if not NA; else converts NA to NULL.}
+\title{Return non-missing values and convert \code{NA} to \code{NULL}.}
 \usage{
 nanull(x)
 }
 \description{
-Returns if not NA; else converts NA to NULL.
+Return non-missing values and convert \code{NA} to \code{NULL}.
 }
 \keyword{internal}

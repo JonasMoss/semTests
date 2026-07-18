@@ -7,7 +7,8 @@
 imhof_pvalue(q, lambda)
 }
 \arguments{
-\item{q}{Numeric scalar (or vector) of thresholds; the observed chi-square.}
+\item{q}{Numeric scalar or vector of thresholds representing the observed
+chi-square.}
 
 \item{lambda}{Numeric vector of eigenvalues (may be mixed sign).}
 }

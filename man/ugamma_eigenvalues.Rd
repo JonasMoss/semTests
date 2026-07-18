@@ -10,7 +10,7 @@ ugamma_eigenvalues(ugamma, df, context = "UGamma", allow_negative = FALSE)
 The theoretical spectrum is real and non-negative. Small negative or
 imaginary components arise from the nonsymmetric numerical representation
 of a matrix that is similar to a symmetric positive-semidefinite product.
-Numerical negatives are truncated; a materially negative leading value is
-either retained for the method-2001 fallback or rejected.
+Numerical negatives are truncated. A materially negative leading value is
+retained for method 2001 when requested and rejected otherwise.
 }
 \keyword{internal}

@@ -19,11 +19,11 @@ magmaan's independent C++23 implementation. It covers:
 - classical nested method 2000 with the delta restriction map, biased and
   Du--Bentler unbiased gamma, both ML and RLS base statistics, and a
   multigroup mean-structure check;
-- continuous GLS, ULS, and full WLS single-model and nested spectra, with
-  lavaan's explicit `N-1` covariance scaling, estimator-specific
-  empirical/normal-theory gamma convention, and the exact WLS fitting weight;
+- continuous GLS and ULS single-model and nested spectra, with lavaan's explicit
+  `N-1` covariance scaling and the estimator-specific empirical/normal-theory
+  gamma convention;
 - observed-information FIML, single-model and nested (`delta` and `exact`);
-- all-ordinal DWLS, ULS, and full WLS, single-model and nested, with complete and
+- all-ordinal DWLS and ULS, single-model and nested, with complete and
   pairwise-missing data;
 - mixed continuous/ordinal DWLS, single-model and nested;
 - multigroup all-ordinal DWLS, single-model and nested.
