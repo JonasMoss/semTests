@@ -49,8 +49,8 @@ supported families separately:
 * `vignette("categorical-data", package = "semTests")` covers ordered and mixed
   indicators, pairwise missingness, and categorical nested comparison.
 * `vignette("fiml-missing-data", package = "semTests")` covers continuous FIML,
-  the observed-information and lavaan compatibility conventions, and nested
-  restriction maps.
+  the finite-sample evidence for the observed-information default, the lavaan
+  compatibility convention, and nested restriction maps.
 
 ## Basic usage: goodness of fit
 

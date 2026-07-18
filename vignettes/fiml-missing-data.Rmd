@@ -87,6 +87,79 @@ lavaan's public Satorra-2000 construction. That construction uses lavaan's H1
 weight convention and the model information selected in the fit. It is
 therefore not simply another spelling of `information = "expected"`.
 
+## Why observed information is the default
+
+The theoretical case is established: expected information can be inconsistent
+under general MAR, while observed information reflects the realized
+missingness patterns and sample curvature (Kenward & Molenberghs, 1998;
+Savalei, 2010; Savalei & Rosseel, 2022). A focused computational study was used
+to check whether that choice also matters in the finite samples relevant here.
+
+The study crossed:
+
+* multivariate normal and elliptical \(t_5\) data;
+* a correct two-factor CFA and a model omitting a 0.25 cross-loading;
+* complete data, 30% MCAR, and 30% MAR;
+* \(N = 150, 300, 600,\) and \(1200\).
+
+Each of the 48 cells used 200,000 replications, for 9.6 million fits. A free
+loading and the factor covariance were followed. The same fitted model was
+used to compare expected information, the analytic observed-H1 approximation,
+and the full observed Hessian. Each information matrix was paired with either
+its model-based inverse or the same empirical-score sandwich meat (Yuan &
+Bentler, 2000).
+
+```{r information-study, echo = FALSE}
+information_coverage <- data.frame(
+  Method = c(
+    "Expected, model-based",
+    "Expected + sandwich",
+    "Observed H1, model-based",
+    "Observed H1 + sandwich",
+    "Full observed Hessian, model-based",
+    "Full observed Hessian + sandwich"
+  ),
+  `Correct, normal` = c(94.48, 94.13, 94.67, 94.39, 94.73, 94.72),
+  `Correct, t5` = c(79.41, 92.45, 79.98, 92.52, 80.14, 93.64),
+  `Misspecified, normal` = c(92.10, 91.53, 92.72, 92.46, 93.46, 94.53),
+  `Misspecified, t5` = c(75.21, 89.28, 76.38, 89.98, 77.51, 93.00),
+  check.names = FALSE
+)
+knitr::kable(
+  information_coverage,
+  digits = 2,
+  caption = paste(
+    "Mean 95% coverage across sample sizes, missingness mechanisms,",
+    "and focal parameters. Misspecified cells use centered coverage."
+  )
+)
+```
+
+Across correctly specified cells, the full observed Hessian with sandwich
+covariance had the smallest mean absolute coverage error, 0.821 percentage
+points, and mean coverage of 94.179%. Under a correct normal model the two
+full-Hessian covariances were essentially tied near 94.7%. Under \(t_5\) data,
+model-based covariance covered only about 80%, while the full-Hessian sandwich
+reached 93.64%. Under misspecification, its centered coverage was 94.53% for
+normal data and 93.00% for \(t_5\), compared with 92.46% and 89.98% for the
+observed-H1 sandwich.
+
+Rare converged Heywood or nearly singular solutions produced extreme
+estimate and standard-error tails, so arithmetic mean SE/SD ratios were not
+used. Coverage retained converged replications with finite standard errors,
+and the worst cell-specific information-inversion rate was 0.0105%. Across all
+48 design cells, the simulation implementation and lavaan agreed in 576 of 576
+parameter-level standard-error comparisons, with maximum absolute difference
+\(5.81\times10^{-7}\).
+
+This study concerns parameter standard errors, not the null calibration of
+`semTests` goodness-of-fit *p*-values. It supports using observed rather than
+expected information as the default building block, especially when the full
+observed model information enters a nested comparison. Deterministic spectrum
+parity and the seeded null simulation under `tools/` provide the separate
+checks of the `semTests` testing pipeline. The `"lavaan"` convention remains
+available when reproduction of lavaan's inspected spectrum is the goal.
+
 ## Comparing observed and expected model information
 
 Fit the same model again, changing only lavaan's model-information option:
@@ -135,8 +208,6 @@ curvature. Expected information averages curvature under the fitted model.
 They can be close under favorable conditions, but missingness and non-normality
 make it unwise to assume they are interchangeable. `semTests` therefore makes
 the convention visible in both the function call and the result provenance.
-Kenward and Molenberghs (1998) discuss this distinction for likelihood
-inference under MAR and recommend observed information.
 
 ## Nested FIML comparison
 
@@ -207,8 +278,22 @@ Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
 inference when data are missing at random. *Statistical Science*, 13(3),
 236–247. <https://doi.org/10.1214/ss/1028905886>
 
+Savalei, V. (2010). Expected versus observed information in SEM with incomplete
+normal and nonnormal data. *Psychological Methods*, 15(4), 352–367.
+<https://doi.org/10.1037/a0020143>
+
+Savalei, V., & Rosseel, Y. (2022). Computational options for standard errors
+and test statistics with incomplete normal and nonnormal data in SEM.
+*Structural Equation Modeling*, 29(2), 163–181.
+<https://doi.org/10.1080/10705511.2021.1877548>
+
 Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
 analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
 A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
 (pp. 233–247). Kluwer Academic.
 <https://doi.org/10.1007/978-1-4615-4603-0_17>
+
+Yuan, K.-H., & Bentler, P. M. (2000). Three likelihood-based methods for mean
+and covariance structure analysis with nonnormal missing data.
+*Sociological Methodology*, 30, 165–200.
+<https://doi.org/10.1111/0081-1750.00078>

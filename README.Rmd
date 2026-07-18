@@ -100,11 +100,21 @@ model with `missing = "fiml"` and pass it to `pvalues` as usual. FIML uses the
 biased gamma and the standard statistic, so the `UG`/`RLS` suffixes do not apply.
 The default `fiml.convention = "observed"` uses observed saturated and model
 information throughout, following the observed-information recommendation for
-likelihood inference under MAR in Kenward and Molenberghs (1998). Use
-`fiml.convention = "lavaan"` to reproduce lavaan 0.7-2's inspected robust-test
-spectrum; the convention is printed with the result. The same option is
-available in `pvalues_nested()`, where `A.method = "delta"` is the default
-restriction map.
+likelihood inference under MAR in Kenward and Molenberghs (1998) and Savalei
+(2010; see also Savalei and Rosseel, 2022). In a focused 48-cell study with
+200,000 replications per cell, the full observed Hessian with empirical-score
+sandwich covariance had the smallest mean coverage error under correct
+specification and was clearly better under nonnormality and misspecification
+(Yuan and Bentler, 2000). This parameter-inference study supports the
+observed-information building block; it is not itself a calibration study of
+the semTests goodness-of-fit p-values. See the
+[FIML vignette](vignettes/fiml-missing-data.Rmd) for the design, coverage table,
+and caveats.
+
+Use `fiml.convention = "lavaan"` to reproduce lavaan 0.7-2's inspected
+robust-test spectrum; the convention is printed with the result. The same
+option is available in `pvalues_nested()`, where `A.method = "delta"` is the
+default restriction map.
 
 ```{r fiml, echo = TRUE, eval = TRUE}
 HS <- lavaan::HolzingerSwineford1939
@@ -166,12 +176,18 @@ Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimato
 
 Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist inference when data are missing at random. Statistical Science, 13(3), 236–247. https://doi.org/10.1214/ss/1028905886
 
+Savalei, V. (2010). Expected versus observed information in SEM with incomplete normal and nonnormal data. Psychological Methods, 15(4), 352–367. https://doi.org/10.1037/a0020143
+
+Savalei, V., & Rosseel, Y. (2022). Computational options for standard errors and test statistics with incomplete normal and nonnormal data in SEM. Structural Equation Modeling, 29(2), 163–181. https://doi.org/10.1080/10705511.2021.1877548
+
 Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, & A. Satorra (Eds.), Innovations in Multivariate Statistical Analysis (pp. 233–247). Kluwer Academic. https://doi.org/10.1007/978-1-4615-4603-0_17
 
 Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test statistic for moment structure analysis. Psychometrika, 66(4), 507–514. https://doi.org/10.1007/BF02296192
 
 Rosseel, Y. (2012). lavaan: An R package for structural equation modeling.
 Journal of Statistical Software, 48(2), 1–36. https://doi.org/10.18637/jss.v048.i02
+
+Yuan, K.-H., & Bentler, P. M. (2000). Three likelihood-based methods for mean and covariance structure analysis with nonnormal missing data. Sociological Methodology, 30, 165–200. https://doi.org/10.1111/0081-1750.00078
 
 ## How to Contribute or Get Help
 If you encounter a bug, have a feature request, or need help, open a [GitHub issue](https://github.com/JonasMoss/semTests/issues). Create a pull request to contribute.
