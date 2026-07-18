@@ -56,6 +56,59 @@ test_that("reduced spectrum matches full UGamma under a general (==) equality co
   expect_spectrum_matches(m0, m1, "2000", 2)
 })
 
+test_that("nested continuous tests support an already-constrained H1", {
+  HS <- lavaan::HolzingerSwineford1939
+  h1 <- "
+    visual  =~ x1 + a*x2 + b*x3
+    textual =~ x4 + c*x5 + d*x6
+    speed   =~ x7 + x8 + x9
+    a == b
+  "
+  h0 <- paste(h1, "c == d", sep = "\n")
+  m1 <- lavaan::cfa(h1, HS, estimator = "MLM")
+  m0 <- lavaan::cfa(h0, HS, estimator = "MLM")
+
+  expect_true(m1@Model@eq.constraints)
+  expect_spectrum_matches(m0, m1, "2000", 1)
+  expect_spectrum_matches(m0, m1, "2000", 2)
+  expect_true(all(pvalues_nested(m0, m1) >= 0))
+})
+
+test_that("nested continuous tests support equality mixed with inequality", {
+  HS <- lavaan::HolzingerSwineford1939
+  h1 <- "
+    visual  =~ x1 + x2 + x3
+    textual =~ x4 + x5 + x6
+    speed   =~ x7 + x8 + x9
+  "
+  h0 <- "
+    visual  =~ x1 + a*x2 + b*x3
+    textual =~ x4 + x5 + x6
+    speed   =~ x7 + x8 + x9
+    a == b
+    a > .1
+  "
+  m1 <- lavaan::cfa(h1, HS, estimator = "MLM")
+  m0 <- lavaan::cfa(h0, HS, estimator = "MLM")
+
+  expect_false(m0@Model@eq.constraints)
+  expect_gt(nrow(m0@Model@ceq.JAC), 0L)
+  A <- get_a_matrix(m1, m0)
+  expect_equal(nrow(A), ndf(m0, m1))
+  expect_true(all(is.finite(pvalues_nested(m0, m1))))
+})
+
+test_that("restriction maps retain lavaan simple-constraint compatibility", {
+  legacy <- m1_no_groups
+  npar <- legacy@Model@nx.free
+  legacy@Model@eq.constraints <- FALSE
+  legacy@Model@ceq.simple.only <- TRUE
+  legacy@Model@ceq.simple.K <- diag(npar)[, -npar, drop = FALSE]
+
+  A <- get_a_matrix(m1_no_groups, legacy)
+  expect_equal(dim(A), c(1L, npar))
+})
+
 test_that("reduced spectrum matches full UGamma on a big model (q = 210)", {
   skip_on_cran()
   set.seed(1)

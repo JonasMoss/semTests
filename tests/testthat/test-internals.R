@@ -29,6 +29,13 @@ test_that("generalized_inverse: full rank, rank-deficient, zero, coercion, bad i
   gv <- generalized_inverse(c(1, 2, 3))
   expect_equal(dim(gv), c(1L, 3L))
 
+  complex_matrix <- matrix(c(1 + 1i, 2 - 1i, 3, 4 + 2i), 2L)
+  expect_equal(
+    generalized_inverse(complex_matrix),
+    solve(complex_matrix),
+    tolerance = 1e-10
+  )
+
   # input validation.
   expect_error(generalized_inverse(matrix("a", 2, 2)), "numeric")
   expect_error(generalized_inverse(array(0, c(2, 2, 2))), "matrix")
@@ -52,6 +59,12 @@ test_that("the print footer reports estimator/data/df for single and nested fits
   expect_output(print(pvalues(object, "PEBA4")), "df:")
   expect_output(print(pvalues_nested(m0_no_groups, m1_no_groups, tests = "PALL")),
                 "nested")
+
+  plain_ml <- lavaan::cfa(
+    hs, lavaan::HolzingerSwineford1939,
+    estimator = "ML"
+  )
+  expect_output(print(pvalues(plain_ml, "PEBA4_ML")), "estimator: ML \\|")
 })
 
 test_that("the print footer flags FIML and the nested A.method", {
@@ -61,6 +74,16 @@ test_that("the print footer flags FIML and the nested A.method", {
   f0 <- lavaan::cfa(hs0, HSm, missing = "fiml", estimator = "MLR")
   expect_output(print(pvalues(f1, "PEBA4")), "FIML")              # single-model FIML label
   expect_output(print(pvalues_nested(f0, f1)), "A.method")        # nested FIML footer
+})
+
+test_that("estimator provenance falls back cleanly when estimator.orig is absent", {
+  fit <- object
+  fit@Options$estimator.orig <- NULL
+  expect_equal(requested_estimator(fit), fit@Options$estimator)
+  expect_equal(
+    fit_provenance(fit, nested = FALSE)$estimator_requested,
+    fit@Options$estimator
+  )
 })
 
 # --- FIML defensive guards (fiml_fmg.R) ------------------------------------
@@ -79,4 +102,105 @@ test_that("nested FIML requires identical raw data and missingness mask", {
   f1 <- lavaan::cfa(hs,  HSa, missing = "fiml", estimator = "MLR")
   f0 <- lavaan::cfa(hs0, HSb, missing = "fiml", estimator = "MLR")
   expect_error(pvalues_nested(f0, f1), "same raw data")
+})
+
+test_that("FIML helper guards explain malformed fit and matrix shapes", {
+  HS <- lavaan::HolzingerSwineford1939
+  HSm <- HS
+  set.seed(9)
+  HSm$x1[sample(nrow(HS), 40)] <- NA
+  fit <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
+
+  categorical_data <- HS
+  categorical_data[paste0("x", 1:9)] <- lapply(
+    categorical_data[paste0("x", 1:9)],
+    function(x) ordered(cut(x, 3))
+  )
+  categorical <- lavaan::cfa(
+    hs, categorical_data,
+    ordered = paste0("x", 1:9)
+  )
+  expect_error(
+    fiml_check_supported(categorical),
+    "only implemented for continuous lavaan fits"
+  )
+  expect_error(
+    fiml_one_group_matrix(list(diag(2), diag(2)), "test"),
+    "Expected one test matrix"
+  )
+  expect_error(
+    fiml_validate_A(matrix(0, 2L, 3L), df = 1L, npar = 3L),
+    "rank.*does not match"
+  )
+  expect_error(
+    fiml_validate_A(matrix(0, 1L, 2L), df = 1L, npar = 3L),
+    "does not match H1"
+  )
+
+  malformed <- fit
+  malformed@Model@nx.free <- malformed@Model@nx.free + 1L
+  expect_error(
+    fiml_parameter_keys(malformed),
+    "Could not identify lavaan's full free-parameter ordering"
+  )
+})
+
+test_that("FIML data and dimension invariants fail close to their source", {
+  HSa <- lavaan::HolzingerSwineford1939
+  HSb <- HSa
+  set.seed(10)
+  HSa$x1[sample(nrow(HSa), 30L)] <- NA
+  set.seed(11)
+  HSb$x2[sample(nrow(HSb), 30L)] <- NA
+  f1 <- lavaan::cfa(hs, HSa, missing = "fiml", estimator = "MLR")
+  f0 <- lavaan::cfa(hs0, HSb, missing = "fiml", estimator = "MLR")
+  expect_error(fiml_check_same_data(f0, f1), "same raw data")
+
+  testthat::local_mocked_bindings(
+    fiml_h1_information_observed = function(...) diag(2L),
+    fiml_gamma_matrix = function(...) diag(3L),
+    fiml_delta_effective = function(...) matrix(0, 2L, 1L),
+    .package = "semTests"
+  )
+  expect_error(
+    fiml_lambdas(f1, 1L, fiml.convention = "observed"),
+    "dimensions do not agree"
+  )
+})
+
+test_that("nested FIML checks restriction and information dimensions", {
+  HS <- lavaan::HolzingerSwineford1939
+  set.seed(12)
+  HS$x1[sample(nrow(HS), 30L)] <- NA
+  f1 <- lavaan::cfa(hs, HS, missing = "fiml", estimator = "MLR")
+  f0 <- lavaan::cfa(hs0, HS, missing = "fiml", estimator = "MLR")
+
+  testthat::local_mocked_bindings(
+    fiml_A_delta = function(...) matrix(0, 1L, 1L),
+    .package = "semTests"
+  )
+  expect_error(
+    fiml_lambdas_nested(f0, f1, 1L, A.method = "delta"),
+    "restriction matrix and H1 information dimensions"
+  )
+})
+
+test_that("FIML keeps compatibility with lavaan simple-constraint bases", {
+  HS <- lavaan::HolzingerSwineford1939
+  set.seed(13)
+  HS$x1[sample(nrow(HS), 30L)] <- NA
+  fit <- lavaan::cfa(hs, HS, missing = "fiml", estimator = "MLR")
+  npar <- fit@Model@nx.free
+
+  legacy <- fit
+  legacy@Model@eq.constraints <- FALSE
+  legacy@Model@ceq.simple.only <- TRUE
+  legacy@Model@ceq.simple.K <- diag(npar)[, -npar, drop = FALSE]
+  expect_equal(dim(fiml_K_matrix(legacy)), c(npar, npar - 1L))
+
+  empty <- fit
+  empty@Model@eq.constraints <- FALSE
+  empty@Model@ceq.simple.only <- TRUE
+  empty@Model@ceq.simple.K <- matrix(numeric(), 0L, npar)
+  expect_equal(fiml_K_matrix(empty), diag(npar))
 })

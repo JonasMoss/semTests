@@ -4,10 +4,11 @@ coverage:
   status:
     project:
       default:
-        # Allow small dips while the test surface is still being broadened.
+        # Keep the hardened project baseline steady.
         target: auto
-        threshold: 1%
+        threshold: 0.1%
     patch:
       default:
-        # New lines need not be fully covered to pass; report informationally.
-        informational: true
+        # New source lines should arrive with tests.
+        target: 100%
+        informational: false

@@ -301,7 +301,20 @@ test_that("categorical fit and pair compatibility guards cover the support surfa
                "same groups and group sample sizes")
 })
 
+test_that("categorical restriction rank failures are reported at the public entry point", {
+  fits <- fit_categorical_pair()
+  testthat::local_mocked_bindings(
+    get_a_matrix = function(...) matrix(0, 0L, 0L),
+    .package = "semTests"
+  )
+  expect_error(
+    pvalues_nested(fits$m0, fits$m1),
+    "restriction rank.*does not match the df difference"
+  )
+})
+
 test_that("UGamma eigenvalue validation distinguishes numerical instability", {
+  expect_length(ugamma_eigenvalues(diag(2L), 0L), 0L)
   expect_error(
     ugamma_eigenvalues(matrix(letters[1:4], 2L), 2L),
     "square numeric"
@@ -318,6 +331,11 @@ test_that("UGamma eigenvalue validation distinguishes numerical instability", {
     ugamma_eigenvalues(diag(c(1, Inf)), 2L),
     "non-finite"
   )
+  huge <- .Machine$double.xmax
+  expect_error(
+    ugamma_eigenvalues(matrix(c(huge, huge, huge, -huge), 2L), 2L),
+    "non-finite eigenvalues"
+  )
   expect_error(
     ugamma_eigenvalues(diag(c(2, -1e-10)), 2L),
     "rank"
@@ -333,5 +351,9 @@ test_that("UGamma eigenvalue validation distinguishes numerical instability", {
   expect_error(
     ugamma_eigenvalues(diag(c(1, 0)), 2L),
     "rank"
+  )
+  expect_error(
+    lavaan_lambdas(NULL, 1L),
+    "could not construct UGamma"
   )
 })

@@ -10,6 +10,13 @@ test_that("every single-model test type returns a p-value in [0, 1]", {
   }
 })
 
+test_that("scaled F handles both fallback formulas for mixed spectra", {
+  # Admissible method-2000 spectra are positive. These small mixed spectra
+  # exercise the defensive denominator and degrees-of-freedom fallbacks.
+  expect_true(is.finite(scaled_f(1, c(-1, -1, -1))))
+  expect_true(is.finite(scaled_f(1, c(2, 2, -1))))
+})
+
 test_that("requesting several tests at once returns one p-value per test", {
   p <- pvalues(object, c("SB_RLS", "pEBA4_RLS", "pOLS2_RLS"))
   expect_length(p, 3L)

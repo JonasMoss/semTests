@@ -108,6 +108,35 @@ test_that("nested fits must be comparable before a difference test is run", {
     "information",
     class = "semTests_error_incompatible_models"
   )
+
+  reordered_constrained <- "
+    speed   =~ x7 + x8 + x9
+    textual =~ x4 + a*x5 + a*x6
+    visual  =~ x1 + x2 + x3
+  "
+  other_variables <- lavaan::cfa(
+    reordered_constrained,
+    lavaan::HolzingerSwineford1939,
+    estimator = "MLM"
+  )
+  expect_error(
+    pvalues_nested(other_variables, m1_no_groups),
+    "same observed variables in the same order",
+    class = "semTests_error_incompatible_models"
+  )
+})
+
+test_that("missing lavaan Gamma matrices fail with public condition classes", {
+  expect_error(
+    gamma_from_lavaan(NULL),
+    "did not expose a Gamma/NACOV matrix for `object`",
+    class = "semTests_error_missing_gamma"
+  )
+  expect_error(
+    gamma_from_lavaan(NULL, list()),
+    "did not expose a Gamma/NACOV matrix for `m0` or `m1`",
+    class = "semTests_error_missing_gamma"
+  )
 })
 
 test_that("reversed nested inputs are swapped with an explicit warning", {

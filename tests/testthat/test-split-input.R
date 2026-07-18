@@ -13,6 +13,11 @@ test_that("split_input parses the two-part chi-square form", {
 
 test_that("split_input rejects unrecognised test strings", {
   expect_error(
+    split_input(c("sb", "ss")),
+    "requires exactly one test specification",
+    class = "semTests_error_invalid_tests"
+  )
+  expect_error(
     split_input("garbage"),
     "Unknown test family",
     class = "semTests_error_invalid_tests"
