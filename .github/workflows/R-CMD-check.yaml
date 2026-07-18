@@ -50,24 +50,25 @@ jobs:
 
   # "no long double" build: not in the matrix above and the one CRAN flavor a
   # pure-R numeric package can still trip. Confirms the tests survive reduced
-  # floating-point precision. Runs in the R-hub noLD container.
+  # floating-point precision. R comes from the R-hub noLD container; the
+  # r-lib/actions chain (pak) resolves the R and system dependencies.
   noLD:
     runs-on: ubuntu-latest
     name: noLD (no long double)
     container: ghcr.io/r-hub/containers/nold:latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install dependencies
-        run: |
-          # Install from CRAN source: the r-hub binary repo can serve
-          # noLD-incompatible builds (crayon/numDeriv failed to resolve).
-          options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4)
-          install.packages(c("lavaan", "testthat", "knitr", "rmarkdown", "xml2", "rcmdcheck"))
-        shell: Rscript {0}
+      - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: R CMD check (no long double)
-        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--ignore-vignettes"), error_on = "warning")
-        shell: Rscript {0}
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: false
