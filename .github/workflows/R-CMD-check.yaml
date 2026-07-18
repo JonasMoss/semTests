@@ -61,7 +61,11 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install dependencies
-        run: install.packages(c("lavaan", "testthat", "knitr", "rmarkdown", "xml2", "rcmdcheck"))
+        run: |
+          # Install from CRAN source: the r-hub binary repo can serve
+          # noLD-incompatible builds (crayon/numDeriv failed to resolve).
+          options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4)
+          install.packages(c("lavaan", "testthat", "knitr", "rmarkdown", "xml2", "rcmdcheck"))
         shell: Rscript {0}
 
       - name: R CMD check (no long double)
