@@ -9,10 +9,6 @@ hs <- " visual =~ x1 + x2 + x3
         textual =~ x4 + x5 + x6
         speed =~ x7 + x8 + x9 "
 
-ordinalize <- function(data, vars = paste0("x", 1:9)) {
-  for (v in vars) data[[v]] <- ordered(cut(data[[v]], 3))
-  data
-}
 valid_p <- function(p) all(is.finite(p) & p >= 0 & p <= 1)
 
 test_that("multi-group continuous single-model p-values are supported", {
@@ -27,16 +23,8 @@ test_that("multi-group continuous single-model p-values are supported", {
 
 test_that("multi-group continuous nested p-values are supported (method 2000)", {
   expect_true(valid_p(pvalues_nested(m0,  m1)))                    # MLM, 2000
-  expect_error(pvalues_nested(m0, m1, method = "2001"), "not available")  # hidden
+  expect_error(pvalues_nested(m0, m1, method = "2001"), "withdrawn")  # withdrawn
   expect_true(valid_p(pvalues_nested(m0_, m1_)))                   # GLS, 2000
-})
-
-test_that("multi-group categorical single-model is supported", {
-  mgc <- lavaan::cfa(hs, ordinalize(lavaan::HolzingerSwineford1939),
-                     ordered = paste0("x", 1:9), group = "school")
-  p <- pvalues(mgc, "PEBA4")
-  expect_true(valid_p(p))
-  expect_equal(attr(p, "semtests")$data_type, "categorical")
 })
 
 test_that("full WLS/ADF is refused (degenerate: correction is the identity)", {

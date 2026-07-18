@@ -124,10 +124,40 @@ test_that("FIML helper guards explain malformed fit and matrix shapes", {
     fiml_check_supported(categorical),
     "only implemented for continuous lavaan fits"
   )
-  expect_error(
-    fiml_one_group_matrix(list(diag(2), diag(2)), "test"),
-    "Expected one test matrix"
+  fixed_x <- lavaan::cfa(
+    "visual =~ x1 + x2 + x3
+     visual ~ ageyr",
+    HSm, missing = "fiml", estimator = "MLR", fixed.x = TRUE
   )
+  expect_error(
+    fiml_check_supported(fixed_x),
+    "fixed or conditional observed exogenous"
+  )
+  expect_error(
+    fiml_group_matrices(list(diag(2), diag(2)), fit, "test"),
+    "Expected 1 test matrix"
+  )
+  invalid_weights <- fit
+  invalid_weights@SampleStats@ntotal <- 0L
+  expect_error(
+    fiml_group_weights(invalid_weights),
+    "valid FIML group weights"
+  )
+  local({
+    testthat::local_mocked_bindings(
+      fiml_group_matrices = function(...) {
+        list(matrix(
+          0, nrow = 2L, ncol = 8L,
+          dimnames = list(NULL, paste0("x", seq_len(8L)))
+        ))
+      },
+      .package = "semTests"
+    )
+    expect_error(
+      fiml_data_blocks(fit),
+      "do not contain all observed variables"
+    )
+  })
   expect_error(
     fiml_validate_A(matrix(0, 2L, 3L), df = 1L, npar = 3L),
     "rank.*does not match"

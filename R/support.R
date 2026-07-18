@@ -17,7 +17,7 @@
 #' | ML / MLM / MLR   | continuous  | single or multi | complete | available    | stable |
 #' | GLS              | continuous  | single or multi | complete | available    | stable |
 #' | ULS              | continuous  | single or multi | complete | available    | stable |
-#' | ML / MLR (FIML)  | continuous  | single only     | FIML     | available    | stable |
+#' | ML / MLR (FIML)  | continuous  | single or multi | FIML     | available    | stable |
 #' | DWLS family      | ordered/mixed | single or multi | listwise/pairwise | available | stable |
 #' | ULS family       | ordered/mixed | single or multi | listwise/pairwise | available | stable |
 #' | WLS (ADF)        | continuous  | single or multi | complete | rejected | -- |
@@ -29,7 +29,7 @@
 #' |-------------------------|-------------|-----------------|------------------|-------------|-----------------|--------------|-----------|
 #' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | --              | available | stable |
 #' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | --              | available | stable |
-#' | ML / MLR (FIML)         | continuous  | single only     | FIML (both fits) | 2000 only   | exact or delta  | available | stable |
+#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | exact or delta  | available | stable |
 #' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | delta only | available | stable |
 #' | any                     | continuous  | --              | mixed / non-FIML | --          | --              | rejected | -- |
 #'
@@ -45,6 +45,20 @@
 #' compatibility rather than as an independently validated construction.
 #' Configurations outside the tables are refused at the entry point.
 #'
+#' ## Observed exogenous covariates
+#'
+#' Observed exogenous predictors are supported when they are modeled jointly
+#' with the other variables. In lavaan, request this random-x analysis with
+#' `fixed.x = FALSE` and `conditional.x = FALSE`. The independent validation
+#' suite covers continuous ML, GLS, ULS, FIML, and mixed categorical DWLS in
+#' this setting, for single models and nested comparisons.
+#'
+#' Fixed or conditional observed exogenous predictors are currently refused.
+#' Their reference distribution conditions on the realized covariate design
+#' and needs a separate saturated-model projection. If a covariate is intended
+#' to be fixed, keep that scientific choice and do not silently change it to
+#' random merely to pass the software check.
+#'
 #' ## Fit quality and nested comparability
 #'
 #' Both entry points require converged lavaan fits and warn when lavaan's
@@ -56,8 +70,7 @@
 #'
 #' The constrained model belongs in `m0`. If the models are supplied in reverse
 #' df order, semTests warns and swaps them. Only the Satorra-2000 reduction is
-#' available in this release; `method = "2001"` is temporarily refused pending
-#' further validation.
+#' available. `method = "2001"` has been withdrawn because it performs poorly.
 #'
 #' ## Statistic and gamma options
 #'
@@ -67,9 +80,10 @@
 #'
 #' * The **RLS** statistic (`browne.residual.nt.model`, Browne 1974) and the
 #'   **`UG`** (Du-Bentler) unbiased gamma are available **only** for classical
-#'   normal-theory ML with continuous, complete data and `estimator = "ML"`.
-#'   lavaan degrades RLS to ADF elsewhere, and the Du-Bentler correction has no
-#'   derivation for the other families. `semTests` refuses either request and
+#'   normal-theory ML with continuous, complete data, `estimator = "ML"`,
+#'   `fixed.x = FALSE`, and `conditional.x = FALSE`. lavaan degrades RLS to ADF
+#'   elsewhere, and the Du-Bentler correction has no derivation for the other
+#'   families or a fixed covariate design. `semTests` refuses either request and
 #'   points you to the standard statistic and biased gamma.
 #' * **Categorical and mixed-indicator fits** use lavaan's biased inspected
 #'   `UGamma` spectrum and unscaled estimator statistic directly. Supported
@@ -81,12 +95,14 @@
 #'   missingness assumptions and does not provide FIML or generally MAR-valid
 #'   inference.
 #' * **FIML** (missing data) uses the biased gamma and the standard statistic
-#'   only. `UG` and `RLS` are refused. FIML requires a single group, continuous
-#'   data, and no fixed exogenous covariates. `fiml.convention = "observed"`
-#'   (the default) uses observed saturated and model information, following the
-#'   recommendation of Kenward and Molenberghs (1998), and is independently
-#'   validated against magmaan. `"lavaan"` reproduces lavaan 0.7-2's inspected
-#'   robust-test spectrum, including its expected H1 weight.
+#'   only. `UG` and `RLS` are refused. FIML supports one or several groups with
+#'   continuous data. Observed exogenous predictors are supported under joint
+#'   random-x inference, using `fixed.x = FALSE` and `conditional.x = FALSE`.
+#'   `fiml.convention = "observed"` (the default) uses observed saturated and
+#'   model information, following the recommendation of Kenward and Molenberghs
+#'   (1998), and is independently validated against magmaan. `"lavaan"`
+#'   reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
+#'   expected H1 weight.
 #'
 #' ## Why full WLS/ADF is refused
 #'

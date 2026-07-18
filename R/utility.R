@@ -1,5 +1,18 @@
 
-#' Is this the classical normal-theory, complete-data, ML case?
+# Does the fitted model contain observed exogenous predictors?
+has_observed_exogenous <- function(fit) {
+  any(fit@Model@nexo > 0L)
+}
+
+# Is inference conditional on observed exogenous predictors?
+uses_fixed_or_conditional_x <- function(fit) {
+  has_observed_exogenous(fit) &&
+    (isTRUE(fit@Options$fixed.x) ||
+       isTRUE(fit@Options$conditional.x) ||
+       isTRUE(fit@Model@conditional.x))
+}
+
+#' Is this the classical normal-theory, complete-data, random-x ML case?
 #'
 #' The Du-Bentler unbiased gamma and the RLS (`browne.residual.nt.model`)
 #' statistic are defined here. Other families use the biased gamma and the
@@ -8,7 +21,8 @@
 is_classic_nt <- function(fit) {
   fit@Options$estimator == "ML" &&
     !isTRUE(fit@Model@categorical) &&
-    identical(fit@Options$missing, "listwise")
+    identical(fit@Options$missing, "listwise") &&
+    !uses_fixed_or_conditional_x(fit)
 }
 
 #' @keywords internal
@@ -36,8 +50,9 @@ make_chisqs <- function(chisq, m0, m1) {
 
   if ("rls" %in% chisq && !classic_nt) {
     stop("The RLS statistic ('browne.residual.nt.model') is only available for ",
-         "continuous, complete-data ML. lavaan evaluates it as ADF outside ",
-         "that setting. ",
+         "continuous, complete-data ML with random observed exogenous ",
+         "covariates (`fixed.x = FALSE`, `conditional.x = FALSE`). lavaan ",
+         "evaluates it as ADF outside that setting. ",
          "Use the standard statistic (the `_ML` suffix) or omit the suffix. ",
          "See `?semTests-support`.",
          call. = FALSE)

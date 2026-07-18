@@ -10,7 +10,9 @@ gamma <- function(m1, unbiased = 1, m0 = NULL) {
   stopifnot(unbiased %in% c(1,2,3))
   if (unbiased %in% c(2, 3) && !is_classic_nt(m1)) {
     stop("The unbiased (Du-Bentler) gamma is only defined for continuous, ",
-         "complete-data ML; drop `UG` from the test name to use the biased gamma. ",
+         "complete-data ML with random observed exogenous covariates ",
+         "(`fixed.x = FALSE`, `conditional.x = FALSE`). Drop `UG` from the ",
+         "test name to use the biased gamma. ",
          "See `?semTests-support`.",
          call. = FALSE)
   }

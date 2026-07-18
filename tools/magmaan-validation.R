@@ -55,6 +55,9 @@ suppressPackageStartupMessages({
 spectrum_tolerance <- as.numeric(Sys.getenv(
   "SPECTRUM_TOLERANCE", "1e-4"
 ))
+multigroup_spectrum_tolerance <- as.numeric(Sys.getenv(
+  "MULTIGROUP_SPECTRUM_TOLERANCE", "5e-4"
+))
 pvalue_tolerance <- as.numeric(Sys.getenv(
   "PVALUE_TOLERANCE", "1e-3"
 ))
@@ -75,6 +78,8 @@ endpoint_statistic_tolerance <- as.numeric(Sys.getenv(
 ))
 parity_output <- Sys.getenv("PARITY_OUTPUT", "")
 if (!is.finite(spectrum_tolerance) || spectrum_tolerance <= 0 ||
+    !is.finite(multigroup_spectrum_tolerance) ||
+      multigroup_spectrum_tolerance <= 0 ||
     !is.finite(pvalue_tolerance) || pvalue_tolerance <= 0 ||
     !is.finite(endpoint_pvalue_tolerance) ||
       endpoint_pvalue_tolerance <= 0 ||
@@ -276,6 +281,16 @@ fiml_h0 <- "
   visual  =~ x1 + b*x2 + b*x3
   textual =~ x4 + a*x5 + a*x6
   speed   =~ x7 + x8 + x9
+"
+
+random_x_h1 <- "
+  visual =~ x1 + x2 + x3
+  visual ~ ageyr
+"
+
+random_x_h0 <- "
+  visual =~ x1 + a*x2 + a*x3
+  visual ~ ageyr
 "
 
 validate_classical_ml <- function() {
@@ -666,6 +681,211 @@ validate_fiml <- function() {
   }
 }
 
+validate_multigroup_fiml <- function() {
+  data <- fiml_data()
+  lavaan_h1 <- lavaan::cfa(
+    fiml_h1, data, group = "school",
+    missing = "fiml", estimator = "MLR", meanstructure = TRUE
+  )
+  lavaan_h0 <- lavaan::cfa(
+    fiml_h1, data, group = "school", group.equal = "loadings",
+    missing = "fiml", estimator = "MLR", meanstructure = TRUE
+  )
+  magmaan_h1 <- magmaan::magmaan(
+    fiml_h1, data, groups = "school",
+    estimator = "FIML", meanstructure = TRUE
+  )
+  magmaan_h0 <- magmaan::magmaan(
+    fiml_h1, data, groups = "school", group_equal = "loadings",
+    estimator = "FIML", meanstructure = TRUE
+  )
+  check_converged("Multigroup FIML", magmaan_h1, magmaan_h0)
+
+  df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
+  single_tests <- tests_for_df(df)
+  semtests_spectrum <- semtests_internal("fiml_lambdas")(
+    lavaan_h1, df, fiml.convention = "observed"
+  )$ug_biased
+  magmaan_tests <- magmaan::fmg_tests(
+    magmaan_h1, tests = single_tests
+  )
+  check_close(
+    "Multigroup FIML single-model spectrum",
+    sort(semtests_spectrum),
+    sort(magmaan_tests$eigenvalues[[1L]]),
+    multigroup_spectrum_tolerance, layer = "spectrum"
+  )
+  semtests_pvalues <- semTests::pvalues(
+    lavaan_h1, single_tests, fiml.convention = "observed"
+  )
+  check_names(
+    "Multigroup FIML single-model labels",
+    names(semtests_pvalues), magmaan_tests$label
+  )
+  check_close(
+    "Multigroup FIML single-model p-values",
+    semtests_pvalues,
+    magmaan_tests$p_value,
+    multigroup_pvalue_tolerance, layer = "end-to-end"
+  )
+  check_close(
+    "Multigroup FIML single-model base statistic",
+    semtests_internal("make_chisqs")("ml", lavaan_h1),
+    magmaan_tests$base_statistic[1L],
+    statistic_tolerance, layer = "statistic"
+  )
+
+  nested_df <- as.integer(
+    lavaan::fitmeasures(lavaan_h0, "df") -
+      lavaan::fitmeasures(lavaan_h1, "df")
+  )
+  nested_tests <- tests_for_df(nested_df)
+  for (A.method in c("delta", "exact")) {
+    semtests_spectrum <- semtests_internal("fiml_lambdas_nested")(
+      lavaan_h0, lavaan_h1, nested_df,
+      A.method = A.method,
+      fiml.convention = "observed"
+    )$ug_biased
+    magmaan_nested <- magmaan::fmg_nested(
+      magmaan_h1, magmaan_h0,
+      tests = nested_tests, A.method = A.method
+    )
+    check_close(
+      paste("Multigroup FIML nested spectrum,", A.method),
+      sort(semtests_spectrum),
+      sort(magmaan_nested$eigenvalues[[1L]]),
+      multigroup_spectrum_tolerance, layer = "spectrum"
+    )
+    semtests_pvalues <- semTests::pvalues_nested(
+      lavaan_h0, lavaan_h1, tests = nested_tests,
+      A.method = A.method,
+      fiml.convention = "observed"
+    )
+    check_names(
+      paste("Multigroup FIML nested labels,", A.method),
+      names(semtests_pvalues), magmaan_nested$label
+    )
+    check_close(
+      paste("Multigroup FIML nested p-values,", A.method),
+      semtests_pvalues,
+      magmaan_nested$p_value,
+      multigroup_pvalue_tolerance, layer = "end-to-end"
+    )
+    check_close(
+      paste("Multigroup FIML nested base statistic,", A.method),
+      semtests_internal("make_chisqs")("ml", lavaan_h0, lavaan_h1),
+      magmaan_nested$base_statistic[1L],
+      statistic_tolerance, layer = "statistic"
+    )
+  }
+}
+
+validate_random_x_fiml <- function() {
+  data <- fiml_data()
+  data$ageyr[seq(7L, nrow(data), by = 23L)] <- NA_real_
+  lavaan_h1 <- lavaan::cfa(
+    random_x_h1, data,
+    missing = "fiml", estimator = "MLR",
+    fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
+  )
+  lavaan_h0 <- lavaan::cfa(
+    random_x_h0, data,
+    missing = "fiml", estimator = "MLR",
+    fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
+  )
+  magmaan_h1 <- magmaan::magmaan(
+    magmaan::model_spec(
+      random_x_h1, fixed_x = FALSE, meanstructure = TRUE
+    ),
+    data, estimator = "FIML"
+  )
+  magmaan_h0 <- magmaan::magmaan(
+    magmaan::model_spec(
+      random_x_h0, fixed_x = FALSE, meanstructure = TRUE
+    ),
+    data, estimator = "FIML"
+  )
+  check_converged("Random-x FIML", magmaan_h1, magmaan_h0)
+
+  df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
+  single_tests <- tests_for_df(df)
+  semtests_spectrum <- semtests_internal("fiml_lambdas")(
+    lavaan_h1, df, fiml.convention = "observed"
+  )$ug_biased
+  magmaan_tests <- magmaan::fmg_tests(
+    magmaan_h1, tests = single_tests
+  )
+  check_close(
+    "Random-x FIML single-model spectrum",
+    sort(semtests_spectrum),
+    sort(magmaan_tests$eigenvalues[[1L]]),
+    spectrum_tolerance, layer = "spectrum"
+  )
+  semtests_pvalues <- semTests::pvalues(
+    lavaan_h1, single_tests, fiml.convention = "observed"
+  )
+  check_names(
+    "Random-x FIML single-model labels",
+    names(semtests_pvalues), magmaan_tests$label
+  )
+  check_close(
+    "Random-x FIML single-model p-values",
+    semtests_pvalues,
+    magmaan_tests$p_value,
+    pvalue_tolerance, layer = "end-to-end"
+  )
+  check_close(
+    "Random-x FIML single-model base statistic",
+    semtests_internal("make_chisqs")("ml", lavaan_h1),
+    magmaan_tests$base_statistic[1L],
+    statistic_tolerance, layer = "statistic"
+  )
+
+  nested_df <- as.integer(
+    lavaan::fitmeasures(lavaan_h0, "df") -
+      lavaan::fitmeasures(lavaan_h1, "df")
+  )
+  nested_tests <- tests_for_df(nested_df)
+  for (A.method in c("delta", "exact")) {
+    semtests_spectrum <- semtests_internal("fiml_lambdas_nested")(
+      lavaan_h0, lavaan_h1, nested_df,
+      A.method = A.method,
+      fiml.convention = "observed"
+    )$ug_biased
+    magmaan_nested <- magmaan::fmg_nested(
+      magmaan_h1, magmaan_h0,
+      tests = nested_tests, A.method = A.method
+    )
+    check_close(
+      paste("Random-x FIML nested spectrum,", A.method),
+      sort(semtests_spectrum),
+      sort(magmaan_nested$eigenvalues[[1L]]),
+      spectrum_tolerance, layer = "spectrum"
+    )
+    semtests_pvalues <- semTests::pvalues_nested(
+      lavaan_h0, lavaan_h1, tests = nested_tests,
+      A.method = A.method,
+      fiml.convention = "observed"
+    )
+    check_names(
+      paste("Random-x FIML nested labels,", A.method),
+      names(semtests_pvalues), magmaan_nested$label
+    )
+    check_close(
+      paste("Random-x FIML nested p-values,", A.method),
+      semtests_pvalues,
+      magmaan_nested$p_value,
+      pvalue_tolerance, layer = "end-to-end"
+    )
+    check_close(
+      paste("Random-x FIML nested base statistic,", A.method),
+      semtests_internal("make_chisqs")("ml", lavaan_h0, lavaan_h1),
+      magmaan_nested$base_statistic[1L],
+      statistic_tolerance, layer = "statistic"
+    )
+  }
+}
+
 categorical_h1 <- "
   visual  =~ x1 + x2 + x3
   textual =~ x4 + x5 + x6
@@ -1025,6 +1245,177 @@ validate_multigroup_categorical <- function() {
   )
 }
 
+validate_random_x_complete <- function() {
+  data <- lavaan::HolzingerSwineford1939
+
+  for (estimator in c("ML", "GLS", "ULS")) {
+    lavaan_estimator <- if (estimator == "ML") "MLM" else estimator
+    lavaan_h1_args <- list(
+      model = random_x_h1, data = data,
+      estimator = lavaan_estimator,
+      fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
+    )
+    lavaan_h0_args <- list(
+      model = random_x_h0, data = data,
+      estimator = lavaan_estimator,
+      fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
+    )
+    if (estimator == "ULS") {
+      lavaan_h1_args$test <- "satorra.bentler"
+      lavaan_h0_args$test <- "satorra.bentler"
+    }
+    lavaan_h1 <- do.call(lavaan::cfa, lavaan_h1_args)
+    lavaan_h0 <- do.call(lavaan::cfa, lavaan_h0_args)
+    magmaan_spec_h1 <- magmaan::model_spec(
+      random_x_h1, fixed_x = FALSE, meanstructure = TRUE
+    )
+    magmaan_spec_h0 <- magmaan::model_spec(
+      random_x_h0, fixed_x = FALSE, meanstructure = TRUE
+    )
+
+    if (estimator == "ML") {
+      magmaan_h1 <- magmaan::magmaan(
+        magmaan_spec_h1, data, estimator = "ML"
+      )
+      magmaan_h0 <- magmaan::magmaan(
+        magmaan_spec_h0, data, estimator = "ML"
+      )
+      magmaan_tests <- magmaan::fmg_tests(
+        magmaan_h1, tests = "SB_ML"
+      )
+      magmaan_nested <- magmaan::fmg_nested(
+        magmaan_h1, magmaan_h0,
+        data = data, tests = "SB_ML", A.method = "delta"
+      )
+    } else {
+      gamma <- if (estimator == "ULS") "normal" else "empirical"
+      magmaan_h1 <- magmaan::magmaan(
+        magmaan_spec_h1,
+        magmaan::df_to_data(
+          data, magmaan_spec_h1, scaling = "n-1"
+        ),
+        estimator = estimator
+      )
+      magmaan_h0 <- magmaan::magmaan(
+        magmaan_spec_h0,
+        magmaan::df_to_data(
+          data, magmaan_spec_h0, scaling = "n-1"
+        ),
+        estimator = estimator
+      )
+      magmaan_tests <- magmaan::fmg_tests(
+        magmaan_h1, tests = "SB", gamma = gamma
+      )
+      magmaan_nested <- magmaan::fmg_nested(
+        magmaan_h1, magmaan_h0,
+        data = data, tests = "SB",
+        A.method = "delta", gamma = gamma
+      )
+    }
+    check_converged(
+      paste("Random-x complete", estimator),
+      magmaan_h1, magmaan_h0
+    )
+
+    df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
+    semtests_spectrum <- semtests_internal("lavaan_lambdas")(
+      lavaan_h1, df
+    )$ug_biased
+    check_close(
+      paste("Random-x complete single spectrum,", estimator),
+      sort(semtests_spectrum),
+      sort(magmaan_tests$eigenvalues[[1L]]),
+      spectrum_tolerance, layer = "spectrum"
+    )
+
+    nested_df <- as.integer(
+      lavaan::fitmeasures(lavaan_h0, "df") -
+        lavaan::fitmeasures(lavaan_h1, "df")
+    )
+    semtests_nested <- semtests_internal("lambdas_nested")(
+      lavaan_h0, lavaan_h1,
+      method = "2000", unbiased = 1L, df = nested_df
+    )$ug_biased
+    check_close(
+      paste("Random-x complete nested spectrum,", estimator),
+      sort(semtests_nested),
+      sort(magmaan_nested$eigenvalues[[1L]]),
+      spectrum_tolerance, layer = "spectrum"
+    )
+  }
+
+  ordered_names <- paste0("x", seq_len(3L))
+  categorical <- data
+  categorical[ordered_names] <- lapply(
+    categorical[ordered_names],
+    function(x) ordered(cut(x, 3L))
+  )
+  lavaan_h1 <- lavaan::cfa(
+    random_x_h1, categorical,
+    ordered = ordered_names, estimator = "WLSMV",
+    fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
+  )
+  lavaan_h0 <- lavaan::cfa(
+    random_x_h0, categorical,
+    ordered = ordered_names, estimator = "WLSMV",
+    fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
+  )
+  magmaan_spec_h1 <- magmaan::model_spec(
+    random_x_h1, ordered = ordered_names,
+    fixed_x = FALSE, meanstructure = TRUE
+  )
+  magmaan_spec_h0 <- magmaan::model_spec(
+    random_x_h0, ordered = ordered_names,
+    fixed_x = FALSE, meanstructure = TRUE
+  )
+  magmaan_stats <- magmaan::magmaan_core$data_mixed_ordinal_stats_from_df(
+    categorical, magmaan_spec_h1,
+    ordered = ordered_names, missing = "listwise",
+    full_wls_weight = FALSE
+  )
+  magmaan_h1 <- magmaan::magmaan(
+    magmaan_spec_h1, magmaan_stats, estimator = "DWLS"
+  )
+  magmaan_h0 <- magmaan::magmaan(
+    magmaan_spec_h0, magmaan_stats, estimator = "DWLS"
+  )
+  check_converged(
+    "Random-x categorical DWLS", magmaan_h1, magmaan_h0
+  )
+
+  df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
+  magmaan_tests <- magmaan::fmg_tests_mixed_ordinal(
+    magmaan_h1, magmaan_stats,
+    tests = "SB", weight = "DWLS"
+  )
+  check_close(
+    "Random-x categorical single spectrum, DWLS",
+    sort(semtests_internal("lavaan_lambdas")(
+      lavaan_h1, df
+    )$ug_biased),
+    sort(magmaan_tests$eigenvalues[[1L]]),
+    spectrum_tolerance, layer = "spectrum"
+  )
+
+  nested_df <- as.integer(
+    lavaan::fitmeasures(lavaan_h0, "df") -
+      lavaan::fitmeasures(lavaan_h1, "df")
+  )
+  magmaan_nested <- magmaan::fmg_nested_mixed_ordinal(
+    magmaan_h1, magmaan_h0, magmaan_stats,
+    tests = "SB", weight = "DWLS", A.method = "delta"
+  )
+  check_close(
+    "Random-x categorical nested spectrum, DWLS",
+    sort(semtests_internal("lambdas_nested")(
+      lavaan_h0, lavaan_h1,
+      method = "2000", unbiased = 1L, df = nested_df
+    )$ug_biased),
+    sort(magmaan_nested$eigenvalues[[1L]]),
+    spectrum_tolerance, layer = "spectrum"
+  )
+}
+
 package_fingerprint <- function(package) {
   package_dir <- system.file(package = package)
   candidates <- c(
@@ -1052,11 +1443,12 @@ cat("magmaan installed-code fingerprint:", magmaan_fingerprint, "\n")
 cat(sprintf(
   paste0(
     "Tolerances: transform %.1e, statistic %.1e, ",
-    "spectrum %.1e, p-value %.1e, optimizer p-value %.1e, ",
+    "spectrum %.1e, multigroup spectrum %.1e, p-value %.1e, ",
+    "optimizer p-value %.1e, ",
     "multigroup p-value %.1e, optimizer statistic %.1e\n\n"
   ),
   transform_tolerance, statistic_tolerance,
-  spectrum_tolerance, pvalue_tolerance,
+  spectrum_tolerance, multigroup_spectrum_tolerance, pvalue_tolerance,
   endpoint_pvalue_tolerance, multigroup_pvalue_tolerance,
   endpoint_statistic_tolerance
 ))
@@ -1067,6 +1459,9 @@ validate_classical_nested_multigroup()
 validate_continuous_ls("GLS")
 validate_continuous_ls("ULS")
 validate_fiml()
+validate_multigroup_fiml()
+validate_random_x_fiml()
+validate_random_x_complete()
 validate_categorical(
   pairwise = FALSE,
   lavaan_estimator = "WLSMV", magmaan_estimator = "DWLS"

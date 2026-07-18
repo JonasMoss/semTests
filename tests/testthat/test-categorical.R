@@ -56,15 +56,33 @@ categorical_valid_p <- function(x) {
   all(is.finite(x) & x >= 0 & x <= 1)
 }
 
-test_that("biased single-model spectra come directly from lavaan UGamma", {
-  fixture <- categorical_test_data()
-  for (estimator in c(
-    "WLSMV", "DWLS", "WLSM", "WLSMVS", "ULSMV", "ULS"
-  )) {
-    fit <- lavaan::cfa(
-      categorical_test_model, fixture$data,
-      ordered = fixture$ordered, estimator = estimator
+categorical_fixture <- categorical_test_data()
+categorical_base_estimators <- c(
+  "WLSMV", "DWLS", "WLSM", "WLSMVS", "ULSMV", "ULS"
+)
+categorical_base_fits <- setNames(
+  lapply(categorical_base_estimators, function(estimator) {
+    lavaan::cfa(
+      categorical_test_model, categorical_fixture$data,
+      ordered = categorical_fixture$ordered, estimator = estimator
     )
+  }),
+  categorical_base_estimators
+)
+categorical_pairs <- list(
+  default = fit_categorical_pair(),
+  pairwise = fit_categorical_pair(pairwise = TRUE),
+  mixed = fit_categorical_pair(mixed = TRUE),
+  theta = fit_categorical_pair(parameterization = "theta")
+)
+categorical_multigroup <- lavaan::cfa(
+  categorical_test_model, categorical_fixture$data,
+  ordered = categorical_fixture$ordered, group = "school"
+)
+
+test_that("biased single-model spectra come directly from lavaan UGamma", {
+  for (estimator in names(categorical_base_fits)) {
+    fit <- categorical_base_fits[[estimator]]
     df <- as.integer(lavaan::fitmeasures(fit, "df"))
     expected <- ugamma_eigenvalues(
       lavaan::lavInspect(fit, "UGamma"), df
@@ -82,20 +100,20 @@ test_that("biased single-model spectra come directly from lavaan UGamma", {
 })
 
 test_that("categorical SB and SS reproduce lavaan's public corrections", {
-  fixture <- categorical_test_data()
   variants <- list(
     DWLS = c("WLSM", "WLSMV"),
     ULS = c("ULSM", "ULSMV")
   )
   for (base in names(variants)) {
-    fit_sb <- lavaan::cfa(
-      categorical_test_model, fixture$data,
-      ordered = fixture$ordered, estimator = variants[[base]][1L]
-    )
-    fit_ss <- lavaan::cfa(
-      categorical_test_model, fixture$data,
-      ordered = fixture$ordered, estimator = variants[[base]][2L]
-    )
+    fit_sb <- if (base == "ULS") {
+      lavaan::cfa(
+        categorical_test_model, categorical_fixture$data,
+        ordered = categorical_fixture$ordered, estimator = "ULSM"
+      )
+    } else {
+      categorical_base_fits[[variants[[base]][1L]]]
+    }
+    fit_ss <- categorical_base_fits[[variants[[base]][2L]]]
     expect_equal(
       as.numeric(pvalues(fit_sb, "SB")),
       lavaan::lavInspect(fit_sb, "test")$satorra.bentler$pvalue,
@@ -112,15 +130,11 @@ test_that("categorical SB and SS reproduce lavaan's public corrections", {
 })
 
 test_that("categorical spectra cover groups, constraints, parameterizations, and mixed indicators", {
-  multigroup_fixture <- categorical_test_data()
   cases <- list(
-    multigroup = lavaan::cfa(
-      categorical_test_model, multigroup_fixture$data,
-      ordered = multigroup_fixture$ordered, group = "school"
-    ),
-    constrained = fit_categorical_pair()$m0,
-    theta = fit_categorical_pair(parameterization = "theta")$m1,
-    mixed = fit_categorical_pair(mixed = TRUE)$m1,
+    multigroup = categorical_multigroup,
+    constrained = categorical_pairs$default$m0,
+    theta = categorical_pairs$theta$m1,
+    mixed = categorical_pairs$mixed$m1,
     binary = {
       fixture <- categorical_test_data(binary = TRUE)
       lavaan::cfa(
@@ -128,7 +142,7 @@ test_that("categorical spectra cover groups, constraints, parameterizations, and
         ordered = fixture$ordered
       )
     },
-    pairwise = fit_categorical_pair(pairwise = TRUE)$m1
+    pairwise = categorical_pairs$pairwise$m1
   )
   for (case in names(cases)) {
     fit <- cases[[case]]
@@ -156,10 +170,10 @@ test_that("full categorical WLS is refused (identity-spectrum no-op)", {
 
 test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
   cases <- list(
-    WLSMV = fit_categorical_pair("WLSMV"),
+    WLSMV = categorical_pairs$default,
     ULSMV = fit_categorical_pair("ULSMV"),
-    pairwise = fit_categorical_pair("WLSMV", pairwise = TRUE),
-    mixed = fit_categorical_pair("WLSMV", mixed = TRUE)
+    pairwise = categorical_pairs$pairwise,
+    mixed = categorical_pairs$mixed
   )
   for (case in names(cases)) {
     fits <- cases[[case]]
@@ -190,19 +204,15 @@ test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
 })
 
 test_that("nested multigroup categorical spectra reproduce lavaan traces", {
-  fixture <- categorical_test_data()
   h0 <- "
     visual  =~ x1 + c(a1, a2)*x2 + c(a1, a2)*x3
     textual =~ x4 + x5 + x6
     speed   =~ x7 + x8 + x9
   "
-  m1 <- lavaan::cfa(
-    categorical_test_model, fixture$data,
-    ordered = fixture$ordered, group = "school"
-  )
+  m1 <- categorical_multigroup
   m0 <- lavaan::cfa(
-    h0, fixture$data,
-    ordered = fixture$ordered, group = "school"
+    h0, categorical_fixture$data,
+    ordered = categorical_fixture$ordered, group = "school"
   )
   actual <- pvalues_nested(m0, m1, tests = c("SB", "SS"))
   shifted <- lavaan::lavTestLRT(
@@ -214,12 +224,12 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
   # semTests SB uses the ordinary trace/df scaling. Fit the same DWLS models
   # through WLSM to obtain lavaan's public simple-scaled reference.
   m1_sb <- lavaan::cfa(
-    categorical_test_model, fixture$data,
-    ordered = fixture$ordered, group = "school", estimator = "WLSM"
+    categorical_test_model, categorical_fixture$data,
+    ordered = categorical_fixture$ordered, group = "school", estimator = "WLSM"
   )
   m0_sb <- lavaan::cfa(
-    h0, fixture$data,
-    ordered = fixture$ordered, group = "school", estimator = "WLSM"
+    h0, categorical_fixture$data,
+    ordered = categorical_fixture$ordered, group = "school", estimator = "WLSM"
   )
   scaled <- lavaan::lavTestLRT(
     m1_sb, m0_sb, method = "satorra.2000",
@@ -235,7 +245,7 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
 })
 
 test_that("nested categorical compatibility checks fail clearly", {
-  fits <- fit_categorical_pair()
+  fits <- categorical_pairs$default
   expect_error(pvalues_nested(fits$m0, fits$m1, method = "2001"),
                "method = \"2000\"")
   expect_error(pvalues_nested(fits$m0, fits$m1, A.method = "exact"),
@@ -244,7 +254,7 @@ test_that("nested categorical compatibility checks fail clearly", {
   dwls <- fit_categorical_pair("DWLS")$m1
   expect_error(pvalues_nested(fits$m0, dwls), "same requested")
 
-  theta <- fit_categorical_pair(parameterization = "theta")$m1
+  theta <- categorical_pairs$theta$m1
   expect_error(pvalues_nested(fits$m0, theta), "same parameterization")
 
   different_data <- categorical_test_data()
@@ -263,7 +273,7 @@ test_that("nested categorical compatibility checks fail clearly", {
 })
 
 test_that("categorical fit and pair compatibility guards cover the support surface", {
-  fits <- fit_categorical_pair()
+  fits <- categorical_pairs$default
 
   bad_estimator <- fits$m1
   bad_estimator@Options$estimator <- "ML"
@@ -275,29 +285,21 @@ test_that("categorical fit and pair compatibility guards cover the support surfa
   expect_error(check_supported(bad_missing),
                "listwise.*pairwise")
 
-  pairwise <- fit_categorical_pair(pairwise = TRUE)$m1
+  pairwise <- categorical_pairs$pairwise$m1
   expect_error(check_categorical_nested_pair(fits$m0, pairwise),
                "same missing-data mode")
 
-  fixture <- categorical_test_data(mixed = TRUE)
-  mixed <- lavaan::cfa(
-    categorical_test_model, fixture$data,
-    ordered = fixture$ordered
-  )
+  mixed <- categorical_pairs$mixed$m1
   expect_error(check_categorical_nested_pair(fits$m0, mixed),
                "same observed and ordered variables")
 
-  fixture <- categorical_test_data()
-  multigroup <- lavaan::cfa(
-    categorical_test_model, fixture$data,
-    ordered = fixture$ordered, group = "school"
-  )
+  multigroup <- categorical_multigroup
   expect_error(check_categorical_nested_pair(fits$m0, multigroup),
                "same groups and group sample sizes")
 })
 
 test_that("categorical restriction rank failures are reported at the public entry point", {
-  fits <- fit_categorical_pair()
+  fits <- categorical_pairs$default
   testthat::local_mocked_bindings(
     get_a_matrix = function(...) matrix(0, 0L, 0L),
     .package = "semTests"

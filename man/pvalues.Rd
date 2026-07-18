@@ -36,9 +36,9 @@ convention (\code{"observed"}, the default) or reproduce lavaan 0.7-2's
 inspected robust-test spectrum (\code{"lavaan"}).}
 
 \item{method}{Nested reduction method. Only Satorra's \code{"2000"} construction
-(the paper-recommended default) is available in this release; the
-Satorra--Bentler \code{"2001"} construction is temporarily refused pending
-further validation, with a pointer to \code{"2000"}.}
+(the paper-recommended default) is available. The Satorra--Bentler \code{"2001"}
+construction has been withdrawn because it performs poorly, and requesting
+it points you to \code{"2000"}.}
 
 \item{A.method}{For nested FIML or categorical models, choose \code{"exact"} for
 the literal parameter restriction map or \code{"delta"} for the local
@@ -120,10 +120,11 @@ expose the asymptotic moment covariance. Robust choices such as
 \code{test = "satorra.bentler"} or \code{estimator = "MLM"}, \code{"MLR"}, or \code{"DWLS"}
 provide it. The RLS statistic (\code{browne.residual.nt.model}) and the unbiased
 (\code{UG}) Du-Bentler gamma are defined for the classical continuous,
-complete-data ML case. Other families use the standard statistic and biased
-gamma. Full WLS/ADF is refused outright: its weight is already the inverse
-moment covariance, so the correction is exactly the identity and every test
-would equal the ordinary chi-square.
+complete-data, random-x ML case. Other families use the standard statistic
+and biased gamma. Fixed or conditional observed exogenous predictors are
+currently refused. Full WLS/ADF is refused outright: its weight is already
+the inverse moment covariance, so the correction is exactly the identity and
+every test would equal the ordinary chi-square.
 
 GLS, ULS, categorical DWLS/ULS, FIML missing data, and nested FIML or
 categorical comparison are validated to numerical tolerance against an

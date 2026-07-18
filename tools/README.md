@@ -22,7 +22,10 @@ magmaan's independent C++23 implementation. It covers:
 - continuous GLS and ULS single-model and nested spectra, with lavaan's explicit
   `N-1` covariance scaling and the estimator-specific empirical/normal-theory
   gamma convention;
-- observed-information FIML, single-model and nested (`delta` and `exact`);
+- observed-information FIML, single-model and nested (`delta` and `exact`),
+  for one or several groups;
+- joint random-x models for continuous ML, GLS, ULS, and FIML, plus mixed
+  categorical DWLS, in single-model and nested form;
 - all-ordinal DWLS and ULS, single-model and nested, with complete and
   pairwise-missing data;
 - mixed continuous/ordinal DWLS, single-model and nested;
@@ -57,6 +60,9 @@ Passing the script certifies only the combinations above. In particular:
   spectrum;
 - semTests' FIML parity target is `fiml.convention = "observed"`, not its
   lavaan-compatibility convention.
+- fixed or conditional observed exogenous predictors are outside the certified
+  boundary; the random-x checks use `fixed.x = FALSE` and
+  `conditional.x = FALSE`.
 
 High-throughput magmaan simulations can replace semTests only inside this
 boundary. Treat an omitted combination as unverified, not as implicitly
@@ -69,6 +75,7 @@ deliberately separate from the strict fixed-input and spectrum tolerances:
 
 ```sh
 TRANSFORM_TOLERANCE=2e-6 SPECTRUM_TOLERANCE=1e-4 \
+  MULTIGROUP_SPECTRUM_TOLERANCE=5e-4 \
   PVALUE_TOLERANCE=1e-3 ENDPOINT_PVALUE_TOLERANCE=2e-3 \
   MULTIGROUP_PVALUE_TOLERANCE=5e-3 \
   Rscript tools/magmaan-validation.R

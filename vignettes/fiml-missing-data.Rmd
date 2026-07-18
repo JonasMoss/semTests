@@ -18,10 +18,12 @@ knitr::opts_chunk$set(
 
 ## Scope
 
-`semTests` supports continuous, single-group FIML models without fixed
-exogenous covariates. FIML uses the standard likelihood-ratio statistic and the
-biased gamma estimate. The complete-data `RLS` and Du--Bentler `UG` choices are
-defined for a different data setting and are unavailable here.
+`semTests` supports continuous FIML models with one or several groups. Observed
+exogenous predictors can be included when they are modeled jointly by setting
+`fixed.x = FALSE` and `conditional.x = FALSE`. Fixed or conditional predictors
+need a different reference distribution and are refused for now. These models
+use the standard likelihood-ratio statistic and the usual biased gamma
+estimate. The complete-data `RLS` and Du--Bentler `UG` choices do not apply.
 
 ```{r setup}
 library("semTests")
@@ -36,10 +38,10 @@ model <- "
 
 ## A reproducible MAR-like example
 
-To make the information choice visible, missingness in `x1` and `x5` is made
-dependent on `x9`, which remains observed. This gives us a reproducible
-MAR-like mechanism for the example. It says nothing about the missingness
-process in the original data.
+To make the information choice visible, we let missingness in `x1` and `x5`
+depend on `x9`, which stays observed. This gives the example a reproducible
+MAR-like mechanism. It says nothing about the missingness process in the
+original data.
 
 ```{r missing-data}
 fiml_data <- HolzingerSwineford1939
@@ -68,34 +70,59 @@ fit_observed <- cfa(
 pvalues(fit_observed, c("SB", "SS", "PEBA4"))
 ```
 
+An observed predictor works too when its distribution belongs to the joint
+model:
+
+```{r random-x-fit}
+model_x <- "
+  visual =~ x1 + x2 + x3
+  visual ~ ageyr
+"
+
+random_x_data <- fiml_data
+random_x_data$ageyr[seq(7, nrow(random_x_data), by = 23)] <- NA
+
+fit_random_x <- cfa(
+  model_x, random_x_data,
+  missing = "fiml", estimator = "MLR",
+  fixed.x = FALSE, conditional.x = FALSE
+)
+
+pvalues(fit_random_x, c("SB", "SS", "PEBA2"))
+```
+
+Because `ageyr` belongs to the joint model, its missing values are handled by
+FIML too. Calling a predictor random is still a modeling decision. If `ageyr`
+should instead be treated as a fixed design variable, this example is not a
+substitute for a conditional analysis.
+
 ## Keep the two information choices separate
 
-Two related controls appear in this workflow:
+Two similarly named controls do different jobs:
 
 1. lavaan's `information` fit option selects the model information stored and
-   used by lavaan's own inference machinery.
-2. `fiml.convention` selects the matrices used to construct the semTests
-   reference spectrum.
+   used for lavaan's own inference.
+2. `fiml.convention` selects the information matrices that `semTests` uses for
+   its reference distribution.
 
-The semTests default, `"observed"`, uses observed saturated and observed model
+The `semTests` default, `"observed"`, uses observed saturated and observed model
 information throughout. `semTests` requests these matrices explicitly. A
 lavaan fit created with expected information therefore keeps the same
 observed-convention result.
 
-The `"lavaan"` convention is a compatibility construction. For a single model
-it reproduces `lavInspect(fit, "UGamma")`. For a nested model it reproduces
-lavaan's public Satorra-2000 construction. That construction uses lavaan's H1
-weight convention and the model information selected in the fit.
-`information = "expected"` controls only the model-information part of that
-construction.
+Choose `"lavaan"` when the goal is compatibility with lavaan's own robust
+construction. For one model, it reproduces `lavInspect(fit, "UGamma")`. For a
+nested pair, it reproduces lavaan's public Satorra-2000 construction. In that
+compatibility path, `information = "expected"` controls the model-information
+part of the calculation.
 
 ## Why observed information is the default
 
 Expected information can be inconsistent under general MAR (Kenward and
 Molenberghs, 1998). Observed information reflects the realized missingness
 patterns and sample curvature. Savalei (2010) and Savalei and Rosseel (2022)
-develop the consequences for SEM. The switch can matter in finite samples, so
-we also checked it in a focused computational study.
+work through the consequences for SEM. The choice can matter in finite samples,
+so we gave it a fairly serious computational check.
 
 The study crossed:
 
@@ -104,12 +131,11 @@ The study crossed:
 * complete data, 30% MCAR, and 30% MAR
 * \(N = 150, 300, 600,\) and \(1200\)
 
-Each of the 48 cells used 200,000 replications, for 9.6 million fits. A free
-loading and the factor covariance were followed. The same fitted model was
-used to compare expected information, the analytic observed-H1 approximation,
-and the full observed Hessian. Each information matrix was paired with either
-its model-based inverse or the same empirical-score sandwich meat (Yuan &
-Bentler, 2000).
+Each of the 48 cells used 200,000 replications, giving 9.6 million fits in all.
+We followed the interval coverage of one free loading and the factor
+covariance. Six standard-error recipes combined three information choices with
+either a model-based covariance or an empirical-score sandwich covariance
+(Yuan & Bentler, 2000).
 
 ```{r information-study, echo = FALSE}
 information_coverage <- data.frame(
@@ -137,30 +163,34 @@ knitr::kable(
 )
 ```
 
-Across correctly specified cells, the full observed Hessian with sandwich
-covariance had the smallest mean absolute coverage error, 0.821 percentage
-points, and mean coverage of 94.179%. Under a correct normal model the two
-full-Hessian covariances were essentially tied near 94.7%. Under \(t_5\) data,
-model-based covariance covered only about 80%, while the full-Hessian sandwich
-reached 93.64%. Under misspecification, its centered coverage was 94.53% for
-normal data and 93.00% for \(t_5\), compared with 92.46% and 89.98% for the
-observed-H1 sandwich.
+For a misspecified model, centered coverage uses the simulation's average
+estimate as the target. That lets us study interval calibration without
+pretending that a misspecified parameter is the original population value.
 
-Rare converged Heywood or nearly singular solutions produced extreme
-estimate and standard-error tails. We therefore omit arithmetic mean SE/SD
-ratios. Coverage retains converged replications with finite standard errors,
-and the worst cell-specific information-inversion rate was 0.0105%. Across all
-48 design cells, the simulation implementation and lavaan agreed in 576 of 576
-parameter-level standard-error comparisons. The maximum absolute difference
+The full observed Hessian with sandwich covariance came closest to 95% overall.
+Its mean absolute coverage error was 0.821 percentage points, with mean
+coverage of 94.179% in the correctly specified cells. Under a correct normal
+model, the two full-Hessian versions were tied at about 94.7%. Under \(t_5\)
+data, model-based covariance hovered near 80%, while the full-Hessian sandwich
+reached 93.64%. The same method also did best in the misspecified cells shown
+in the table.
+
+A few converged fits had Heywood estimates or nearly singular information
+matrices. Those fits create wild estimate and standard-error tails, so we do
+not report arithmetic mean SE/SD ratios. Coverage keeps converged replications
+with finite standard errors. The worst information-inversion failure rate in
+any cell was 0.0105%.
+
+We also compared the simulation calculations with lavaan in all 576
+parameter-level checks. Every check agreed, and the largest absolute difference
 was \(5.81\times10^{-7}\).
 
-The outcome studied here is parameter standard-error coverage. Null
-calibration of the `semTests` goodness-of-fit *p*-values has its own checks
-through deterministic spectrum parity and the seeded null simulation under
-`tools/`. The coverage results favor observed information as the default
-building block, especially when a nested comparison uses the full observed
-model information. The `"lavaan"` convention remains available whenever the
-goal is to reproduce lavaan's inspected spectrum.
+This study is about parameter interval coverage. It does not directly test the
+null calibration of `semTests` goodness-of-fit p-values, which has separate
+deterministic and seeded simulation checks under `tools/`. The result still
+gives a good practical reason to use observed information as the default
+building block. The `"lavaan"` convention remains handy when reproduction of
+lavaan's inspected spectrum is the goal.
 
 ## Comparing observed and expected model information
 
@@ -177,8 +207,8 @@ fit_expected <- cfa(
 max(abs(coef(fit_observed) - coef(fit_expected)))
 ```
 
-The option does not change the fitted parameters here. It can change the
-reference spectrum:
+The information option leaves the fitted parameters unchanged here. It can
+still change the reference distribution:
 
 ```{r convention-table}
 tests <- c("SB", "SS", "PEBA4")
@@ -201,15 +231,15 @@ rownames(comparison) <- tests
 format(comparison, scientific = TRUE, digits = 4)
 ```
 
-The two observed-convention columns agree: semTests explicitly uses observed
-information. The lavaan-convention columns can differ because the compatibility
-path honors the model-information choice stored in the fit.
+The two observed-convention columns agree because `semTests` explicitly
+requests observed information. The lavaan-convention columns can differ because
+that path respects the model-information choice stored in the fit.
 
 Observed information reflects the realized missingness patterns and sample
 curvature. Expected information averages curvature under the fitted model.
-They can be close under favorable conditions, but missingness and non-normality
-can pull them apart. `semTests` keeps the convention visible in both the
-function call and the result provenance.
+They can be close in friendly settings. Missingness and non-normality can pull
+them apart. `semTests` keeps the convention visible in both the function call
+and the result footer.
 
 ## Nested FIML comparison
 
@@ -233,9 +263,10 @@ m0 <- cfa(
 )
 ```
 
-The default delta map compares the local moment-tangent spaces. The exact map
-uses the literal parameter restriction and requires the same underlying full
-free-parameter set:
+The default delta map works with the local model derivatives and tolerates a
+wider range of equivalent parameterizations. The exact map uses the literal
+parameter restrictions and requires both fits to share the same underlying set
+of free parameters:
 
 ```{r nested-comparison}
 nested_tests <- c("SB", "SS", "PEBA2")
@@ -257,9 +288,34 @@ rownames(nested) <- nested_tests
 format(nested, scientific = TRUE, digits = 4)
 ```
 
-Use the delta default when equivalent models have different parameter-table
-representations. Use exact when the scientific hypothesis is naturally a
-literal restriction on a shared free-parameter set.
+The delta default is the forgiving choice when equivalent models have different
+parameter tables. Use exact when the hypothesis is naturally written as a
+literal restriction on one shared set of free parameters.
+
+## FIML with several groups
+
+Grouped models use the same interface. Here we compare a configural model with
+one that holds the factor loadings equal across schools:
+
+```{r multigroup-fits}
+mg1 <- cfa(
+  model, fiml_data,
+  group = "school",
+  missing = "fiml", estimator = "MLR"
+)
+mg0 <- cfa(
+  model, fiml_data,
+  group = "school", group.equal = "loadings",
+  missing = "fiml", estimator = "MLR"
+)
+
+pvalues(mg1, c("SB", "SS", "PEBA4"))
+pvalues_nested(mg0, mg1, tests = c("SB", "SS", "PEBA4"))
+```
+
+The groups may have different sample sizes and missingness patterns. The two
+fits in a nested comparison still need the same observations and missingness
+mask within each group.
 
 ## What to report
 
@@ -267,12 +323,12 @@ A reproducible FIML analysis should report:
 
 * the missingness pattern and its substantive justification
 * lavaan's estimator and `information` option
-* the semTests `fiml.convention`
+* the `semTests` `fiml.convention`
 * the nested `A.method`, when applicable
-* the requested p-value method and unscaled base-statistic choice
+* the requested p-value method and base statistic
 
-The provenance footer and `attr(result, "semtests")` retain these semTests
-choices with the returned p-values.
+The result footer and `attr(result, "semtests")` retain these `semTests` choices
+with the returned p-values.
 
 ## References
 

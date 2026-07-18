@@ -74,7 +74,8 @@ check_fit_quality <- function(fit, arg = "object") {
 #'
 #' The single entry-level gate for [pvalues()]. It admits exactly the
 #' configurations documented in [semTests-support] -- the supported continuous
-#' and categorical estimators, complete data, and single-group FIML -- and stops
+#' and categorical estimators, complete data, and FIML with one or several
+#' groups -- and stops
 #' with a pointer to `?semTests-support` otherwise. Statistic- and gamma-specific
 #' rejections (the normal-theory-only RLS statistic and `UG` gamma) depend on the
 #' parsed test string and stay with the code that consumes them (`make_chisqs()`
@@ -102,6 +103,12 @@ check_supported <- function(fit, arg = "object") {
          "ML/MLM/MLR, GLS, ULS, and the categorical DWLS/ULS families. ",
          "See `?semTests-support`.", call. = FALSE)
   }
+  if (uses_fixed_or_conditional_x(fit)) {
+    stop("Models with fixed or conditional observed exogenous covariates are ",
+         "not currently supported. Refit with `fixed.x = FALSE` and ",
+         "`conditional.x = FALSE` for joint random-x inference, or see ",
+         "`?semTests-support`.", call. = FALSE)
+  }
   if (isTRUE(fit@Model@categorical)) {
     if (!est %in% .supported_categorical_estimators) {
       stop("Categorical fits currently support lavaan's DWLS and ULS ",
@@ -114,9 +121,9 @@ check_supported <- function(fit, arg = "object") {
            "\". See `?semTests-support`.", call. = FALSE)
     }
   } else if (is_fiml(fit)) {
-    # Continuous by construction (is_fiml excludes categorical); enforce the
-    # single-group / no-fixed-exogenous-covariate FIML constraints here so they
-    # surface at the entry point rather than deep in the FIML engine.
+    # Continuous by construction (is_fiml excludes categorical). The general
+    # gate above has already excluded fixed/conditional x, while random x uses
+    # the ordinary joint observed-data likelihood.
     fiml_check_supported(fit, "FIML (missing data)")
   } else if (!identical(fit@Options$missing, "listwise")) {
     stop("Missing data is only supported through FIML (continuous ML/MLR with ",
@@ -268,11 +275,11 @@ check_supported_nested <- function(m0, m1, method, A.method = "delta") {
            "See `?semTests-support`.", call. = FALSE)
     }
   } else if (method != "2000") {
-    # Continuous complete-data nesting: method 2001 is hidden in this release
-    # (it cannot yet be cross-validated against magmaan). The internal reduction
-    # in gamma.R still understands it, so reinstating is a one-line change.
-    stop("Nested method \"2001\" is not available in this release. Use ",
-         "method = \"2000\" (the paper-recommended default). ",
+    # Continuous complete-data nesting: method 2001 is withdrawn for its poor
+    # performance. The internal reduction in gamma.R is kept but no longer
+    # exposed.
+    stop("Nested method \"2001\" has been withdrawn for its poor performance. ",
+         "Use method = \"2000\" (the paper-recommended default). ",
          "See `?semTests-support`.", call. = FALSE)
   }
   check_nested_pair(m0, m1)

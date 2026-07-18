@@ -17,6 +17,12 @@ test_that("scaled F handles both fallback formulas for mixed spectra", {
   expect_true(is.finite(scaled_f(1, c(2, 2, -1))))
 })
 
+test_that("eigenvalue methods handle a one-dimensional spectrum", {
+  expect_true(is.finite(peba_pvalue(22, 1, 2)))
+  expect_true(is.finite(eba_pvalue(22, 1, 2)))
+  expect_true(is.finite(pols_pvalue(22, 1, 2)))
+})
+
 test_that("requesting several tests at once returns one p-value per test", {
   p <- pvalues(object, c("SB_RLS", "pEBA4_RLS", "pOLS2_RLS"))
   expect_length(p, 3L)

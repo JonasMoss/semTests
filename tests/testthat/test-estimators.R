@@ -39,14 +39,6 @@ test_that("single-model p-values work for ULS / GLS / MLR / FIML", {
   }
 })
 
-test_that("single-model p-values work for categorical WLSMV", {
-  fit <- lavaan::cfa(hs, ordinalize(lavaan::HolzingerSwineford1939),
-                     ordered = paste0("x", 1:9))
-  p <- pvalues(fit, "PEBA4")
-  expect_true(valid_p(p))
-  expect_equal(attr(p, "semtests")$data_type, "categorical")
-})
-
 test_that("nested p-values work for continuous non-ML estimators", {
   HS <- lavaan::HolzingerSwineford1939
   # ULS needs a robust test for the NACOV (gamma); GLS supplies it natively and
@@ -60,8 +52,8 @@ test_that("nested p-values work for continuous non-ML estimators", {
 })
 
 test_that("normal-theory-only options are refused off the normal-theory ML case", {
-  # is_classic_nt() keys on the *estimator* (ML), so MLM/MLR on complete data
-  # still admit RLS/UG; the non-classic fits are GLS, ULS, categorical, and FIML.
+  # MLM/MLR on complete random-x data still admit RLS/UG. The non-classic fits
+  # are GLS, ULS, categorical, FIML, and conditional/fixed-x ML.
   HS  <- lavaan::HolzingerSwineford1939
   HSm <- HS; set.seed(8); HSm$x1[sample(nrow(HS), 40)] <- NA
   non_classic <- list(
@@ -74,32 +66,95 @@ test_that("normal-theory-only options are refused off the normal-theory ML case"
     expect_error(pvalues(non_classic[[nm]], "SB_RLS"), "RLS",      info = nm)
     expect_error(pvalues(non_classic[[nm]], "SB_UG"),  "unbiased", info = nm)
   }
-})
 
-test_that("FIML constraints (single-group, no fixed exogenous covariates) are enforced", {
-  HS  <- lavaan::HolzingerSwineford1939
-  HSm <- HS; set.seed(9); HSm$x1[sample(nrow(HS), 40)] <- NA
-  mg_fiml <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR",
-                         group = "school")
-  expect_error(pvalues(mg_fiml, "PEBA4"), "single-group")
-
-  fixed_x <- lavaan::cfa(
-    "visual =~ x1 + x2 + x3
-     visual ~ ageyr",
-    HSm, missing = "fiml", estimator = "MLR", fixed.x = TRUE
+  x_model <- "visual =~ x1 + x2 + x3
+              visual ~ ageyr"
+  random_x <- lavaan::cfa(
+    x_model, HS, estimator = "MLM",
+    fixed.x = FALSE, conditional.x = FALSE
   )
-  expect_error(pvalues(fixed_x, "PEBA4"), "fixed exogenous")
+  fixed_x <- lavaan::cfa(
+    x_model, HS, estimator = "MLM",
+    fixed.x = TRUE, conditional.x = FALSE
+  )
+  conditional_x <- lavaan::cfa(
+    x_model, HS, estimator = "MLM",
+    fixed.x = TRUE, conditional.x = TRUE
+  )
+  expect_true(valid_p(pvalues(random_x, c("SB_RLS", "SB_UG_ML"))))
+  expect_true(is_classic_nt(random_x))
+  expect_false(is_classic_nt(fixed_x))
+  expect_false(is_classic_nt(conditional_x))
 })
 
-test_that("nested categorical works through the 2000/delta path", {
-  HSc <- ordinalize(lavaan::HolzingerSwineford1939)
-  fc1 <- lavaan::cfa(hs,  HSc, ordered = paste0("x", 1:9))
-  fc0 <- lavaan::cfa(hs0, HSc, ordered = paste0("x", 1:9))
-  expect_true(valid_p(pvalues_nested(fc0, fc1)))
-  expect_error(pvalues_nested(fc0, fc1, method = "2001"),
-               "method = \"2000\"")
-  expect_error(pvalues_nested(fc0, fc1, A.method = "exact"),
-               "A.method = \"delta\"")
+test_that("fixed or conditional exogenous covariates are refused consistently", {
+  HS <- lavaan::HolzingerSwineford1939
+  HSm <- HS
+  HSm$x1[seq(5L, nrow(HSm), by = 17L)] <- NA_real_
+  model <- "visual =~ x1 + x2 + x3
+            visual ~ ageyr"
+  fixed_fits <- list(
+    ML = lavaan::cfa(model, HS, estimator = "MLM", fixed.x = TRUE),
+    GLS = lavaan::cfa(model, HS, estimator = "GLS", fixed.x = TRUE),
+    ULS = lavaan::cfa(
+      model, HS, estimator = "ULS", test = "satorra.bentler",
+      fixed.x = TRUE
+    ),
+    FIML = lavaan::cfa(
+      model, HSm, estimator = "MLR", missing = "fiml", fixed.x = TRUE
+    )
+  )
+  HSord <- HS
+  HSord[paste0("x", 1:3)] <- lapply(
+    HSord[paste0("x", 1:3)],
+    function(x) ordered(cut(x, 3))
+  )
+  fixed_fits$categorical <- lavaan::cfa(
+    model, HSord, ordered = paste0("x", 1:3),
+    fixed.x = TRUE, conditional.x = TRUE
+  )
+  for (nm in names(fixed_fits)) {
+    expect_error(
+      pvalues(fixed_fits[[nm]], "PEBA2"),
+      "fixed or conditional observed exogenous",
+      info = nm
+    )
+  }
+})
+
+test_that("random exogenous covariates work across estimator families", {
+  HS <- lavaan::HolzingerSwineford1939
+  model <- "visual =~ x1 + x2 + x3
+            visual ~ ageyr"
+  fits <- list(
+    ML = lavaan::cfa(
+      model, HS, estimator = "MLM",
+      fixed.x = FALSE, conditional.x = FALSE
+    ),
+    GLS = lavaan::cfa(
+      model, HS, estimator = "GLS",
+      fixed.x = FALSE, conditional.x = FALSE
+    ),
+    ULS = lavaan::cfa(
+      model, HS, estimator = "ULS", test = "satorra.bentler",
+      fixed.x = FALSE, conditional.x = FALSE
+    )
+  )
+  HSord <- HS
+  HSord[paste0("x", 1:3)] <- lapply(
+    HSord[paste0("x", 1:3)],
+    function(x) ordered(cut(x, 3))
+  )
+  fits$categorical <- lavaan::cfa(
+    model, HSord, ordered = paste0("x", 1:3),
+    fixed.x = FALSE, conditional.x = FALSE
+  )
+  for (nm in names(fits)) {
+    expect_true(
+      valid_p(pvalues(fits[[nm]], "PEBA2")),
+      info = nm
+    )
+  }
 })
 
 test_that("nested missing-data (FIML) works for continuous fits", {

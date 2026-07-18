@@ -64,10 +64,11 @@
 #' `test = "satorra.bentler"` or `estimator = "MLM"`, `"MLR"`, or `"DWLS"`
 #' provide it. The RLS statistic (`browne.residual.nt.model`) and the unbiased
 #' (`UG`) Du-Bentler gamma are defined for the classical continuous,
-#' complete-data ML case. Other families use the standard statistic and biased
-#' gamma. Full WLS/ADF is refused outright: its weight is already the inverse
-#' moment covariance, so the correction is exactly the identity and every test
-#' would equal the ordinary chi-square.
+#' complete-data, random-x ML case. Other families use the standard statistic
+#' and biased gamma. Fixed or conditional observed exogenous predictors are
+#' currently refused. Full WLS/ADF is refused outright: its weight is already
+#' the inverse moment covariance, so the correction is exactly the identity and
+#' every test would equal the ordinary chi-square.
 #'
 #' GLS, ULS, categorical DWLS/ULS, FIML missing data, and nested FIML or
 #' categorical comparison are validated to numerical tolerance against an
@@ -103,9 +104,9 @@
 #'   greater than the test df. `pOLS` takes a finite positive penalty (for
 #'   example, `"pOLS2"`).
 #' @param method Nested reduction method. Only Satorra's `"2000"` construction
-#'   (the paper-recommended default) is available in this release; the
-#'   Satorra--Bentler `"2001"` construction is temporarily refused pending
-#'   further validation, with a pointer to `"2000"`.
+#'   (the paper-recommended default) is available. The Satorra--Bentler `"2001"`
+#'   construction has been withdrawn because it performs poorly, and requesting
+#'   it points you to `"2000"`.
 #' @param A.method For nested FIML or categorical models, choose `"exact"` for
 #'   the literal parameter restriction map or `"delta"` for the local
 #'   moment-tangent restriction map. `"delta"` is the default and applies to a

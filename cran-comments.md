@@ -14,10 +14,13 @@ submission and was previously archived on CRAN.
 ## Notes
 
 * Requires lavaan (>= 0.7-2), now available on CRAN.
-* The GLS, ULS, categorical DWLS/ULS, and single-group FIML estimators (single
-  and nested) are now documented as stable, having been validated to numerical
-  tolerance against an independent implementation.
-* Full WLS/ADF and nested method "2001" are refused pending further work, each
-  with a message pointing to the supported alternative.
+* The GLS, ULS, categorical DWLS/ULS, and FIML estimators with one or several
+  groups are now documented as stable for single and nested models, having been
+  validated to numerical tolerance against an independent implementation.
+* Observed exogenous predictors are covered under joint random-x inference.
+  Fixed or conditional covariate designs are refused with an explanatory
+  message.
+* Full WLS/ADF and nested method "2001" are refused, each with an explanation
+  and a message pointing to the supported alternative.
 
 See NEWS.md for the full list of changes.

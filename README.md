@@ -18,9 +18,11 @@ regression *p* values of [Foldnes, Moss, and Grønneberg
 extension to nested model comparison in [Foldnes, Grønneberg, and Moss
 (2026)](https://doi.org/10.3758/s13428-026-02968-4).
 
-**News.** You can now use `semTests` with GLS and ULS, categorical DWLS,
-ULS, or WLS models, and continuous FIML fits. Nested comparisons are
-included too. See `?semTests-support` for the details.
+**News.** `semTests` now supports GLS and ULS for continuous data, DWLS
+and ULS for categorical data, and continuous FIML with one or several
+groups. Observed predictors work under joint random-x inference too.
+Nested comparisons are included. See `?semTests-support` for the
+details.
 
 ## Installation
 
@@ -49,7 +51,7 @@ model <- "visual  =~ x1 + x2 + x3
 object <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = "MLM")
 pvalues(object, tests = c("SB", "SS", "PEBA4"))
 #>       sb_rls       ss_rls    peba4_rls
-#> 1.726558e-07 9.251198e-07 5.165737e-07
+#> 1.726558e-07 9.251198e-07 5.165712e-07
 #> estimator: ML (MLM) | data: continuous | information: expected | df: 24
 ```
 
@@ -83,7 +85,7 @@ HS$x1[sample(nrow(HS), 60)] <- NA
 fit_fiml <- lavaan::cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
 #>     peba4_ml
-#> 3.301168e-07
+#> 3.301286e-07
 #> estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed
 ```
 
@@ -108,6 +110,8 @@ pvalues(fit_ordinal)
 - `vignette("continuous-data", package = "semTests")`
 - `vignette("categorical-data", package = "semTests")`
 - `vignette("fiml-missing-data", package = "semTests")`
+- `vignette("latent-growth", package = "semTests")`
+- `vignette("measurement-invariance", package = "semTests")`
 - `vignette("semTests", package = "semTests")`
 
 The help page `?semTests-support` gives the exact supported

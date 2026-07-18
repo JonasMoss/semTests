@@ -19,13 +19,14 @@ knitr::opts_chunk$set(
 ## Scope
 
 Measurement invariance asks whether a construct is measured the same way across
-groups. It is tested as a chain of nested models: a *configural* model that only
-shares the factor pattern, then a *metric* model that additionally holds the
-measurement parameters equal across groups. Each step is a nested-model
-comparison, and with ordinal indicators the difference statistic is a weighted
-sum of chi-squares -- exactly the setting the `semTests` robust p-values are
-built for. This vignette runs the sequence on ordinal data and reports the
-block-averaged and penalized tests next to the Satorra--Bentler value.
+groups. The usual strategy fits a sequence of increasingly constrained models
+and compares each model with the one before it.
+
+Ordinal indicators need a little care here. Thresholds enter the measurement
+model alongside factor loadings, and the order of the invariance tests matters.
+Following Wu and Estabrook (2016), we test threshold equality first and loading
+equality second. The example is deliberately small, but it gives
+`pvalues_nested()` a realistic categorical job to do.
 
 ```{r setup}
 library("semTests")
@@ -43,18 +44,22 @@ mi_data[ordered_names] <- lapply(
   mi_data[ordered_names],
   function(x) ordered(cut(
     x,
-    breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+    breaks = c(-Inf, quantile(x, c(.25, .50, .75)), Inf),
     include.lowest = TRUE
   ))
 )
 ```
 
-The grouping variable is `school`, which has two levels.
+The grouping variable is `school`, which has two levels. Cutting at the
+quartiles gives every indicator four ordered categories and three thresholds.
+This artificial split is only here to make the example reproducible. Ordinal
+status should come from the measurement design in a real study.
 
 ## The configural model
 
-The configural model estimates the measurement parameters freely in each group.
-Its overall fit is the usual single-model goodness-of-fit question:
+The configural model uses the same factor pattern in both schools while leaving
+its measurement parameters free across schools. We can start by checking its
+overall fit:
 
 ```{r configural}
 configural <- cfa(
@@ -65,37 +70,77 @@ configural <- cfa(
 pvalues(configural, c("SB", "SS", "ALL", "PEBA4"))
 ```
 
-## The metric invariance test
+## Thresholds first
 
-Metric invariance holds the measurement model equal across groups. For ordinal
-indicators the loadings and thresholds are identified together (Wu and
-Estabrook, 2016), so `group.equal = "loadings"` constrains the measurement model
-as a whole. The constrained model is the *more* restricted one, so it goes in
-`m0`:
+The next model makes the thresholds equal across schools. It is more
+constrained than the configural model, so it goes in the first argument:
 
-```{r metric}
-metric <- cfa(
+```{r thresholds}
+equal_thresholds <- cfa(
   model, mi_data, ordered = ordered_names,
-  group = "school", group.equal = "loadings", estimator = "WLSMV"
+  group = "school", group.equal = "thresholds", estimator = "WLSMV"
 )
 
-pvalues_nested(metric, configural, tests = c("SB", "SS", "ALL", "PEBA4"))
+pvalues_nested(
+  equal_thresholds, configural,
+  tests = c("SB", "SS", "ALL", "PEBA4")
+)
 ```
 
-A large p-value supports invariance; a small one says the measurement model
-differs across groups. The comparison uses Satorra's 2000 reduction with the
-delta restriction map, which `semTests` selects automatically for ordinal fits
-(the only supported categorical nested configuration).
+The test asks whether the equal-threshold restrictions create a noticeable loss
+of fit. A large p-value means the data have not picked a fight with those
+restrictions. It does not prove that the thresholds are identical.
+
+## Then the loadings
+
+Now retain equal thresholds and add equality constraints on the loadings:
+
+```{r loadings}
+equal_loadings <- cfa(
+  model, mi_data, ordered = ordered_names,
+  group = "school",
+  group.equal = c("thresholds", "loadings"),
+  estimator = "WLSMV"
+)
+
+pvalues_nested(
+  equal_loadings, equal_thresholds,
+  tests = c("SB", "SS", "ALL", "PEBA4")
+)
+```
+
+This second comparison isolates the extra loading restrictions given equal
+thresholds. A small p-value would count against that step. A large one says the
+step did not noticeably worsen fit in this sample. In a real invariance study,
+the model-identification choices, effect sizes, and the purpose of the group
+comparison deserve attention too.
+
+Both comparisons use Satorra's 2000 reduction and the delta restriction map.
+Those are the categorical nested options supported by `semTests`.
 
 ```{r provenance}
-attr(pvalues_nested(metric, configural, tests = "PEBA4"), "semtests")
+attr(
+  pvalues_nested(
+    equal_loadings, equal_thresholds,
+    tests = "PEBA4"
+  ),
+  "semtests"
+)
 ```
 
-The provenance footer records the categorical estimator, the reduction method,
-and the restriction map, so the inferential choices stay attached to the result.
+The result footer records the categorical estimator, the reduction method, and
+the restriction map. That makes it much easier to tell later which test you
+actually ran.
 
-## Reference
+## References
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+(pp. 233–247). Kluwer Academic.
+<https://doi.org/10.1007/978-1-4615-4603-0_17>
 
 Wu, H., & Estabrook, R. (2016). Identification of confirmatory factor analysis
 models of different levels of invariance for ordered categorical outcomes.
 *Psychometrika*, 81(4), 1014--1045.
+<https://doi.org/10.1007/s11336-016-9506-0>

@@ -11,13 +11,11 @@ fiml_check_supported <- function(fit, context = "FIML FMG") {
     stop(context, " is only implemented for continuous lavaan fits. ",
          "See `?semTests-support`.", call. = FALSE)
   }
-  if (fit@Data@ngroups != 1L) {
-    stop(context, " is currently implemented for single-group FIML fits. ",
-         "See `?semTests-support`.", call. = FALSE)
-  }
-  if (isTRUE(fit@Model@conditional.x) || any(fit@Model@nexo > 0L)) {
-    stop(context, " is not implemented for models with fixed exogenous ",
-         "covariates. See `?semTests-support`.", call. = FALSE)
+  if (uses_fixed_or_conditional_x(fit)) {
+    stop(context, " is not implemented for models with fixed or conditional ",
+         "observed exogenous covariates. Refit with `fixed.x = FALSE` and ",
+         "`conditional.x = FALSE` for joint random-x inference, or see ",
+         "`?semTests-support`.", call. = FALSE)
   }
   invisible(TRUE)
 }
@@ -27,41 +25,96 @@ fiml_sym <- function(x) {
   (x + t(x)) / 2
 }
 
-#' Extract the single matrix returned by a one-group lavaan inspection.
-#' @keywords internal
-fiml_one_group_matrix <- function(x, what) {
-  if (is.list(x)) {
-    if (length(x) != 1L) {
-      stop("Expected one ", what, " matrix for a single-group FIML fit.",
-           call. = FALSE)
-    }
-    x <- x[[1L]]
+# Convert a lavaan inspection to one matrix per group.
+fiml_group_matrices <- function(x, fit, what) {
+  blocks <- if (is.list(x)) x else list(x)
+  n_groups <- fit@Data@ngroups
+  if (length(blocks) != n_groups) {
+    stop("Expected ", n_groups, " ", what, " ",
+         if (n_groups == 1L) "matrix" else "matrices",
+         " for a ", n_groups, "-group FIML fit.", call. = FALSE)
   }
-  as.matrix(x)
+  lapply(blocks, as.matrix)
+}
+
+# Group proportions used by lavaan's global moment-space convention.
+fiml_group_weights <- function(fit) {
+  weights <- as.numeric(unlist(fit@SampleStats@nobs)) /
+    fit@SampleStats@ntotal
+  if (length(weights) != fit@Data@ngroups ||
+      any(!is.finite(weights)) || any(weights <= 0) ||
+      abs(sum(weights) - 1) > sqrt(.Machine$double.eps)) {
+    stop("Could not construct valid FIML group weights.", call. = FALSE)
+  }
+  weights
+}
+
+# Assemble independent group blocks in the global moment space. Projector
+# weights use n_g/N; Gamma uses its reciprocal so U Gamma keeps the intended
+# group scaling.
+fiml_group_bdiag <- function(x, fit, what,
+                              scale = c("weight", "inverse_weight")) {
+  scale <- match.arg(scale)
+  blocks <- fiml_group_matrices(x, fit, what)
+  weights <- fiml_group_weights(fit)
+  multipliers <- switch(
+    scale,
+    weight = weights,
+    inverse_weight = 1 / weights
+  )
+  blocks <- Map(function(block, multiplier) {
+    block * multiplier
+  }, blocks, multipliers)
+  lavaan::lav_matrix_bdiag(blocks)
+}
+
+# Stack per-group moment derivatives. Each block already uses lavaan's global
+# full-parameter columns, including columns joined by cross-group constraints.
+fiml_delta_matrix <- function(fit) {
+  do.call(
+    rbind,
+    fiml_group_matrices(lavaan::lavInspect(fit, "delta"), fit, "delta")
+  )
 }
 
 #' @keywords internal
-fiml_data_matrix <- function(fit) {
+fiml_data_blocks <- function(fit) {
   fiml_check_supported(fit)
-  x <- as.data.frame(lavaan::lavInspect(fit, "data"))
+  blocks <- fiml_group_matrices(
+    lavaan::lavInspect(fit, "data"), fit, "raw-data"
+  )
   ov <- lavaan::lavNames(fit, "ov")
-  as.matrix(x[, ov, drop = FALSE])
+  lapply(blocks, function(x) {
+    missing_names <- setdiff(ov, colnames(x))
+    if (length(missing_names)) {
+      stop("FIML raw data do not contain all observed variables.",
+           call. = FALSE)
+    }
+    x[, ov, drop = FALSE]
+  })
 }
 
 #' Verify that two FIML fits use identical observations.
 #' @keywords internal
 fiml_check_same_data <- function(m0, m1) {
-  X0 <- fiml_data_matrix(m0)
-  X1 <- fiml_data_matrix(m1)
-  same_values <- identical(dim(X0), dim(X1)) &&
-    identical(colnames(X0), colnames(X1)) &&
-    identical(is.na(X0), is.na(X1))
+  X0 <- fiml_data_blocks(m0)
+  X1 <- fiml_data_blocks(m1)
+  same_values <- identical(m0@Data@group.label, m1@Data@group.label) &&
+    length(X0) == length(X1)
   if (same_values) {
-    observed <- !is.na(X0)
-    same_values <- isTRUE(all.equal(
-      unname(X0[observed]), unname(X1[observed]),
-      tolerance = 0, check.attributes = FALSE
-    ))
+    same_values <- all(vapply(seq_along(X0), function(group) {
+      x0 <- X0[[group]]
+      x1 <- X1[[group]]
+      same_block <- identical(dim(x0), dim(x1)) &&
+        identical(colnames(x0), colnames(x1)) &&
+        identical(is.na(x0), is.na(x1))
+      if (!same_block) return(FALSE)
+      observed <- !is.na(x0)
+      isTRUE(all.equal(
+        unname(x0[observed]), unname(x1[observed]),
+        tolerance = 0, check.attributes = FALSE
+      ))
+    }, logical(1)))
   }
   if (!same_values) {
     stop("Nested FIML fits must use the same raw data and missingness mask.",
@@ -152,8 +205,8 @@ fiml_A_exact <- function(m0, m1, df) {
 fiml_A_delta <- function(m0, m1, df) {
   K1 <- fiml_K_matrix(m1)
   K0 <- fiml_K_matrix(m0)
-  Delta1 <- fiml_one_group_matrix(lavaan::lavInspect(m1, "delta"), "delta")
-  Delta0 <- fiml_one_group_matrix(lavaan::lavInspect(m0, "delta"), "delta")
+  Delta1 <- fiml_delta_matrix(m1)
+  Delta0 <- fiml_delta_matrix(m0)
   D1 <- Delta1 %*% K1
   D0 <- Delta0 %*% K0
   H <- generalized_inverse(D1) %*% D0
@@ -170,21 +223,31 @@ fiml_A_delta <- function(m0, m1, df) {
 fiml_h1_information_observed <- function(fit) {
   object <- fit
   object@Options$h1.information[] <- "unstructured"
-  fiml_one_group_matrix(
+  fiml_group_bdiag(
     lavaan::lavTech(object, "h1.information.observed"),
-    "observed H1 information"
+    fit, "observed H1 information", scale = "weight"
   )
 }
 
 #' @keywords internal
 fiml_gamma_matrix <- function(fit) {
-  fiml_one_group_matrix(lavaan::lavTech(fit, "Gamma"), "Gamma")
+  fiml_group_bdiag(
+    lavaan::lavTech(fit, "Gamma"),
+    fit, "Gamma", scale = "inverse_weight"
+  )
 }
 
 #' @keywords internal
 fiml_delta_effective <- function(fit) {
-  Delta <- fiml_one_group_matrix(lavaan::lavInspect(fit, "delta"), "delta")
-  Delta %*% fiml_K_matrix(fit)
+  fiml_delta_matrix(fit) %*% fiml_K_matrix(fit)
+}
+
+# Expected H1 weight in lavaan's grouped moment-space convention.
+fiml_h1_information_lavaan <- function(fit) {
+  fiml_group_bdiag(
+    lavaan::lavTech(fit, "WLS.V"),
+    fit, "WLS.V", scale = "weight"
+  )
 }
 
 #' Return the leading symmetric-product eigenvalues without forming AB.
@@ -240,14 +303,13 @@ fiml_nested_ingredients <- function(m1,
                                     fiml.convention = c("observed", "lavaan")) {
   fiml.convention <- match.arg(fiml.convention)
   K1 <- fiml_K_matrix(m1)
-  Delta <- fiml_one_group_matrix(lavaan::lavInspect(m1, "delta"), "delta")
-  Delta <- Delta %*% K1
+  Delta <- fiml_delta_matrix(m1) %*% K1
 
   if (fiml.convention == "observed") {
     V <- fiml_h1_information_observed(m1)
     information <- as.matrix(lavaan::lavTech(m1, "information.observed"))
   } else {
-    V <- fiml_one_group_matrix(lavaan::lavTech(m1, "WLS.V"), "WLS.V")
+    V <- fiml_h1_information_lavaan(m1)
     information <- as.matrix(lavaan::lavTech(m1, "information"))
   }
 

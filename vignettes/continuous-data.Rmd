@@ -19,10 +19,9 @@ knitr::opts_chunk$set(
 ## Scope
 
 This guide covers models with continuous, complete data. Normal-theory maximum
-likelihood is the mature, paper-backed core of `semTests`. Complete-data GLS and
-ULS use the same minimum-discrepancy framework and are validated against an
-independent implementation.
-We begin with ML because it offers the richest set of options.
+likelihood is the most thoroughly studied part of `semTests` and offers the
+widest menu of test options. Complete-data GLS and ULS are supported too, and
+their results have been checked against a separate implementation.
 
 ```{r setup}
 library("semTests")
@@ -38,16 +37,16 @@ data <- HolzingerSwineford1939
 
 ## Overall goodness of fit
 
-Fit with a robust lavaan test so the fitted object contains the asymptotic
-moment covariance needed by the eigenvalue corrections.
+Ask lavaan for a robust test when fitting the model. This stores the extra
+sample information that `semTests` needs.
 
 ```{r ml-fit}
 fit_ml <- cfa(model, data, estimator = "MLM")
 pvalues(fit_ml)
 ```
 
-The default uses penalized eigenvalue block averaging. Several corrections can
-be requested together:
+The default uses penalized eigenvalue block averaging. You can also request a
+small collection of tests in one call:
 
 ```{r ml-battery}
 pvalues(
@@ -56,16 +55,16 @@ pvalues(
 )
 ```
 
-The suffixes select three separate ingredients:
+The names let you choose three ingredients:
 
-* the approximation to the weighted chi-square law (`SB`, `SS`, `ALL`,
-  `PEBA4`, and others)
-* biased gamma or the unbiased Du--Bentler estimate (`UG`)
-* the standard discrepancy statistic (`ML`) or Browne's reweighted statistic
-  (`RLS`)
+* the p-value method, such as `SB`, `SS`, `ALL`, or `PEBA4`
+* the usual gamma estimate or the unbiased Du--Bentler estimate, selected with
+  `UG`
+* the standard statistic, selected with `ML`, or Browne's reweighted statistic,
+  selected with `RLS`
 
-The unbiased gamma and RLS statistic are specific to this classical
-complete-data ML setting:
+The unbiased gamma and RLS statistic are available for continuous,
+complete-data fits from lavaan's ML family, including `MLM` and `MLR` fits:
 
 ```{r classical-options}
 pvalues(
@@ -84,8 +83,8 @@ result <- pvalues(fit_ml, "PEBA4_ML")
 attr(result, "semtests")
 ```
 
-This is useful when results from several estimator families are collected in
-one analysis.
+That little record is useful when several kinds of models end up in the same
+analysis.
 
 ## Nested comparison
 
@@ -111,15 +110,14 @@ Satorra's 2000 reduction is the method used for nested comparison:
 pvalues_nested(m0, m1, method = "2000", tests = c("SB_ML", "PALL_ML"))
 ```
 
-`PALL` is the recommended default for nested comparison. (The Satorra--Bentler
-2001 construction is temporarily unavailable in this release pending further
-validation; `method = "2001"` is refused with a pointer to `"2000"`.)
+`PALL` is the recommended default for nested comparison. The Satorra--Bentler
+2001 construction is unavailable in this release, so `method = "2001"` points
+you back to `"2000"`.
 
 ## GLS and ULS
 
-The limiting weighted chi-square argument also applies beyond ML. GLS supplies
-the required covariance directly. ULS should be fit with a robust test so
-lavaan computes it:
+GLS supplies the required sample information directly. For ULS, ask lavaan for
+a robust test so that it computes the same ingredient:
 
 ```{r least-squares}
 fit_gls <- cfa(model, data, estimator = "GLS")
@@ -132,27 +130,34 @@ pvalues(fit_gls, "PEBA4")
 pvalues(fit_uls, "PEBA4")
 ```
 
-For GLS and ULS, use the standard statistic and biased gamma. Requests for
-`RLS` or `UG` are rejected because their current derivations belong to the
-classical ML case.
+For GLS and ULS, use the standard statistic and the usual biased gamma. `RLS`
+and `UG` are limited to the complete-data ML setting.
 
 ## Practical checks
 
-A little housekeeping goes a long way in a complete-data analysis:
+A quick preflight check catches many avoidable surprises:
 
 1. Inspect convergence and admissibility. `semTests` refuses nonconvergence and
    warns when lavaan's post-estimation check fails.
 2. Request a robust lavaan test whenever the fit would otherwise omit `Gamma`.
-3. Report the test name, base statistic, and gamma choice.
-4. Keep the `semtests` provenance attribute with saved results.
-5. Use nested methods for genuinely nested models. `semTests` verifies fit
-   comparability, while substantive nesting remains part of the model argument.
+3. Report the test name, statistic, and gamma choice.
+4. Keep the `semtests` attribute with saved results.
+5. Make sure nested models really are nested. `semTests` checks that the fits
+   use comparable data and options, while the model logic is still yours.
 
 See `vignette("categorical-data", package = "semTests")` and
 `vignette("fiml-missing-data", package = "semTests")` before carrying this
 workflow to categorical or missing data.
 
 ## References
+
+Browne, M. W. (1974). Generalized least squares estimators in the analysis of
+covariance structures. *South African Statistical Journal*, 8, 1–24.
+
+Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free
+Estimator Reliably Improves SEM Statistics for Nonnormal Data. *Structural
+Equation Modeling*, 29(6), 872–887.
+<https://doi.org/10.1080/10705511.2022.2063870>
 
 Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
 procedures for structural equation models. *Structural Equation Modeling: A

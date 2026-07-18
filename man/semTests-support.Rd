@@ -18,7 +18,7 @@ same boundary.
    ML / MLM / MLR \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
    GLS \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
    ULS \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
-   ML / MLR (FIML) \tab continuous \tab single only \tab FIML \tab available \tab stable \cr
+   ML / MLR (FIML) \tab continuous \tab single or multi \tab FIML \tab available \tab stable \cr
    DWLS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available \tab stable \cr
    ULS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available \tab stable \cr
    WLS (ADF) \tab continuous \tab single or multi \tab complete \tab rejected \tab -- \cr
@@ -31,7 +31,7 @@ same boundary.
    Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Availability \tab Stability \cr
    ML/MLM/MLR \tab continuous \tab single or multi \tab complete \tab 2000 \tab -- \tab available \tab stable \cr
    GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 \tab -- \tab available \tab stable \cr
-   ML / MLR (FIML) \tab continuous \tab single only \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab available \tab stable \cr
+   ML / MLR (FIML) \tab continuous \tab single or multi \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab available \tab stable \cr
    DWLS/ULS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab delta only \tab available \tab stable \cr
    any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \tab -- \cr
 }
@@ -51,6 +51,21 @@ compatibility rather than as an independently validated construction.
 Configurations outside the tables are refused at the entry point.
 }
 
+\subsection{Observed exogenous covariates}{
+
+Observed exogenous predictors are supported when they are modeled jointly
+with the other variables. In lavaan, request this random-x analysis with
+\code{fixed.x = FALSE} and \code{conditional.x = FALSE}. The independent validation
+suite covers continuous ML, GLS, ULS, FIML, and mixed categorical DWLS in
+this setting, for single models and nested comparisons.
+
+Fixed or conditional observed exogenous predictors are currently refused.
+Their reference distribution conditions on the realized covariate design
+and needs a separate saturated-model projection. If a covariate is intended
+to be fixed, keep that scientific choice and do not silently change it to
+random merely to pass the software check.
+}
+
 \subsection{Fit quality and nested comparability}{
 
 Both entry points require converged lavaan fits and warn when lavaan's
@@ -62,8 +77,7 @@ is genuinely nested within the other still belongs in the analysis.
 
 The constrained model belongs in \code{m0}. If the models are supplied in reverse
 df order, semTests warns and swaps them. Only the Satorra-2000 reduction is
-available in this release; \code{method = "2001"} is temporarily refused pending
-further validation.
+available. \code{method = "2001"} has been withdrawn because it performs poorly.
 }
 
 \subsection{Statistic and gamma options}{
@@ -74,9 +88,10 @@ test families. Two of the options are defined only for the classical case:
 \itemize{
 \item The \strong{RLS} statistic (\code{browne.residual.nt.model}, Browne 1974) and the
 \strong{\code{UG}} (Du-Bentler) unbiased gamma are available \strong{only} for classical
-normal-theory ML with continuous, complete data and \code{estimator = "ML"}.
-lavaan degrades RLS to ADF elsewhere, and the Du-Bentler correction has no
-derivation for the other families. \code{semTests} refuses either request and
+normal-theory ML with continuous, complete data, \code{estimator = "ML"},
+\code{fixed.x = FALSE}, and \code{conditional.x = FALSE}. lavaan degrades RLS to ADF
+elsewhere, and the Du-Bentler correction has no derivation for the other
+families or a fixed covariate design. \code{semTests} refuses either request and
 points you to the standard statistic and biased gamma.
 \item \strong{Categorical and mixed-indicator fits} use lavaan's biased inspected
 \code{UGamma} spectrum and unscaled estimator statistic directly. Supported
@@ -88,12 +103,14 @@ sample-statistic and \code{UGamma} calculation. Pairwise deletion has its own
 missingness assumptions and does not provide FIML or generally MAR-valid
 inference.
 \item \strong{FIML} (missing data) uses the biased gamma and the standard statistic
-only. \code{UG} and \code{RLS} are refused. FIML requires a single group, continuous
-data, and no fixed exogenous covariates. \code{fiml.convention = "observed"}
-(the default) uses observed saturated and model information, following the
-recommendation of Kenward and Molenberghs (1998), and is independently
-validated against magmaan. \code{"lavaan"} reproduces lavaan 0.7-2's inspected
-robust-test spectrum, including its expected H1 weight.
+only. \code{UG} and \code{RLS} are refused. FIML supports one or several groups with
+continuous data. Observed exogenous predictors are supported under joint
+random-x inference, using \code{fixed.x = FALSE} and \code{conditional.x = FALSE}.
+\code{fiml.convention = "observed"} (the default) uses observed saturated and
+model information, following the recommendation of Kenward and Molenberghs
+(1998), and is independently validated against magmaan. \code{"lavaan"}
+reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
+expected H1 weight.
 }
 }
 

@@ -19,11 +19,13 @@ knitr::opts_chunk$set(
 ## Scope
 
 A latent growth curve model describes change across repeated measurements with
-latent intercept and slope factors. It is an ordinary continuous SEM, so the
-`semTests` robust p-values apply -- including under full-information maximum
-likelihood (FIML) when the repeated measures are incomplete. This vignette fits
-a linear growth model to incomplete data, reports its robust goodness of fit,
-and then tests whether the growth is really linear.
+latent intercept and slope factors. From `semTests`' point of view, it is a
+continuous SEM. The usual robust p-values therefore work, including with
+full-information maximum likelihood (FIML) when a few repeated measurements
+have gone missing.
+
+We will fit a linear trajectory, check its overall fit, and then ask whether a
+more flexible shape fits noticeably better.
 
 ```{r setup}
 library("semTests")
@@ -35,8 +37,9 @@ growth_data <- Demo.growth
 ## A reproducible missing-data mechanism
 
 `Demo.growth` is complete. To exercise FIML, missingness in the later waves `t3`
-and `t4` is made dependent on the first wave `t1`. This is a reproducible
-MAR-like mechanism for the example and says nothing about any real process.
+and `t4` depends on the first wave `t1`. This gives the example a reproducible
+MAR-like mechanism. It is only a teaching device and says nothing about a real
+missingness process.
 
 ```{r missing}
 set.seed(20260718)
@@ -61,14 +64,15 @@ pvalues(linear, c("SB", "SS", "ALL", "PEBA4"))
 ```
 
 FIML uses the standard likelihood-ratio statistic and the observed-information
-convention by default; the provenance footer records both.
+convention by default. The footer records both choices, so they do not vanish
+when the result is copied into another script.
 
 ## Is the growth linear?
 
 A latent-basis model frees the last two slope loadings and lets the data choose
-the shape of change. Linear growth is the special case with those loadings fixed
-to `2` and `3`, so it is nested in the latent-basis model. The linear model is
-the constrained one and goes in `m0`:
+the shape of change. Linear growth fixes those loadings to `2` and `3`, which
+makes it a special case of the latent-basis model. The linear model is the more
+constrained fit, so it goes first:
 
 ```{r basis}
 basis <- growth(
@@ -80,7 +84,10 @@ basis <- growth(
 pvalues_nested(linear, basis, tests = c("SB", "SS", "ALL", "PEBA2"))
 ```
 
-A large p-value supports the linear form; a small one says the shape of change
-departs from linear. The two freed loadings give a two-degree-of-freedom test,
-so the block-averaged method uses `PEBA2` -- a penalized method cannot use more
-blocks than the test has degrees of freedom.
+A small p-value would be evidence that the linear shape is too stiff. A large
+one means this comparison has not found a clear reason to bend the trajectory.
+The two freed loadings give a two-degree-of-freedom test, so we use `PEBA2`.
+The number of blocks cannot exceed the test degrees of freedom.
+
+The missing-data details are collected in
+`vignette("fiml-missing-data", package = "semTests")`.

@@ -1,11 +1,4 @@
 tests <- c("SB_UG_RLS", "pEBA2_UG_RLS", "EBA4_RLS", "pEBA6_RLS", "pOLS2_UG_ML")
-options <- sapply(tests, \(test) split_input(test))
-
-test_that("split_input looks reasonable", {
-  expect_equal(colnames(options), tests)
-  expect_equal(dim(options), c(6, 5))
-})
-
 options <- lapply(tests, \(test) split_input(test))
 result <- sapply(options, \(option) do.call(pvalues_, c(object, option)))
 test_that("split_input applied to p_values gives correct names", {

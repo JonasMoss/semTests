@@ -20,11 +20,13 @@ knitr::opts_chunk$set(
 
 This guide covers ordered and mixed indicators. The implementation covers
 lavaan's DWLS and ULS families, one or several groups, and listwise or pairwise
-missingness, and is validated against an independent implementation.
+missingness. The supported paths have also been checked against a separate
+implementation.
 
-The correction uses the unscaled estimator statistic and the biased spectrum
-that lavaan exposes through `lavInspect(fit, "UGamma")`. The Du--Bentler `UG`
-gamma and the continuous-data `RLS` statistic do not apply.
+For these models, `semTests` uses lavaan's unscaled statistic and the
+eigenvalues stored in `lavInspect(fit, "UGamma")`. The Du--Bentler `UG` option
+and the continuous-data `RLS` statistic belong to a different setting, so test
+names here do not use either suffix.
 
 ```{r setup}
 library("semTests")
@@ -48,10 +50,13 @@ ordinal_data[ordered_names] <- lapply(
 )
 ```
 
+The cuts create a tidy teaching example. They are not a recommendation to turn
+continuous measurements into categories.
+
 ## Overall goodness of fit
 
 lavaan's `WLSMV` shortcut fits the DWLS family and requests a
-mean-and-variance-adjusted test:
+mean-and-variance-adjusted test. From there, `pvalues()` works as usual:
 
 ```{r ordinal-fit}
 fit_ordinal <- cfa(
@@ -63,16 +68,16 @@ fit_ordinal <- cfa(
 pvalues(fit_ordinal, c("STD", "SB", "SS", "ALL", "PEBA4"))
 ```
 
-The output provenance records both the base estimator (`DWLS`) and the
-requested estimator (`WLSMV`), together with the categorical parameterization.
+The footer records both the base estimator (`DWLS`) and the estimator requested
+from lavaan (`WLSMV`). It also records the categorical parameterization.
 
 ```{r ordinal-provenance}
 attr(pvalues(fit_ordinal, "PEBA4"), "semtests")
 ```
 
-For `SB` and `SS`, the result can be sanity-checked against lavaan's public
-robust corrections. The other methods use more of the spectrum than the trace
-and squared trace used by these classical corrections.
+The `SB` and `SS` results give us a handy sanity check against lavaan's public
+robust corrections. The eigenvalue methods use more of the reference
+distribution, so they need not give the same p-value.
 
 ## Estimator families
 
@@ -81,10 +86,9 @@ The accepted shortcuts include:
 * DWLS, WLSM, WLSMV, and WLSMVS
 * ULS, ULSM, and ULSMV
 
-Full WLS/ADF is *refused*. Its weight is already the inverse asymptotic moment
-covariance, so the spectrum is the identity and every correction would reduce to
-the ordinary chi-square -- the robust p-values add nothing, so semTests declines
-the fit rather than return a naive test in robust clothing.
+Full WLS/ADF is refused. Its weight already produces an identity spectrum, so
+every correction reduces to the ordinary chi-square. There is no extra
+correction for `semTests` to make.
 
 ## Mixed indicators
 
@@ -111,15 +115,14 @@ fit_mixed <- cfa(
 pvalues(fit_mixed, "PEBA4")
 ```
 
-The threshold, covariance, and mean components of mixed sample statistics make
-the moment space larger than in a continuous covariance-only analysis. Using
-lavaan's inspected spectrum avoids reconstructing these conventions inside
-`semTests`.
+Mixed models combine thresholds with the usual covariance and mean information.
+Lavaan has already done that bookkeeping, and `semTests` reads the resulting
+spectrum directly.
 
 ## Pairwise missingness
 
-With pairwise categorical estimation, lavaan estimates each sample statistic
-from the observations available for that pair:
+With pairwise estimation, lavaan uses the observations available for each
+statistic:
 
 ```{r pairwise-fit}
 pairwise_data <- ordinal_data
@@ -138,14 +141,13 @@ pvalues(fit_pairwise, c("SB", "SS", "PEBA4"))
 ```
 
 `semTests` follows lavaan's pairwise sample-statistic and `UGamma`
-calculation. The validity of pairwise deletion depends on the missingness
-process, so its assumptions deserve a separate justification. Pairwise
-estimation does not provide FIML inference.
+calculation. Pairwise deletion brings its own assumptions about missingness, so
+report and defend that choice separately. It is not FIML.
 
 ## Nested categorical models
 
-Categorical comparison uses Satorra's 2000 restriction-map construction with
-the delta method:
+For categorical models, nested comparison uses Satorra's 2000 construction and
+the delta restriction map:
 
 ```{r categorical-nested}
 constrained <- "
@@ -172,18 +174,17 @@ pvalues_nested(
 
 Both fits must use the same requested estimator, parameterization, variables,
 groups, raw data, and missingness mask. Method 2001 and the exact restriction
-map are intentionally rejected for this family.
+map are unavailable for this family.
 
 ## Practical checks
 
-Before interpreting the result, give the fit a quick check:
+Before reading too much into a p-value, check the basics:
 
 1. Verify convergence and adequate category counts.
-2. Inspect sparse thresholds and pairwise observation counts.
+2. Look for sparse categories and, when relevant, small pairwise counts.
 3. Confirm that the two nested fits use identical data and options.
-4. Compare `SB` and `SS` with lavaan as a trace-level sanity check.
-5. Report pairwise missingness and the categorical estimator choice as
-   analysis assumptions.
+4. Compare `SB` and `SS` with lavaan as a quick numerical check.
+5. Report the estimator and any use of pairwise missingness.
 
 ## References
 

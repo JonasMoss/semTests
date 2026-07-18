@@ -1,3 +1,27 @@
+# semTests 1.0.0
+
+## New features
+
+* GLS, ULS, categorical DWLS and ULS, mixed indicators, and FIML with one or
+  several groups now work for single models and nested comparisons.
+* Observed exogenous predictors are supported under joint random-x inference.
+  Fixed or conditional covariate designs are refused until their separate
+  reference distribution is implemented and independently validated.
+* A `fiml.convention` argument selects the FIML information convention.
+* New vignettes cover measurement invariance with ordinal indicators and latent
+  growth models under FIML.
+
+## Bug fixes
+
+* The reweighted least-squares statistic was read as `NULL` under lavaan 0.7-2
+  and is now correct. semTests requires `lavaan (>= 0.7-2)`.
+
+## Removed
+
+* Nested method 2001 is withdrawn because of its poor performance.
+* Full WLS is refused because its correction reduces to the ordinary chi-square.
+
+
 # semTests 0.9.0
 
 A major release on two fronts: semTests now has a self-contained numerical core
@@ -5,23 +29,11 @@ with a minimal dependency footprint (`Imports` is just `lavaan` and the base
 `methods` package), and the eigenvalue-based p-values have been broadened well
 beyond normal-theory ML (see `?semTests-support`).
 
-* Full WLS/ADF is now refused at the entry point. Its weight is already the
-  inverse asymptotic moment covariance, so the eigenvalue correction is exactly
-  the identity and every robust p-value equals the ordinary chi-square; rather
-  than return a naive test in robust clothing, `pvalues()` / `pvalues_nested()`
-  now stop and point to a DWLS/ULS family. See `?semTests-support`.
-* The GLS, ULS, categorical DWLS/ULS (complete and pairwise), mixed-indicator,
-  and single-group FIML estimators -- single-model and nested -- are now marked
-  **stable**, having been validated to numerical tolerance against the
-  independent magmaan implementation across a simulation battery.
-* Nested `method = "2001"` (Satorra-Bentler) is temporarily unavailable and is
-  refused with a pointer to `method = "2000"`. It cannot yet be cross-validated
-  against magmaan and will return once it can.
-* Added vignettes on measurement invariance with ordinal indicators and on
-  latent growth models fitted under FIML.
-* Adapted statistic extraction to the named-list `lavaan::lavTest()` structure
-  introduced in lavaan 0.7-1 and used by the required lavaan 0.7-2 (the
-  reweighted least-squares statistic was previously read as `NULL`).
+* Fixed compatibility with lavaan 0.7-1, in which `lavaan::lavTest()` returns a
+  named list of test results rather than a single flat object (the reweighted
+  least squares chi-square statistic was previously read as `NULL`). The
+  statistic is now extracted in a way that works with both old and new lavaan
+  return structures.
 * The eigenvalue-based p-values no longer depend on CompQuadForm. The upper tail
   of the quadratic form `sum lambda_j chi^2_1` is computed internally by
   `imhof_pvalue()`, which is more accurate in the tail, where CompQuadForm
@@ -42,61 +54,18 @@ beyond normal-theory ML (see `?semTests-support`).
   built-in `HolzingerSwineford1939` data). `Imports` is now `lavaan` and
   `methods`.
 * Broadened the eigenvalue-based p-values beyond normal-theory ML. `pvalues()`
-  now supports GLS, ULS, and categorical DWLS/ULS/WLS families in addition to ML/MLM/MLR,
+  now supports GLS, ULS, and categorical WLSMV/DWLS in addition to ML/MLM/MLR,
   plus FIML missing-data fits (single-group, continuous); `pvalues_nested()`
-  supports the continuous estimators, nested FIML comparison, and categorical
-  Satorra-2000 comparisons with the delta restriction map. See
-  `?semTests-support`. **This broadened support is experimental**; the
-  classical normal-theory ML path remains stable.
-* FIML now requires lavaan 0.7-2, whose corrected missing-data `Gamma` and
-  observed H1 information are used directly. The former hand-coded saturated
-  score and Hessian implementation has been removed.
-* Added `fiml.convention` to `pvalues()` and `pvalues_nested()`. The default,
-  `"observed"`, uses observed saturated and model information throughout and is
-  validated against an independent magmaan implementation. `"lavaan"`
-  reproduces lavaan 0.7-2's inspected single-model `UGamma` and public nested
-  Satorra-2000 scaled/scaled-shifted tests.
-* Biased single-model spectra now use lavaan's inspected `UGamma` directly.
-  Experimental categorical support covers DWLS/WLSMV, ULS/ULSMV, and full WLS
-  for ordered or mixed indicators, single or multiple groups, and listwise or
-  pairwise missingness. Nested categorical tests use Satorra 2000 with the
-  delta restriction map.
-* Fixed constrained FIML models: equality-constraint bases are now applied to
-  single-model spectra, general equality constraints mixed with inequalities
-  are handled, and nested tests support an already-constrained H1.
-* `A.method = "delta"` is now the nested FIML default. Exact restriction maps
-  align parameters by model identity rather than parameter-table row order and
-  fail clearly when the two models do not share a full parameter set.
-* Removed the unreachable missing-data rescaling and the expected-information
-  warning. The FIML information convention is now an explicit argument and is
-  recorded in result provenance.
+  supports the continuous estimators and nested FIML comparison
+  (`method = "2000"`). See `?semTests-support`. **This broadened support is
+  experimental**; the classical normal-theory ML path remains stable.
 * Added entry-point validation with clear messages pointing at
   `?semTests-support`: non-`lavaan` objects, unsupported estimators, unsupported
   missing-data modes, multi-group / fixed-exogenous FIML, the normal-theory-only
   RLS statistic and the Du-Bentler `UG` gamma off the classical case, and
-  incompatible nested pairs are now refused up front. All nested families must
-  use the same estimator, fitting conventions, variables, groups, sample sizes,
-  raw data, and missingness mask.
-* Added typed public conditions for malformed test specifications,
-  nonconverged or inadmissible fits, reversed nested inputs, incompatible model
-  pairs, and unstable method-2001 spectra. Test names now enforce their grammar
-  and parameter domains. Reversed inputs warn before being swapped, and method
-  2001 never silently falls back to method 2000.
+  categorical nested tests are now refused up front.
 * The returned value is now a `semTests_pvalues` object that records the options
-  actually used (requested and base estimator, requested tests, base statistic,
-  information type, gamma type, data type, and degrees of freedom) and prints a
-  one-line provenance footer.
+  actually used (estimator, statistic, information type, gamma type, data type,
+  degrees of freedom) and prints a one-line provenance footer.
 * Added a `semTests` vignette and an `inst/CITATION`.
-* Expanded the opt-in magmaan parity harness into a simulation gate. It now
-  separates strict fixed-spectrum transform checks from independently optimized
-  end-to-end checks; covers classical ML, FIML, DWLS/ULS, mixed indicators,
-  pairwise missingness, and multigroup ordinal models; fingerprints the
-  installed magmaan code; and can emit a machine-readable result table. The
-  developer documentation records the exact certified boundary and known gaps.
-* Extended that gate to continuous GLS/ULS/full WLS, categorical full WLS, and
-  nested mixed-ordinal models. It now also covers nested Du--Bentler unbiased
-  gamma (including a multigroup mean structure) and continuous GLS/ULS/WLS
-  restriction maps. The current gate runs 89 checks over 824 values; it
-  exercises magmaan's explicit delta restriction map, continuous-LS gamma
-  convention, and corrected one-df scaled-F limit.
 * Documentation fixes and a substantially expanded test suite.

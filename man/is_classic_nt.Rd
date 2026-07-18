@@ -2,7 +2,7 @@
 % Please edit documentation in R/utility.R
 \name{is_classic_nt}
 \alias{is_classic_nt}
-\title{Is this the classical normal-theory, complete-data, ML case?}
+\title{Is this the classical normal-theory, complete-data, random-x ML case?}
 \usage{
 is_classic_nt(fit)
 }
