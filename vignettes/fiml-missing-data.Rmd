@@ -122,7 +122,7 @@ Expected information can be inconsistent under general MAR (Kenward and
 Molenberghs, 1998). Observed information reflects the realized missingness
 patterns and sample curvature. Savalei (2010) and Savalei and Rosseel (2022)
 work through the consequences for SEM. The choice can matter in finite samples,
-so we checked it with a large simulation.[^sim]
+so we checked it with a large simulation.
 
 The study crossed:
 
@@ -162,26 +162,13 @@ knitr::kable(
 )
 ```
 
-For a misspecified model, centered coverage uses the simulation's average
-estimate as the target. That lets us study interval calibration without
-pretending that a misspecified parameter is the original population value.
-
 The full observed Hessian with a sandwich covariance came closest to 95%
-overall, and its advantage is largest under heavy tails and misspecification.
-Under \(t_5\) data the model-based intervals drop to about 80%, while the
-full-Hessian sandwich stays above 93%. The lavaan calculations agreed with ours
-throughout.[^validate]
-
-This study is about parameter interval coverage. It does not directly test the
-null calibration of `semTests` goodness-of-fit p-values, which has separate
-deterministic and seeded simulation checks under `tools/`. The result still
-gives a practical reason to use observed information as the default building
-block. The `"lavaan"` convention remains available when the goal is to
-reproduce lavaan's inspected spectrum.
-
-[^sim]: The 48 cells used 200,000 replications each, 9.6 million fits in all. A few converged fits had Heywood estimates or nearly singular information matrices, which produce wild standard-error tails. Coverage keeps only converged replications with finite standard errors, and we do not report mean SE/SD ratios. The worst information-inversion failure rate in any cell was 0.0105%.
-
-[^validate]: Across all 576 parameter-level checks the largest absolute difference from lavaan was \(5.81\times10^{-7}\).
+overall, with its advantage largest under heavy tails and misspecification, so
+`semTests` uses observed information by default. The study targets parameter
+interval coverage, not the null calibration of the goodness-of-fit p-values
+themselves, which have their own deterministic and seeded checks under
+`tools/`. The `"lavaan"` convention remains available when the goal is to
+reproduce lavaan's spectrum.
 
 ## Comparing observed and expected model information
 
