@@ -56,3 +56,6 @@ rsconnect/
 
 # Local analyses, participant files, and generated discrepancy reports
 /workspace/
+
+# Claude Code local files (memory, settings)
+.claude/
