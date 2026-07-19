@@ -1,11 +1,16 @@
 # semTests 1.0.0
 
+Earlier versions marked several estimators as experimental. This release
+promotes them to stable.
+
 ## New features
 
-* GLS, ULS, categorical DWLS and ULS, mixed indicators, and FIML with one or
-  several groups now work for single models and nested comparisons.
-* A `fiml.convention` argument selects the FIML information convention, with
-  default disagreeing with lavaan, but with better statistical properties.
+* GLS, ULS, categorical DWLS and ULS, mixed continuous and ordinal indicators,
+  and FIML, each with one or several groups, now work for both single models and
+  nested comparisons.
+* A `fiml.convention` argument selects the FIML information convention. The
+  default disagrees with lavaan but has better statistical properties; set
+  `fiml.convention = "lavaan"` to reproduce lavaan's numbers exactly.
 * New vignettes cover measurement invariance with ordinal indicators and latent
   growth models under FIML.
 
