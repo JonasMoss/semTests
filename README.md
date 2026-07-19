@@ -18,10 +18,10 @@ regression *p* values of [Foldnes, Moss, and Grønneberg
 extension to nested model comparison in [Foldnes, Grønneberg, and Moss
 (2026)](https://doi.org/10.3758/s13428-026-02968-4).
 
-It covers ML, GLS, ULS, categorical DWLS and ULS, and continuous FIML with
-one or several groups, for both single models and nested comparisons.
-Observed predictors are supported under joint random-x inference. See
-`?semTests-support` for the exact list.
+It covers ML, GLS, ULS, categorical DWLS and ULS, and continuous FIML
+with one or several groups, for both single models and nested
+comparisons. Observed predictors are supported under joint random-x
+inference. See `?semTests-support` for the exact list.
 
 ## Installation
 

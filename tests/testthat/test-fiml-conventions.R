@@ -25,11 +25,13 @@ fit_fiml_pair <- function() {
   data <- fiml_test_data()
   list(
     m0 = lavaan::cfa(
-      fiml_h0_model, data, missing = "fiml", estimator = "MLR",
+      fiml_h0_model, data,
+      missing = "fiml", estimator = "MLR",
       meanstructure = TRUE
     ),
     m1 = lavaan::cfa(
-      fiml_h1_model, data, missing = "fiml", estimator = "MLR",
+      fiml_h1_model, data,
+      missing = "fiml", estimator = "MLR",
       meanstructure = TRUE
     )
   )
@@ -64,11 +66,13 @@ fit_fiml_random_x_pair <- function() {
   "
   list(
     m0 = lavaan::cfa(
-      h0, data, missing = "fiml", estimator = "MLR",
+      h0, data,
+      missing = "fiml", estimator = "MLR",
       fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
     ),
     m1 = lavaan::cfa(
-      h1, data, missing = "fiml", estimator = "MLR",
+      h1, data,
+      missing = "fiml", estimator = "MLR",
       fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
     )
   )
@@ -84,7 +88,8 @@ test_that("lavaan FIML single-model convention is its inspected UGamma spectrum"
   actual <- fiml_lambdas(fit, df, fiml.convention = "lavaan")$ug_biased
   expected <- sort(
     Re(eigen(lavaan::lavInspect(fit, "UGamma"),
-             only.values = TRUE)$values),
+      only.values = TRUE
+    )$values),
     decreasing = TRUE
   )[seq_len(df)]
   expect_equal(actual, expected, tolerance = 1e-8)
@@ -127,11 +132,13 @@ test_that("multigroup lavaan convention reproduces inspected and public tests", 
   fits <- fiml_multigroup_pair
   df <- as.integer(lavaan::fitmeasures(fits$m1, "df"))
   actual <- fiml_lambdas(
-    fits$m1, df, fiml.convention = "lavaan"
+    fits$m1, df,
+    fiml.convention = "lavaan"
   )$ug_biased
   expected <- sort(
     Re(eigen(lavaan::lavInspect(fits$m1, "UGamma"),
-             only.values = TRUE)$values),
+      only.values = TRUE
+    )$values),
     decreasing = TRUE
   )[seq_len(df)]
   expect_equal(actual, expected, tolerance = 1e-8)
@@ -195,10 +202,12 @@ test_that("observed FIML spectra match pinned magmaan validation goldens", {
   )
   fits <- fiml_pair
   h1 <- sort(fiml_lambdas(
-    fits$m1, 24L, fiml.convention = "observed"
+    fits$m1, 24L,
+    fiml.convention = "observed"
   )$ug_biased)
   h0 <- sort(fiml_lambdas(
-    fits$m0, 25L, fiml.convention = "observed"
+    fits$m0, 25L,
+    fiml.convention = "observed"
   )$ug_biased)
   delta <- fiml_lambdas_nested(
     fits$m0, fits$m1, 1L,
@@ -249,7 +258,8 @@ test_that("multigroup observed FIML matches pinned magmaan goldens", {
   fits <- fiml_multigroup_pair
   df <- as.integer(lavaan::fitmeasures(fits$m1, "df"))
   single <- fiml_lambdas(
-    fits$m1, df, fiml.convention = "observed"
+    fits$m1, df,
+    fiml.convention = "observed"
   )$ug_biased
   nested_df <- as.integer(
     lavaan::fitmeasures(fits$m0, "df") -
@@ -269,7 +279,8 @@ test_that("multigroup observed FIML matches pinned magmaan goldens", {
   expect_equal(exact, expected_exact, tolerance = 3e-4)
   expect_true(all(is.finite(pvalues(fits$m1, c("SB", "SS", "PEBA4")))))
   expect_true(all(is.finite(pvalues_nested(
-    fits$m0, fits$m1, tests = c("SB", "SS", "PEBA4")
+    fits$m0, fits$m1,
+    tests = c("SB", "SS", "PEBA4")
   ))))
 })
 
@@ -290,7 +301,8 @@ test_that("random-x FIML matches pinned magmaan goldens", {
       lavaan::fitmeasures(fits$m1, "df")
   )
   single <- fiml_lambdas(
-    fits$m1, df, fiml.convention = "observed"
+    fits$m1, df,
+    fiml.convention = "observed"
   )$ug_biased
   delta <- fiml_lambdas_nested(
     fits$m0, fits$m1, nested_df,
@@ -359,7 +371,7 @@ test_that("FIML equality bases cover labels, general constraints, and mixtures",
   )
   spectra <- lapply(models, function(model) {
     fit <- lavaan::cfa(model, data, missing = "fiml", estimator = "MLR")
-    K <- fiml_K_matrix(fit)
+    K <- model_parameter_basis(fit)
     expect_equal(nrow(K), fit@Model@nx.free)
     expect_equal(ncol(K), fit@Model@nx.free - 1L)
     expect_equal(crossprod(K), diag(ncol(K)), tolerance = 1e-8)
@@ -382,10 +394,11 @@ test_that("nested FIML supports an already-constrained H1", {
   h0 <- paste(h1, "c == d", sep = "\n")
   m1 <- lavaan::cfa(h1, data, missing = "fiml", estimator = "MLR")
   m0 <- lavaan::cfa(h0, data, missing = "fiml", estimator = "MLR")
-  expect_equal(ncol(fiml_K_matrix(m1)), m1@Model@nx.free - 1L)
+  expect_equal(ncol(model_parameter_basis(m1)), m1@Model@nx.free - 1L)
   for (A.method in c("delta", "exact")) {
     spectrum <- fiml_lambdas_nested(
-      m0, m1, 1L, A.method = A.method,
+      m0, m1, 1L,
+      A.method = A.method,
       fiml.convention = "observed"
     )$ug_biased
     expect_length(spectrum, 1L)

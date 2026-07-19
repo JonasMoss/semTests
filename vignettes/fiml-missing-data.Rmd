@@ -263,15 +263,18 @@ of free parameters:
 nested_tests <- c("SB", "SS", "PEBA2")
 nested <- cbind(
   observed_delta = as.numeric(pvalues_nested(
-    m0, m1, tests = nested_tests,
+    m0, m1,
+    tests = nested_tests,
     A.method = "delta", fiml.convention = "observed"
   )),
   observed_exact = as.numeric(pvalues_nested(
-    m0, m1, tests = nested_tests,
+    m0, m1,
+    tests = nested_tests,
     A.method = "exact", fiml.convention = "observed"
   )),
   lavaan_delta = as.numeric(pvalues_nested(
-    m0, m1, tests = nested_tests,
+    m0, m1,
+    tests = nested_tests,
     A.method = "delta", fiml.convention = "lavaan"
   ))
 )

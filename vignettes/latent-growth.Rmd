@@ -56,7 +56,8 @@ The linear model fixes the slope loadings to `0, 1, 2, 3`:
 linear <- growth(
   "i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
    s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4",
-  growth_data, missing = "fiml", estimator = "MLR"
+  growth_data,
+  missing = "fiml", estimator = "MLR"
 )
 
 pvalues(linear, c("SB", "SS", "ALL", "PEBA4"))
@@ -77,7 +78,8 @@ constrained fit, so it goes first:
 basis <- growth(
   "i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
    s =~ 0*t1 + 1*t2 + t3 + t4",
-  growth_data, missing = "fiml", estimator = "MLR"
+  growth_data,
+  missing = "fiml", estimator = "MLR"
 )
 
 pvalues_nested(linear, basis, tests = c("SB", "SS", "ALL", "PEBA2"))

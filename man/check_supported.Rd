@@ -20,6 +20,6 @@ groups -- and stops
 with a pointer to \code{?semTests-support} otherwise. Statistic- and gamma-specific
 rejections (the normal-theory-only RLS statistic and \code{UG} gamma) depend on the
 parsed test string and stay with the code that consumes them (\code{make_chisqs()}
-and \code{\link[=gamma]{gamma()}}). This gate checks the shape of the fit.
+and \code{\link[=gamma_matrices]{gamma_matrices()}}). This gate checks the shape of the fit.
 }
 \keyword{internal}

@@ -31,3 +31,41 @@ get_orthogonal_complement <- function(mat) {
   q_mat <- qr.Q(qr_decomp, complete = TRUE)
   q_mat[, -seq_len(qr_decomp$rank), drop = FALSE]
 }
+
+#' Map effective model parameters to lavaan's full free-parameter space.
+#'
+#' Handles explicit equality-constraint bases, simple equality constraints,
+#' and equality constraints combined with inequalities or bounds.
+#' @keywords internal
+model_parameter_basis <- function(fit) {
+  model <- fit@Model
+  if (isTRUE(model@eq.constraints)) {
+    return(as.matrix(model@eq.constraints.K))
+  }
+  if (methods::.hasSlot(model, "ceq.simple.only") &&
+    isTRUE(model@ceq.simple.only)) {
+    basis <- as.matrix(model@ceq.simple.K)
+    if (!nrow(basis)) {
+      return(diag(model@nx.free))
+    }
+    return(qr.Q(qr(basis)))
+  }
+  if (methods::.hasSlot(model, "ceq.JAC") && nrow(model@ceq.JAC) > 0L) {
+    return(get_orthogonal_complement(t(as.matrix(model@ceq.JAC))))
+  }
+  diag(model@nx.free)
+}
+
+#' Stack lavaan's per-group moment derivatives.
+#' @keywords internal
+model_delta_matrix <- function(fit) {
+  delta <- lavaan::lavInspect(fit, "delta")
+  blocks <- if (is.list(delta)) delta else list(delta)
+  do.call(rbind, lapply(blocks, as.matrix))
+}
+
+#' Moment derivatives with respect to effective model parameters.
+#' @keywords internal
+model_effective_delta <- function(fit) {
+  model_delta_matrix(fit) %*% model_parameter_basis(fit)
+}

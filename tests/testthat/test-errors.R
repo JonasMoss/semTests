@@ -79,7 +79,8 @@ test_that("nested fits must be comparable before a difference test is run", {
   different_data$x1 <- different_data$x1 +
     seq_len(nrow(different_data)) / 1000
   other_data_fit <- lavaan::cfa(
-    hs_model, different_data, estimator = "MLM"
+    hs_model, different_data,
+    estimator = "MLM"
   )
   expect_error(
     pvalues_nested(m0_no_groups, other_data_fit),
@@ -88,7 +89,8 @@ test_that("nested fits must be comparable before a difference test is run", {
   )
 
   other_estimator <- lavaan::cfa(
-    hs_model, lavaan::HolzingerSwineford1939, estimator = "MLR"
+    hs_model, lavaan::HolzingerSwineford1939,
+    estimator = "MLR"
   )
   expect_error(
     pvalues_nested(m0_no_groups, other_estimator),

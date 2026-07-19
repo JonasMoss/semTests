@@ -34,22 +34,3 @@ test_that("pvalues_nested default (penalized, all eigenvalues) is valid", {
   expect_length(p, 1L)
   expect_true(all(p >= 0 & p <= 1))
 })
-
-test_that("nested p-values can be requested via direct method arguments", {
-  p <- pvalues_nested_internal(m0_no_groups, m1_no_groups, tests = NULL, peba = 2)
-  expect_true(all(p >= 0 & p <= 1))
-})
-
-test_that("extras = TRUE appends chi-squares and eigenvalues", {
-  base <- pvalues_internal(object, tests = NULL, peba = 4, chisq = "rls")
-  extra <- pvalues_internal(object, tests = NULL, peba = 4, chisq = "rls", extras = TRUE)
-  expect_gt(length(extra), length(base))
-  expect_true("lambda" %in% names(extra))
-})
-
-test_that("extras = TRUE works with the unbiased gamma estimator", {
-  extra <- pvalues_internal(object,
-    tests = NULL, peba = 4, unbiased = 2, chisq = "rls", extras = TRUE
-  )
-  expect_gt(length(extra), 0L)
-})

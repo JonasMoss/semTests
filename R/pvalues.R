@@ -95,8 +95,9 @@
 #' For nested FIML models, `"lavaan"` reproduces
 #' `lavTestLRT(..., method = "satorra.2000")`.
 #'
-#' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does goodness-of-fit testing on one object,
-#'    `pvalues_nested` does hypothesis testing on two nested models.
+#' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does
+#'   goodness-of-fit testing on one object, while `pvalues_nested` does
+#'   hypothesis testing on two nested models.
 #' @param tests A non-empty character vector of tests. Each element uses one of
 #'   `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`, `TEST_UG_ML`, or
 #'   `TEST_UG_RLS`. The defaults are the recommended options. `EBA` and `pEBA`
@@ -147,69 +148,90 @@
 #'
 #' @references
 #'
-#' Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit procedures for structural equation models. *Structural Equation Modeling: A Multidisciplinary Journal*, 32(1), 1--13. \doi{10.1080/10705511.2024.2372028}
+#' Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
+#' procedures for structural equation models. *Structural Equation Modeling: A
+#' Multidisciplinary Journal*, 32(1), 1--13.
+#' \doi{10.1080/10705511.2024.2372028}
 #'
-#' Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. *Behavior Research Methods*, 58, article 107. \doi{10.3758/s13428-026-02968-4}
+#' Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
+#' averaging: Extension to nested model comparison and Monte Carlo evaluations.
+#' *Behavior Research Methods*, 58, article 107.
+#' \doi{10.3758/s13428-026-02968-4}
 #'
-#' Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, & A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis* (pp. 233--247). Kluwer Academic. \doi{10.1007/978-1-4615-4603-0_17}
+#' Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+#' analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+#' A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+#' (pp. 233--247). Kluwer Academic.
+#' \doi{10.1007/978-1-4615-4603-0_17}
 #'
-#' Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test statistic for moment structure analysis. *Psychometrika*, 66(4), 507--514. \doi{10.1007/BF02296192}
+#' Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test
+#' statistic for moment structure analysis. *Psychometrika*, 66(4), 507--514.
+#' \doi{10.1007/BF02296192}
 #'
-#' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. In A. von Eye & C. C. Clogg (Eds.), *Latent Variables Analysis: Applications for Developmental Research* (pp. 399--419). Sage.
+#' Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and
+#' standard errors in covariance structure analysis. In A. von Eye &
+#' C. C. Clogg (Eds.), *Latent Variables Analysis: Applications for
+#' Developmental Research* (pp. 399--419). Sage.
 #'
-#' Asparouhov, T., & Muthén, B. O. (2010). *Simple second order chi-square correction*. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
+#' Asparouhov, T., & Muthén, B. O. (2010). *Simple second order chi-square
+#' correction*. Mplus Technical Appendix.
+#' https://www.statmodel.com/download/WLSMV_new_chi21.pdf
 #'
-#' Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the Distribution of Test Statistics in Covariance Structure Analysis. Structural Equation Modeling. https://doi.org/10.1080/10705511.2015.1057733
+#' Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the
+#' Distribution of Test Statistics in Covariance Structure Analysis.
+#' *Structural Equation Modeling*.
+#' \doi{10.1080/10705511.2015.1057733}
 #'
-#' Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101-114. https://doi.org/10.1080/10705511.2017.1373021
+#' Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using
+#' Eigenvalue Block Averaging. *Structural Equation Modeling*, 25(1), 101--114.
+#' \doi{10.1080/10705511.2017.1373021}
 #'
-#' Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872-887. https://doi.org/10.1080/10705511.2022.2063870
+#' Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free
+#' Estimator Reliably Improves SEM Statistics for Nonnormal Data.
+#' *Structural Equation Modeling: A Multidisciplinary Journal*, 29(6),
+#' 872--887. \doi{10.1080/10705511.2022.2063870}
 #'
-#' Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist inference when data are missing at random. *Statistical Science*, 13(3), 236--247. \doi{10.1214/ss/1028905886}
+#' Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
+#' inference when data are missing at random. *Statistical Science*, 13(3),
+#' 236--247. \doi{10.1214/ss/1028905886}
 #'
-#' Bollen, K. A. (1989). *Structural Equations with Latent Variables*. John Wiley & Sons. \doi{10.1002/9781118619179}
+#' Bollen, K. A. (1989). *Structural Equations with Latent Variables*.
+#' John Wiley & Sons. \doi{10.1002/9781118619179}
 #'
-#' Browne, M. W. (1974). Generalized least squares estimators in the analysis of covariance structures. *South African Statistical Journal*, 8, 1--24.
+#' Browne, M. W. (1974). Generalized least squares estimators in the analysis
+#' of covariance structures. *South African Statistical Journal*, 8, 1--24.
 pvalues <- function(object,
                     tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
                     fiml.convention = c("observed", "lavaan")) {
   # The default is fit-appropriate: the historical RLS default for the classical
   # normal-theory ML case, the suffix-free form (standard statistic, biased
-  # gamma) otherwise. `tests = NULL` still routes to the "nothing requested"
-  # error in pvalues_internal().
-  pvalues_internal(object, tests, fiml.convention = fiml.convention)
-}
-
-#' @keywords internal
-pvalues_internal <- function(object, tests = c("SB_UG_RLS", "pEBA2_UG_RLS", "pEBA4_RLS", "pEBA6_RLS", "pOLS_RLS"), trad = NULL, eba = NULL, peba = NULL, pols = NULL, unbiased = 1, chisq = c("ml"), extras = FALSE, fiml.convention = c("observed", "lavaan")) {
-  # Class gate first: must precede the `tests` default promise (it forces
-  # is_classic_nt(object), which dereferences object@Options) and check_supported.
+  # gamma) otherwise.
   check_lavaan(object, "object")
-  if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
-    semtests_abort(
-      "`tests` must request at least one p-value; see `?pvalues` for valid names.",
-      "semTests_error_invalid_tests"
-    )
-  }
-  if (!is.null(tests)) validate_tests(tests)
+  options <- parse_tests(tests)
   check_supported(object)
   fiml.convention <- match.arg(fiml.convention)
-  options <- NULL
-  result <- if (is.null(tests)) {
-    pvalues_(object, unbiased = unbiased, trad = trad, eba = eba, peba = peba, pols = pols, chisq = chisq, extras = extras, fiml.convention = fiml.convention)
-  } else {
-    options <- lapply(tests, function(test) split_input(test))
-    sapply(options, function(option) do.call(
-      pvalues_,
-      c(object, option, extras = extras, fiml.convention = fiml.convention)
-    ))
-  }
+  result <- unlist(lapply(options, function(option) {
+    do.call(
+      compute_pvalues,
+      c(
+        list(m0 = object),
+        option,
+        list(fiml.convention = fiml.convention)
+      )
+    )
+  }))
   provenance_fiml <- if (is_fiml(object)) fiml.convention else NA
-  as_semtests(result, fit_provenance(object, nested = FALSE,
-                                     fiml.convention = provenance_fiml,
-                                     df = unname(lavaan::fitmeasures(object, "df")),
-                                     tests = tests,
-                                     parsed_options = options))
+  as_semtests(
+    result,
+    fit_provenance(
+      object,
+      nested = FALSE,
+      fiml.convention = provenance_fiml,
+      df = fit_df(object),
+      tests = tests,
+      parsed_options = options
+    )
+  )
 }
 
 #' @rdname pvalues
@@ -218,19 +240,6 @@ pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
                            tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
                            A.method = c("delta", "exact"),
                            fiml.convention = c("observed", "lavaan")) {
-  pvalues_nested_internal(m0, m1, method = method, tests = tests,
-                          A.method = A.method,
-                          fiml.convention = fiml.convention)
-}
-
-#' @keywords internal
-pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
-                                    tests = c("PALL_UG_ML"), trad = NULL,
-                                    eba = NULL, peba = NULL, pols = NULL,
-                                    unbiased = 1, chisq = "ml",
-                                    extras = FALSE,
-                                    A.method = c("delta", "exact"),
-                                    fiml.convention = c("observed", "lavaan")) {
   method <- match.arg(method)
   A.method <- match.arg(A.method)
   fiml.convention <- match.arg(fiml.convention)
@@ -239,16 +248,9 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
   # would otherwise die on a cryptic S4 slot error for a non-lavaan argument.
   check_lavaan(m0, "m0")
   check_lavaan(m1, "m1")
+  options <- parse_tests(tests)
 
-  if (is.null(tests) && is.null(trad) && is.null(eba) && is.null(peba) && is.null(pols)) {
-    semtests_abort(
-      "`tests` must request at least one p-value; see `?pvalues` for valid names.",
-      "semTests_error_invalid_tests"
-    )
-  }
-  if (!is.null(tests)) validate_tests(tests)
-
-  m <- m0@test[[1]]$df - m1@test[[1]]$df
+  m <- fit_df(m0) - fit_df(m1)
 
   # Check for identical df setting
   if (m == 0L) {
@@ -258,44 +260,54 @@ pvalues_nested_internal <- function(m0, m1, method = c("2000", "2001"),
     )
   } else if (m < 0) {
     semtests_warn(
-      "`m0` has fewer degrees of freedom than `m1`; treating `m1` as the constrained model and swapping the inputs.",
+      paste0(
+        "`m0` has fewer degrees of freedom than `m1`; treating `m1` as the ",
+        "constrained model and swapping the inputs."
+      ),
       "semTests_warning_model_order"
     )
     tmp <- m1
     m1 <- m0
     m0 <- tmp
   }
-  df <- m0@test[[1]]$df - m1@test[[1]]$df
+  df <- fit_df(m0) - fit_df(m1)
 
   check_supported_nested(m0, m1, method, A.method)
 
-  options <- NULL
-  result <- if (is.null(tests)) {
-    pvalues_(m0, m1, unbiased = unbiased, trad = trad, eba = eba,
-             peba = peba, pols = pols, chisq = chisq, extras = extras,
-             method = method, A.method = A.method,
-             fiml.convention = fiml.convention)
-  } else {
-    options <- lapply(tests, function(test) split_input(test))
-    sapply(options, function(option) {
-      do.call(pvalues_, c(m0, m1, option, extras = extras, method = method,
-                          A.method = A.method,
-                          fiml.convention = fiml.convention))
-    })
-  }
+  result <- unlist(lapply(options, function(option) {
+    do.call(
+      compute_pvalues,
+      c(
+        list(m0 = m0, m1 = m1),
+        option,
+        list(
+          A.method = A.method,
+          fiml.convention = fiml.convention
+        )
+      )
+    )
+  }))
   provenance_A_method <- if (is_fiml(m0) || is_fiml(m1) ||
-                             isTRUE(m0@Model@categorical) ||
-                             isTRUE(m1@Model@categorical)) {
+    isTRUE(m0@Model@categorical) ||
+    isTRUE(m1@Model@categorical)) {
     A.method
   } else {
     NA
   }
   provenance_fiml <- if (is_fiml(m0) || is_fiml(m1)) fiml.convention else NA
-  as_semtests(result, fit_provenance(m0, nested = TRUE, method = method,
-                                     A.method = provenance_A_method,
-                                     fiml.convention = provenance_fiml,
-                                     df = df, tests = tests,
-                                     parsed_options = options))
+  as_semtests(
+    result,
+    fit_provenance(
+      m0,
+      nested = TRUE,
+      method = method,
+      A.method = provenance_A_method,
+      fiml.convention = provenance_fiml,
+      df = df,
+      tests = tests,
+      parsed_options = options
+    )
+  )
 }
 
 #' Provenance of a `semTests_pvalues` object.
@@ -308,7 +320,7 @@ fit_provenance <- function(fit, nested, method = NA, A.method = NA,
                            parsed_options = NULL) {
   estimator_requested <- fit@Options$estimator.orig
   if (is.null(estimator_requested) || !length(estimator_requested) ||
-      is.na(estimator_requested[1])) {
+    is.na(estimator_requested[1])) {
     estimator_requested <- fit@Options$estimator
   }
   out <- list(
@@ -375,41 +387,36 @@ print.semTests_pvalues <- function(x, ...) {
   if (!is.null(info)) {
     fiml <- !is.null(info$missing) && info$missing[1] %in% c("ml", "fiml")
     requested <- if (!is.null(info$estimator_requested) &&
-                     info$estimator_requested[1] != info$estimator[1]) {
+      info$estimator_requested[1] != info$estimator[1]) {
       sprintf(" (%s)", info$estimator_requested[1])
     } else {
       ""
     }
     # lavaan stores `information` as a length-2 vector; show the (single) choice.
-    cat(sprintf("estimator: %s%s%s | data: %s | information: %s | df: %s%s%s\n",
-                info$estimator[1], requested, if (fiml) " (FIML)" else "",
-                info$data_type[1], info$information[1], info$df[1],
-                if (!is.null(info$fiml.convention)) {
-                  sprintf(" | FIML convention: %s", info$fiml.convention[1])
-                } else {
-                  ""
-                },
-                if (isTRUE(info$nested)) {
-                  a_method <- if (!is.null(info$A.method) &&
-                                  !is.na(info$A.method[1])) {
-                    sprintf(", A.method %s", info$A.method[1])
-                  } else {
-                    ""
-                  }
-                  sprintf(" | nested (method %s%s)", info$method[1], a_method)
-                } else {
-                  ""
-                }))
+    cat(sprintf(
+      "estimator: %s%s%s | data: %s | information: %s | df: %s%s%s\n",
+      info$estimator[1], requested, if (fiml) " (FIML)" else "",
+      info$data_type[1], info$information[1], info$df[1],
+      if (!is.null(info$fiml.convention)) {
+        sprintf(" | FIML convention: %s", info$fiml.convention[1])
+      } else {
+        ""
+      },
+      if (isTRUE(info$nested)) {
+        a_method <- if (!is.null(info$A.method) &&
+          !is.na(info$A.method[1])) {
+          sprintf(", A.method %s", info$A.method[1])
+        } else {
+          ""
+        }
+        sprintf(" | nested (method %s%s)", info$method[1], a_method)
+      } else {
+        ""
+      }
+    ))
   }
   invisible(x)
 }
-
-#' P value function for one and two arguments.
-#'
-#' @keywords internal
-#' @name pvalue_internal
-#' @return pvalues.
-NULL
 
 #' Calculate traditional pvalues.
 #' @param df,chisq,lambdas,type Parameters needed to calculate the p-values.
@@ -435,27 +442,26 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "p
     return(as.numeric(pvalue_all(chisq, lambdas)))
   }
 
-  if (type == "pall") {
-    return(as.numeric(pall(chisq, lambdas)))
-  }
-
+  as.numeric(pall(chisq, lambdas))
 }
 
-#' @rdname pvalue_internal
-pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
-                     chisq = c("ml", "rls"), extras = FALSE, method,
-                     A.method = "delta",
-                     fiml.convention = "observed") {
+#' Compute p-values for one parsed test specification.
+#' @keywords internal
+compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
+                            chisq = c("ml", "rls"), m1 = NULL,
+                            A.method = "delta",
+                            fiml.convention = "observed") {
   use_trad <- setdiff(trad, "std")
-  if (missing(m1)) {
-    df <- lavaan::fitmeasures(m0, "df")
+  if (is.null(m1)) {
+    df <- fit_df(m0)
     chisqs <- make_chisqs(chisq, m0)
     if (is_fiml(m0)) {
       if (unbiased != 1) {
         stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
-             "drop `UG` from the test name to use the biased FIML spectrum. ",
-             "See `?semTests-support`.",
-             call. = FALSE)
+          "drop `UG` from the test name to use the biased FIML spectrum. ",
+          "See `?semTests-support`.",
+          call. = FALSE
+        )
       }
       lambdas_list <- fiml_lambdas(m0, df, fiml.convention)
     } else if (unbiased == 1) {
@@ -472,21 +478,21 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
         )
       })
     }
-
   } else {
     # The nested reduction (method 2000) is estimator-agnostic for continuous
     # data -- the estimator enters only through WLS.V and the information matrix.
     # Fit-shape support (categorical / missing / FIML) is enforced upstream by
     # check_supported_nested(); here we branch on the FIML vs complete-data
     # computation and reject the FIML-incompatible UG gamma (a per-test option).
-    df <- lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
+    df <- fit_df(m0) - fit_df(m1)
     chisqs <- make_chisqs(chisq, m0, m1)
     if (is_fiml(m0) || is_fiml(m1)) {
       if (unbiased != 1) {
         stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
-             "drop `UG` from the test name to use the biased FIML spectrum. ",
-             "See `?semTests-support`.",
-             call. = FALSE)
+          "drop `UG` from the test name to use the biased FIML spectrum. ",
+          "See `?semTests-support`.",
+          call. = FALSE
+        )
       }
       lambdas_list <- fiml_lambdas_nested(
         m0, m1, df,
@@ -494,14 +500,16 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
         fiml.convention = fiml.convention
       )
     } else {
-      lambdas_list <- lambdas_nested(m0, m1, method, unbiased, df)
+      lambdas_list <- lambdas_nested(m0, m1, unbiased, df)
     }
 
     if (min(unlist(lambdas_list)) < 0) {
       semtests_abort(
-        paste0("Nested comparison produced materially negative leading ",
-               "eigenvalues. The fits may be unstable or not genuinely nested; ",
-               "inspect them before trusting the p-values."),
+        paste0(
+          "Nested comparison produced materially negative leading ",
+          "eigenvalues. The fits may be unstable or not genuinely nested; ",
+          "inspect them before trusting the p-values."
+        ),
         "semTests_error_unstable_spectrum"
       )
     }
@@ -512,8 +520,10 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
     blocks <- block_options[[label]]
     if (!is.null(blocks) && any(blocks > df)) {
       semtests_abort(
-        paste0(label, " cannot use more blocks than the test degrees ",
-               "of freedom (", df, ")."),
+        paste0(
+          label, " cannot use more blocks than the test degrees ",
+          "of freedom (", df, ")."
+        ),
         "semTests_error_invalid_tests"
       )
     }
@@ -568,14 +578,5 @@ pvalues_ <- function(m0, m1, unbiased, trad, eba, peba, pols,
     return_value <- c(return_value, result)
   }
 
-  if (extras) {
-    n <- length(lambdas_list)
-    names(lambdas_list) <- rep("lambda", n)
-    if (unbiased == 2) {
-      names(lambdas_list) <- c(rep("lambda_biased", n / 2), rep("lambda_unbiased", n / 2))
-    }
-    c(return_value, chisqs, lambdas_list)
-  } else {
-    return_value
-  }
+  return_value
 }

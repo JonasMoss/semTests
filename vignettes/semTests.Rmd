@@ -131,8 +131,10 @@ the required sample information:
 gls <- cfa(model, HolzingerSwineford1939, estimator = "GLS")
 pvalues(gls, "pEBA4")
 
-uls <- cfa(model, HolzingerSwineford1939, estimator = "ULS",
-           test = "satorra.bentler")
+uls <- cfa(model, HolzingerSwineford1939,
+  estimator = "ULS",
+  test = "satorra.bentler"
+)
 pvalues(uls, "pEBA4")
 ```
 

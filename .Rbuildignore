@@ -12,3 +12,4 @@ README_cache
 ^cran-comments\.md$
 \.Rhistory$
 ^\.claude$
+^\.lintr$

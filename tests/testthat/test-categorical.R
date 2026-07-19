@@ -21,7 +21,8 @@ categorical_test_data <- function(binary = FALSE, mixed = FALSE,
       c(-Inf, stats::quantile(data[[variable]], c(.33, .67)), Inf)
     }
     data[[variable]] <- ordered(cut(
-      data[[variable]], breaks = unique(breaks),
+      data[[variable]],
+      breaks = unique(breaks),
       include.lowest = TRUE
     ))
   }
@@ -129,7 +130,7 @@ test_that("categorical SB and SS reproduce lavaan's public corrections", {
   }
 })
 
-test_that("categorical spectra cover groups, constraints, parameterizations, and mixed indicators", {
+test_that("categorical spectra cover the supported model shapes", {
   cases <- list(
     multigroup = categorical_multigroup,
     constrained = categorical_pairs$default$m0,
@@ -154,7 +155,8 @@ test_that("categorical spectra cover groups, constraints, parameterizations, and
       info = case
     )
     expect_true(categorical_valid_p(pvalues(fit, c("SB", "SS", "PEBA4"))),
-                info = case)
+      info = case
+    )
   }
 })
 
@@ -164,8 +166,10 @@ test_that("full categorical WLS is refused (identity-spectrum no-op)", {
   # The spectrum is still the identity -- that is exactly why it is refused ...
   expect_equal(lavaan_lambdas(fit, df)$ug_biased, rep(1, df), tolerance = 1e-8)
   # ... the public entry point declines rather than return the naive test.
-  expect_error(pvalues(fit, c("STD", "SB", "SS", "ALL", "PEBA4")),
-               "full weighted least squares")
+  expect_error(
+    pvalues(fit, c("STD", "SB", "SS", "ALL", "PEBA4")),
+    "full weighted least squares"
+  )
 })
 
 test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
@@ -188,7 +192,8 @@ test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
       scaled.shifted = TRUE
     )
     actual <- pvalues_nested(
-      fits$m0, fits$m1, tests = c("SB", "SS")
+      fits$m0, fits$m1,
+      tests = c("SB", "SS")
     )
     expect_equal(
       unname(actual[c("sb_ml", "ss_ml")]),
@@ -216,7 +221,8 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
   )
   actual <- pvalues_nested(m0, m1, tests = c("SB", "SS"))
   shifted <- lavaan::lavTestLRT(
-    m1, m0, method = "satorra.2000",
+    m1, m0,
+    method = "satorra.2000",
     A.method = "delta", scaled.shifted = TRUE
   )
   # With WLSMV model tests, lavaan labels scaled.shifted = FALSE as a
@@ -232,24 +238,31 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
     ordered = categorical_fixture$ordered, group = "school", estimator = "WLSM"
   )
   scaled <- lavaan::lavTestLRT(
-    m1_sb, m0_sb, method = "satorra.2000",
+    m1_sb, m0_sb,
+    method = "satorra.2000",
     A.method = "delta", scaled.shifted = FALSE
   )
   actual_sb <- pvalues_nested(m0_sb, m1_sb, tests = "SB")
   expect_equal(as.numeric(actual_sb),
-               unname(scaled[2L, "Pr(>Chisq)"]),
-               tolerance = 1e-8)
+    unname(scaled[2L, "Pr(>Chisq)"]),
+    tolerance = 1e-8
+  )
   expect_equal(as.numeric(actual["ss_ml"]),
-               unname(shifted[2L, "Pr(>Chisq)"]),
-               tolerance = 1e-8)
+    unname(shifted[2L, "Pr(>Chisq)"]),
+    tolerance = 1e-8
+  )
 })
 
 test_that("nested categorical compatibility checks fail clearly", {
   fits <- categorical_pairs$default
-  expect_error(pvalues_nested(fits$m0, fits$m1, method = "2001"),
-               "method = \"2000\"")
-  expect_error(pvalues_nested(fits$m0, fits$m1, A.method = "exact"),
-               "A.method = \"delta\"")
+  expect_error(
+    pvalues_nested(fits$m0, fits$m1, method = "2001"),
+    "method = \"2000\""
+  )
+  expect_error(
+    pvalues_nested(fits$m0, fits$m1, A.method = "exact"),
+    "A.method = \"delta\""
+  )
 
   dwls <- fit_categorical_pair("DWLS")$m1
   expect_error(pvalues_nested(fits$m0, dwls), "same requested")
@@ -277,25 +290,35 @@ test_that("categorical fit and pair compatibility guards cover the support surfa
 
   bad_estimator <- fits$m1
   bad_estimator@Options$estimator <- "ML"
-  expect_error(check_supported(bad_estimator),
-               "currently support lavaan's DWLS and ULS")
+  expect_error(
+    check_supported(bad_estimator),
+    "currently support lavaan's DWLS and ULS"
+  )
 
   bad_missing <- fits$m1
   bad_missing@Options$missing[1L] <- "ml"
-  expect_error(check_supported(bad_missing),
-               "listwise.*pairwise")
+  expect_error(
+    check_supported(bad_missing),
+    "listwise.*pairwise"
+  )
 
   pairwise <- categorical_pairs$pairwise$m1
-  expect_error(check_categorical_nested_pair(fits$m0, pairwise),
-               "same missing-data mode")
+  expect_error(
+    check_categorical_nested_pair(fits$m0, pairwise),
+    "same missing-data mode"
+  )
 
   mixed <- categorical_pairs$mixed$m1
-  expect_error(check_categorical_nested_pair(fits$m0, mixed),
-               "same observed and ordered variables")
+  expect_error(
+    check_categorical_nested_pair(fits$m0, mixed),
+    "same observed and ordered variables"
+  )
 
   multigroup <- categorical_multigroup
-  expect_error(check_categorical_nested_pair(fits$m0, multigroup),
-               "same groups and group sample sizes")
+  expect_error(
+    check_categorical_nested_pair(fits$m0, multigroup),
+    "same groups and group sample sizes"
+  )
 })
 
 test_that("categorical restriction rank failures are reported at the public entry point", {

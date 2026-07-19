@@ -4,12 +4,10 @@
 \alias{lambdas_nested}
 \title{Reference spectrum of the nested test, without forming the full UGamma.}
 \usage{
-lambdas_nested(m0, m1, method = c("2000", "2001"), unbiased = 1, df)
+lambdas_nested(m0, m1, unbiased = 1, df)
 }
 \arguments{
 \item{m0, m1}{Two nested \code{lavaan} objects.}
-
-\item{method}{Either \code{"2000"} or \code{"2001"}.}
 
 \item{unbiased}{Biased (1), unbiased (2), or both (3) gamma.}
 
@@ -21,8 +19,6 @@ A list of eigenvalue vectors, one per gamma estimate.
 \description{
 For Satorra's (2000) method the nonzero eigenvalues are those of the \verb{m x m}
 matrix \verb{C^\{-1\} D' Gamma D} (see \link{nested_factor_2000}). This avoids the
-\verb{q x q} UGamma and its eigendecomposition. The (2001) method has no such
-reduction, so the top-\code{df} eigenvalues of the full \verb{(U0 - U1) Gamma} are
-returned.
+\verb{q x q} UGamma and its eigendecomposition.
 }
 \keyword{internal}

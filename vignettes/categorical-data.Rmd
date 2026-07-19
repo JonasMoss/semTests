@@ -42,11 +42,13 @@ ordered_names <- paste0("x", 1:9)
 ordinal_data <- HolzingerSwineford1939
 ordinal_data[ordered_names] <- lapply(
   ordinal_data[ordered_names],
-  function(x) ordered(cut(
-    x,
-    breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
-    include.lowest = TRUE
-  ))
+  function(x) {
+    ordered(cut(
+      x,
+      breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+      include.lowest = TRUE
+    ))
+  }
 )
 ```
 
@@ -100,11 +102,13 @@ mixed_names <- paste0("x", 1:6)
 mixed_data <- HolzingerSwineford1939
 mixed_data[mixed_names] <- lapply(
   mixed_data[mixed_names],
-  function(x) ordered(cut(
-    x,
-    breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
-    include.lowest = TRUE
-  ))
+  function(x) {
+    ordered(cut(
+      x,
+      breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+      include.lowest = TRUE
+    ))
+  }
 )
 
 fit_mixed <- cfa(

@@ -84,8 +84,7 @@ peba_pvalue <- function(chisq, lambdas, j) {
 #' Calculate penalized OLS pvalue.
 #' @keywords internal
 pols_pvalue <- function(chisq, lambdas, gamma) {
-
-  lambda_hat <- if(length(lambdas) == 1) {
+  lambda_hat <- if (length(lambdas) == 1) {
     lambdas
   } else {
     x <- seq_along(lambdas)

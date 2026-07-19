@@ -34,16 +34,6 @@ test_that("split_input rejects unrecognised test strings", {
   )
 })
 
-test_that("default() returns 2 for empty input and the number otherwise", {
-  expect_equal(default(""), 2)
-  expect_equal(default("5"), 5)
-})
-
-test_that("nanull() maps NA to NULL and passes other values through", {
-  expect_null(nanull(NA))
-  expect_equal(nanull(3), 3)
-})
-
 test_that("pols_pvalue handles a single eigenvalue", {
   expect_true(is.finite(suppressWarnings(pols_pvalue(22, 1, 2))))
 })

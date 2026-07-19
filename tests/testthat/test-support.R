@@ -12,8 +12,8 @@ hs <- " visual =~ x1 + x2 + x3
 valid_p <- function(p) all(is.finite(p) & p >= 0 & p <= 1)
 
 test_that("multi-group continuous single-model p-values are supported", {
-  p_mlm <- pvalues(m1, "PEBA4")       # MLM, group = "school"
-  p_gls <- pvalues(m1_, "PEBA4")      # GLS, group = "school"
+  p_mlm <- pvalues(m1, "PEBA4") # MLM, group = "school"
+  p_gls <- pvalues(m1_, "PEBA4") # GLS, group = "school"
   expect_true(valid_p(p_mlm))
   expect_true(valid_p(p_gls))
   expect_equal(attr(p_mlm, "semtests")$estimator, "ML")
@@ -22,9 +22,9 @@ test_that("multi-group continuous single-model p-values are supported", {
 })
 
 test_that("multi-group continuous nested p-values are supported (method 2000)", {
-  expect_true(valid_p(pvalues_nested(m0,  m1)))                    # MLM, 2000
-  expect_error(pvalues_nested(m0, m1, method = "2001"), "withdrawn")  # withdrawn
-  expect_true(valid_p(pvalues_nested(m0_, m1_)))                   # GLS, 2000
+  expect_true(valid_p(pvalues_nested(m0, m1))) # MLM, 2000
+  expect_error(pvalues_nested(m0, m1, method = "2001"), "withdrawn") # withdrawn
+  expect_true(valid_p(pvalues_nested(m0_, m1_))) # GLS, 2000
 })
 
 test_that("full WLS/ADF is refused (degenerate: correction is the identity)", {
@@ -32,8 +32,10 @@ test_that("full WLS/ADF is refused (degenerate: correction is the identity)", {
   set.seed(2024)
   dat <- lavaan::simulateData(hs, sample.nobs = 600)
   wls <- lavaan::cfa(hs, dat, estimator = "WLS")
-  expect_error(pvalues(wls, c("STD", "PEBA4", "SB", "POLS")),
-               "full weighted least squares")
+  expect_error(
+    pvalues(wls, c("STD", "PEBA4", "SB", "POLS")),
+    "full weighted least squares"
+  )
 })
 
 test_that("check_supported rejects estimators outside the supported set", {
@@ -49,18 +51,24 @@ test_that("check_supported rejects non-FIML missing data", {
 })
 
 test_that("nested missing-data requires FIML for both fits", {
-  HS  <- lavaan::HolzingerSwineford1939
-  HSm <- HS; set.seed(11); HSm$x1[sample(nrow(HS), 40)] <- NA
-  fiml     <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
-  complete <- lavaan::cfa(hs, HS,  estimator = "MLM")
+  HS <- lavaan::HolzingerSwineford1939
+  HSm <- HS
+  set.seed(11)
+  HSm$x1[sample(nrow(HS), 40)] <- NA
+  fiml <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "MLR")
+  complete <- lavaan::cfa(hs, HS, estimator = "MLM")
   expect_error(check_supported_nested(fiml, complete, "2000", "exact"), "FIML")
 })
 
 test_that("the FIML convention is explicit and recorded", {
-  HS  <- lavaan::HolzingerSwineford1939
-  HSm <- HS; set.seed(12); HSm$x1[sample(nrow(HS), 60)] <- NA
-  fiml_expected <- lavaan::cfa(hs, HSm, missing = "fiml", estimator = "ML",
-                               information = "expected")
+  HS <- lavaan::HolzingerSwineford1939
+  HSm <- HS
+  set.seed(12)
+  HSm$x1[sample(nrow(HS), 60)] <- NA
+  fiml_expected <- lavaan::cfa(hs, HSm,
+    missing = "fiml", estimator = "ML",
+    information = "expected"
+  )
 
   observed <- pvalues(fiml_expected, "PEBA4")
   lavaan <- pvalues(fiml_expected, "PEBA4", fiml.convention = "lavaan")

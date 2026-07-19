@@ -96,7 +96,8 @@ semtests_internal <- function(name) {
   get(name, envir = asNamespace("semTests"), inherits = FALSE)
 }
 
-parity_results <- list()
+parity_results <- new.env(parent = emptyenv())
+parity_results$rows <- list()
 
 check_close <- function(label, semtests, magmaan, tolerance,
                         layer = "end-to-end") {
@@ -112,7 +113,7 @@ check_close <- function(label, semtests, magmaan, tolerance,
   } else {
     0
   }
-  parity_results[[length(parity_results) + 1L]] <<- data.frame(
+  parity_results$rows[[length(parity_results$rows) + 1L]] <- data.frame(
     layer = layer,
     check = label,
     values = length(semtests),
@@ -383,7 +384,7 @@ validate_classical_ml <- function() {
   )
   semtests_nested_spectra <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    method = "2000", unbiased = 3L, df = nested_df
+    unbiased = 3L, df = nested_df
   )
   biased_row <- which(!magmaan_nested$ug)[1L]
   unbiased_row <- which(magmaan_nested$ug)[1L]
@@ -457,7 +458,7 @@ validate_classical_nested_multigroup <- function() {
   )
   spectra <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    method = "2000", unbiased = 3L, df = nested_df
+    unbiased = 3L, df = nested_df
   )
   check_close(
     "Classical multigroup nested spectrum, biased",
@@ -569,7 +570,7 @@ validate_continuous_ls <- function(estimator) {
   )
   semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_fit,
-    method = "2000", unbiased = 1L, df = nested_df
+    unbiased = 1L, df = nested_df
   )$ug_biased
   check_close(
     paste("Continuous nested spectrum,", estimator),
@@ -1001,7 +1002,7 @@ validate_categorical <- function(pairwise,
   nested_tests <- tests_for_df(nested_df)
   semtests_nested <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    method = "2000", unbiased = 1L, df = nested_df
+    unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaan::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
@@ -1112,7 +1113,7 @@ validate_mixed_categorical <- function() {
   nested_tests <- tests_for_df(nested_df)
   semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    method = "2000", unbiased = 1L, df = nested_df
+    unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaan::fmg_nested_mixed_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
@@ -1216,7 +1217,7 @@ validate_multigroup_categorical <- function() {
   nested_tests <- tests_for_df(nested_df)
   semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    method = "2000", unbiased = 1L, df = nested_df
+    unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaan::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
@@ -1334,7 +1335,7 @@ validate_random_x_complete <- function() {
     )
     semtests_nested <- semtests_internal("lambdas_nested")(
       lavaan_h0, lavaan_h1,
-      method = "2000", unbiased = 1L, df = nested_df
+      unbiased = 1L, df = nested_df
     )$ug_biased
     check_close(
       paste("Random-x complete nested spectrum,", estimator),
@@ -1409,7 +1410,7 @@ validate_random_x_complete <- function() {
     "Random-x categorical nested spectrum, DWLS",
     sort(semtests_internal("lambdas_nested")(
       lavaan_h0, lavaan_h1,
-      method = "2000", unbiased = 1L, df = nested_df
+      unbiased = 1L, df = nested_df
     )$ug_biased),
     sort(magmaan_nested$eigenvalues[[1L]]),
     spectrum_tolerance, layer = "spectrum"
@@ -1481,7 +1482,7 @@ validate_categorical(
 validate_mixed_categorical()
 validate_multigroup_categorical()
 
-parity_results <- do.call(rbind, parity_results)
+parity_results <- do.call(rbind, parity_results$rows)
 parity_results$semTests_version <- semtests_version
 parity_results$lavaan_version <- lavaan_version
 parity_results$magmaan_version <- magmaan_version

@@ -21,8 +21,9 @@ pvalues_nested(
 )
 }
 \arguments{
-\item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does goodness-of-fit testing on one object,
-\code{pvalues_nested} does hypothesis testing on two nested models.}
+\item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does
+goodness-of-fit testing on one object, while \code{pvalues_nested} does
+hypothesis testing on two nested models.}
 
 \item{tests}{A non-empty character vector of tests. Each element uses one of
 \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or
@@ -174,29 +175,58 @@ pvalues_nested(m0, m1)
 
 }
 \references{
-Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit procedures for structural equation models. \emph{Structural Equation Modeling: A Multidisciplinary Journal}, 32(1), 1--13. \doi{10.1080/10705511.2024.2372028}
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
+procedures for structural equation models. \emph{Structural Equation Modeling: A
+Multidisciplinary Journal}, 32(1), 1--13.
+\doi{10.1080/10705511.2024.2372028}
 
-Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block averaging: Extension to nested model comparison and Monte Carlo evaluations. \emph{Behavior Research Methods}, 58, article 107. \doi{10.3758/s13428-026-02968-4}
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
+averaging: Extension to nested model comparison and Monte Carlo evaluations.
+\emph{Behavior Research Methods}, 58, article 107.
+\doi{10.3758/s13428-026-02968-4}
 
-Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, & A. Satorra (Eds.), \emph{Innovations in Multivariate Statistical Analysis} (pp. 233--247). Kluwer Academic. \doi{10.1007/978-1-4615-4603-0_17}
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), \emph{Innovations in Multivariate Statistical Analysis}
+(pp. 233--247). Kluwer Academic.
+\doi{10.1007/978-1-4615-4603-0_17}
 
-Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test statistic for moment structure analysis. \emph{Psychometrika}, 66(4), 507--514. \doi{10.1007/BF02296192}
+Satorra, A., & Bentler, P. M. (2001). A scaled difference chi-square test
+statistic for moment structure analysis. \emph{Psychometrika}, 66(4), 507--514.
+\doi{10.1007/BF02296192}
 
-Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and standard errors in covariance structure analysis. In A. von Eye & C. C. Clogg (Eds.), \emph{Latent Variables Analysis: Applications for Developmental Research} (pp. 399--419). Sage.
+Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and
+standard errors in covariance structure analysis. In A. von Eye &
+C. C. Clogg (Eds.), \emph{Latent Variables Analysis: Applications for
+Developmental Research} (pp. 399--419). Sage.
 
-Asparouhov, T., & Muthén, B. O. (2010). \emph{Simple second order chi-square correction}. Mplus Technical Appendix. https://www.statmodel.com/download/WLSMV_new_chi21.pdf
+Asparouhov, T., & Muthén, B. O. (2010). \emph{Simple second order chi-square
+correction}. Mplus Technical Appendix.
+https://www.statmodel.com/download/WLSMV_new_chi21.pdf
 
-Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the Distribution of Test Statistics in Covariance Structure Analysis. Structural Equation Modeling. https://doi.org/10.1080/10705511.2015.1057733
+Wu, H., & Lin, J. (2016). A Scaled F Distribution as an Approximation to the
+Distribution of Test Statistics in Covariance Structure Analysis.
+\emph{Structural Equation Modeling}.
+\doi{10.1080/10705511.2015.1057733}
 
-Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using Eigenvalue Block Averaging. Structural Equation Modeling, 25(1), 101-114. https://doi.org/10.1080/10705511.2017.1373021
+Foldnes, N., & Grønneberg, S. (2018). Approximating Test Statistics Using
+Eigenvalue Block Averaging. \emph{Structural Equation Modeling}, 25(1), 101--114.
+\doi{10.1080/10705511.2017.1373021}
 
-Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free Estimator Reliably Improves SEM Statistics for Nonnormal Data. Structural Equation Modeling: A Multidisciplinary Journal, 29(6), 872-887. https://doi.org/10.1080/10705511.2022.2063870
+Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free
+Estimator Reliably Improves SEM Statistics for Nonnormal Data.
+\emph{Structural Equation Modeling: A Multidisciplinary Journal}, 29(6),
+872--887. \doi{10.1080/10705511.2022.2063870}
 
-Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist inference when data are missing at random. \emph{Statistical Science}, 13(3), 236--247. \doi{10.1214/ss/1028905886}
+Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
+inference when data are missing at random. \emph{Statistical Science}, 13(3),
+236--247. \doi{10.1214/ss/1028905886}
 
-Bollen, K. A. (1989). \emph{Structural Equations with Latent Variables}. John Wiley & Sons. \doi{10.1002/9781118619179}
+Bollen, K. A. (1989). \emph{Structural Equations with Latent Variables}.
+John Wiley & Sons. \doi{10.1002/9781118619179}
 
-Browne, M. W. (1974). Generalized least squares estimators in the analysis of covariance structures. \emph{South African Statistical Journal}, 8, 1--24.
+Browne, M. W. (1974). Generalized least squares estimators in the analysis
+of covariance structures. \emph{South African Statistical Journal}, 8, 1--24.
 }
 \seealso{
 \link{semTests-support} for the full list of supported configurations.

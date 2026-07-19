@@ -42,11 +42,13 @@ ordered_names <- paste0("x", 1:9)
 mi_data <- HolzingerSwineford1939
 mi_data[ordered_names] <- lapply(
   mi_data[ordered_names],
-  function(x) ordered(cut(
-    x,
-    breaks = c(-Inf, quantile(x, c(.25, .50, .75)), Inf),
-    include.lowest = TRUE
-  ))
+  function(x) {
+    ordered(cut(
+      x,
+      breaks = c(-Inf, quantile(x, c(.25, .50, .75)), Inf),
+      include.lowest = TRUE
+    ))
+  }
 )
 ```
 
@@ -63,7 +65,8 @@ overall fit:
 
 ```{r configural}
 configural <- cfa(
-  model, mi_data, ordered = ordered_names,
+  model, mi_data,
+  ordered = ordered_names,
   group = "school", estimator = "WLSMV"
 )
 
@@ -77,7 +80,8 @@ constrained than the configural model, so it goes in the first argument:
 
 ```{r thresholds}
 equal_thresholds <- cfa(
-  model, mi_data, ordered = ordered_names,
+  model, mi_data,
+  ordered = ordered_names,
   group = "school", group.equal = "thresholds", estimator = "WLSMV"
 )
 
@@ -97,7 +101,8 @@ Now retain equal thresholds and add equality constraints on the loadings:
 
 ```{r loadings}
 equal_loadings <- cfa(
-  model, mi_data, ordered = ordered_names,
+  model, mi_data,
+  ordered = ordered_names,
   group = "school",
   group.equal = c("thresholds", "loadings"),
   estimator = "WLSMV"

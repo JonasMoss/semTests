@@ -1,4 +1,3 @@
-
 # Does the fitted model contain observed exogenous predictors?
 has_observed_exogenous <- function(fit) {
   any(fit@Model@nexo > 0L)
@@ -8,8 +7,8 @@ has_observed_exogenous <- function(fit) {
 uses_fixed_or_conditional_x <- function(fit) {
   has_observed_exogenous(fit) &&
     (isTRUE(fit@Options$fixed.x) ||
-       isTRUE(fit@Options$conditional.x) ||
-       isTRUE(fit@Model@conditional.x))
+      isTRUE(fit@Options$conditional.x) ||
+      isTRUE(fit@Model@conditional.x))
 }
 
 #' Is this the classical normal-theory, complete-data, random-x ML case?
@@ -27,9 +26,11 @@ is_classic_nt <- function(fit) {
 
 #' @keywords internal
 make_chisqs <- function(chisq, m0, m1) {
-  # lavaan >= 0.7-1 returns a named list of tests from `lavTest()` (e.g. both
-  # "standard" and the requested test), whereas earlier versions return a single
-  # flat test object with `$stat`. Grab the statistic from whichever layout we get.
+  # `lavTest()` returns one of two shapes depending on the requested test.
+  # Asking for "standard" gives a single flat test object with a top-level
+  # `$stat`; asking for a non-standard test (e.g. "browne.residual.nt.model")
+  # gives a named list keyed by "standard" and the requested test, each element
+  # carrying its own `$stat`. Read the statistic from whichever shape we get.
   get_stat <- function(object, test) {
     res <- lavaan::lavTest(object, test = test)
     if (!is.null(res[[test]])) res[[test]][["stat"]] else res[["stat"]]
@@ -50,12 +51,13 @@ make_chisqs <- function(chisq, m0, m1) {
 
   if ("rls" %in% chisq && !classic_nt) {
     stop("The RLS statistic ('browne.residual.nt.model') is only available for ",
-         "continuous, complete-data ML with random observed exogenous ",
-         "covariates (`fixed.x = FALSE`, `conditional.x = FALSE`). lavaan ",
-         "evaluates it as ADF outside that setting. ",
-         "Use the standard statistic (the `_ML` suffix) or omit the suffix. ",
-         "See `?semTests-support`.",
-         call. = FALSE)
+      "continuous, complete-data ML with random observed exogenous ",
+      "covariates (`fixed.x = FALSE`, `conditional.x = FALSE`). lavaan ",
+      "evaluates it as ADF outside that setting. ",
+      "Use the standard statistic (the `_ML` suffix) or omit the suffix. ",
+      "See `?semTests-support`.",
+      call. = FALSE
+    )
   }
 
   chisqs <- c()
@@ -64,20 +66,23 @@ make_chisqs <- function(chisq, m0, m1) {
   chisqs
 }
 
-#' Return non-missing values and convert `NA` to `NULL`.
+#' Extract model degrees of freedom through lavaan's public API.
 #' @keywords internal
-nanull <- function(x) {
-  if (is.na(x)) {
-    NULL
-  } else {
-    x
-  }
+fit_df <- function(fit) {
+  unname(lavaan::fitmeasures(fit, "df"))
 }
 
-#' Common default value of 2.
+#' Parse and validate public test specifications.
 #' @keywords internal
-default <- function(x) {
-  if (x != "") as.numeric(x) else 2
+parse_tests <- function(tests) {
+  if (is.null(tests)) {
+    semtests_abort(
+      "`tests` must request at least one p-value; see `?pvalues` for valid names.",
+      "semTests_error_invalid_tests"
+    )
+  }
+  validate_tests(tests)
+  lapply(tests, split_input)
 }
 
 #' Validate public test specifications.
@@ -87,7 +92,7 @@ default <- function(x) {
 #' @keywords internal
 validate_tests <- function(tests) {
   if (!is.character(tests) || !length(tests) || anyNA(tests) ||
-      any(!nzchar(tests))) {
+    any(!nzchar(tests))) {
     semtests_abort(
       "`tests` must be a non-empty character vector with no missing or empty values.",
       "semTests_error_invalid_tests"
@@ -112,10 +117,10 @@ split_input <- function(string) {
   splitted <- strsplit(string, "_", fixed = TRUE)[[1]]
   valid_suffix <- length(splitted) == 1L ||
     (length(splitted) == 2L &&
-       splitted[2L] %in% c("ug", "ml", "rls")) ||
+      splitted[2L] %in% c("ug", "ml", "rls")) ||
     (length(splitted) == 3L &&
-       splitted[2L] == "ug" &&
-       splitted[3L] %in% c("ml", "rls"))
+      splitted[2L] == "ug" &&
+      splitted[3L] %in% c("ml", "rls"))
   if (!valid_suffix) {
     semtests_abort(
       paste0(
@@ -128,8 +133,8 @@ split_input <- function(string) {
   }
   trad <- peba <- eba <- pols <- NULL
   unbiased <- 1
-  chisq <- "auto"   # resolved per fit in make_chisqs (rls if classical NT, else ml)
-  type <- nanull(splitted[1])
+  chisq <- "auto" # resolved per fit in make_chisqs (rls if classical NT, else ml)
+  type <- splitted[1L]
 
   if (length(splitted) == 3) {
     unbiased <- if (splitted[2] == "ug") 2 else 1
@@ -152,8 +157,10 @@ split_input <- function(string) {
     if (!valid) {
       requirement <- if (integer) "a positive integer" else "a finite positive number"
       semtests_abort(
-        paste0("Invalid test specification `", string, "`: `", prefix,
-               "` requires ", requirement, "."),
+        paste0(
+          "Invalid test specification `", string, "`: `", prefix,
+          "` requires ", requirement, "."
+        ),
         "semTests_error_invalid_tests"
       )
     }
@@ -170,8 +177,10 @@ split_input <- function(string) {
     trad <- type
   } else {
     semtests_abort(
-      paste0("Unknown test family in `", string,
-             "`. See `?pvalues` for the supported test names."),
+      paste0(
+        "Unknown test family in `", string,
+        "`. See `?pvalues` for the supported test names."
+      ),
       "semTests_error_invalid_tests"
     )
   }
