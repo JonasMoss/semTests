@@ -83,6 +83,7 @@ fiml_multigroup_pair <- fit_fiml_multigroup_pair()
 fiml_random_x_pair <- fit_fiml_random_x_pair()
 
 test_that("lavaan FIML single-model convention is its inspected UGamma spectrum", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   fit <- fiml_pair$m1
   df <- as.integer(lavaan::fitmeasures(fit, "df"))
   actual <- fiml_lambdas(fit, df, fiml.convention = "lavaan")$ug_biased
@@ -96,6 +97,7 @@ test_that("lavaan FIML single-model convention is its inspected UGamma spectrum"
 })
 
 test_that("lavaan nested convention reproduces public Satorra-2000 tests", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   fits <- fiml_pair
   for (A.method in c("delta", "exact")) {
     scaled <- lavaan::lavTestLRT(
@@ -129,6 +131,7 @@ test_that("lavaan nested convention reproduces public Satorra-2000 tests", {
 })
 
 test_that("multigroup lavaan convention reproduces inspected and public tests", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   fits <- fiml_multigroup_pair
   df <- as.integer(lavaan::fitmeasures(fits$m1, "df"))
   actual <- fiml_lambdas(
@@ -320,6 +323,7 @@ test_that("random-x FIML matches pinned magmaan goldens", {
 })
 
 test_that("random-x FIML lavaan convention reproduces public nested tests", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   fits <- fiml_random_x_pair
   for (A.method in c("delta", "exact")) {
     scaled <- lavaan::lavTestLRT(
@@ -353,6 +357,7 @@ test_that("random-x FIML lavaan convention reproduces public nested tests", {
 })
 
 test_that("FIML equality bases cover labels, general constraints, and mixtures", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   data <- fiml_test_data()
   shared <- "
     textual =~ x4 + x5 + x6
@@ -407,6 +412,7 @@ test_that("nested FIML supports an already-constrained H1", {
 })
 
 test_that("nested FIML restrictions are invariant to parameter-table ordering", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   data <- fiml_test_data()
   h1 <- "
     visual  =~ x1 + x2 + x3

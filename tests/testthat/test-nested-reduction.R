@@ -25,16 +25,19 @@ expect_spectrum_matches <- function(m0, m1, unbiased) {
 }
 
 test_that("reduced 2000 spectrum matches full UGamma (no groups, biased + unbiased)", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   expect_spectrum_matches(m0_no_groups, m1_no_groups, 1)
   expect_spectrum_matches(m0_no_groups, m1_no_groups, 2)
 })
 
 test_that("reduced 2000 spectrum matches full UGamma (multi-group metric invariance)", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   expect_spectrum_matches(m0, m1, 1)
   expect_spectrum_matches(m0, m1, 2)
 })
 
 test_that("reduced spectrum matches full UGamma under a general (==) equality constraint", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   # `a*` labels create *simple* equalities (ceq.simple); an explicit `==` makes a
   # general equality constraint (eq.constraints), which routes through the
   # eq.constraints.K mapping in both the reduced and the full reference paths.
@@ -52,6 +55,7 @@ test_that("reduced spectrum matches full UGamma under a general (==) equality co
 })
 
 test_that("nested continuous tests support an already-constrained H1", {
+  skip_on_cran() # cross-route numeric-equivalence; not portable across BLAS/LAPACK
   HS <- lavaan::HolzingerSwineford1939
   h1 <- "
     visual  =~ x1 + a*x2 + b*x3

@@ -82,6 +82,7 @@ categorical_multigroup <- lavaan::cfa(
 )
 
 test_that("biased single-model spectra come directly from lavaan UGamma", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   for (estimator in names(categorical_base_fits)) {
     fit <- categorical_base_fits[[estimator]]
     df <- as.integer(lavaan::fitmeasures(fit, "df"))
@@ -101,6 +102,7 @@ test_that("biased single-model spectra come directly from lavaan UGamma", {
 })
 
 test_that("categorical SB and SS reproduce lavaan's public corrections", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   variants <- list(
     DWLS = c("WLSM", "WLSMV"),
     ULS = c("ULSM", "ULSMV")
@@ -131,6 +133,7 @@ test_that("categorical SB and SS reproduce lavaan's public corrections", {
 })
 
 test_that("categorical spectra cover the supported model shapes", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   cases <- list(
     multigroup = categorical_multigroup,
     constrained = categorical_pairs$default$m0,
@@ -173,6 +176,7 @@ test_that("full categorical WLS is refused (identity-spectrum no-op)", {
 })
 
 test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   cases <- list(
     WLSMV = categorical_pairs$default,
     ULSMV = fit_categorical_pair("ULSMV"),
@@ -209,6 +213,7 @@ test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
 })
 
 test_that("nested multigroup categorical spectra reproduce lavaan traces", {
+  skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   h0 <- "
     visual  =~ x1 + c(a1, a2)*x2 + c(a1, a2)*x3
     textual =~ x4 + x5 + x6
