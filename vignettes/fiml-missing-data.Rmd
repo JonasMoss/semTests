@@ -122,7 +122,7 @@ Expected information can be inconsistent under general MAR (Kenward and
 Molenberghs, 1998). Observed information reflects the realized missingness
 patterns and sample curvature. Savalei (2010) and Savalei and Rosseel (2022)
 work through the consequences for SEM. The choice can matter in finite samples,
-so we gave it a fairly serious computational check.
+so we checked it with a large simulation.[^sim]
 
 The study crossed:
 
@@ -131,7 +131,6 @@ The study crossed:
 * complete data, 30% MCAR, and 30% MAR
 * \(N = 150, 300, 600,\) and \(1200\)
 
-Each of the 48 cells used 200,000 replications, giving 9.6 million fits in all.
 We followed the interval coverage of one free loading and the factor
 covariance. Six standard-error recipes combined three information choices with
 either a model-based covariance or an empirical-score sandwich covariance
@@ -167,30 +166,22 @@ For a misspecified model, centered coverage uses the simulation's average
 estimate as the target. That lets us study interval calibration without
 pretending that a misspecified parameter is the original population value.
 
-The full observed Hessian with sandwich covariance came closest to 95% overall.
-Its mean absolute coverage error was 0.821 percentage points, with mean
-coverage of 94.179% in the correctly specified cells. Under a correct normal
-model, the two full-Hessian versions were tied at about 94.7%. Under \(t_5\)
-data, model-based covariance hovered near 80%, while the full-Hessian sandwich
-reached 93.64%. The same method also did best in the misspecified cells shown
-in the table.
-
-A few converged fits had Heywood estimates or nearly singular information
-matrices. Those fits create wild estimate and standard-error tails, so we do
-not report arithmetic mean SE/SD ratios. Coverage keeps converged replications
-with finite standard errors. The worst information-inversion failure rate in
-any cell was 0.0105%.
-
-We also compared the simulation calculations with lavaan in all 576
-parameter-level checks. Every check agreed, and the largest absolute difference
-was \(5.81\times10^{-7}\).
+The full observed Hessian with a sandwich covariance came closest to 95%
+overall, and its advantage is largest under heavy tails and misspecification.
+Under \(t_5\) data the model-based intervals drop to about 80%, while the
+full-Hessian sandwich stays above 93%. The lavaan calculations agreed with ours
+throughout.[^validate]
 
 This study is about parameter interval coverage. It does not directly test the
 null calibration of `semTests` goodness-of-fit p-values, which has separate
 deterministic and seeded simulation checks under `tools/`. The result still
-gives a good practical reason to use observed information as the default
-building block. The `"lavaan"` convention remains handy when reproduction of
-lavaan's inspected spectrum is the goal.
+gives a practical reason to use observed information as the default building
+block. The `"lavaan"` convention remains available when the goal is to
+reproduce lavaan's inspected spectrum.
+
+[^sim]: The 48 cells used 200,000 replications each, 9.6 million fits in all. A few converged fits had Heywood estimates or nearly singular information matrices, which produce wild standard-error tails. Coverage keeps only converged replications with finite standard errors, and we do not report mean SE/SD ratios. The worst information-inversion failure rate in any cell was 0.0105%.
+
+[^validate]: Across all 576 parameter-level checks the largest absolute difference from lavaan was \(5.81\times10^{-7}\).
 
 ## Comparing observed and expected model information
 
@@ -237,8 +228,8 @@ that path respects the model-information choice stored in the fit.
 
 Observed information reflects the realized missingness patterns and sample
 curvature. Expected information averages curvature under the fitted model.
-They can be close in friendly settings. Missingness and non-normality can pull
-them apart. `semTests` keeps the convention visible in both the function call
+They can be close in well-behaved settings. Missingness and non-normality can
+pull them apart. `semTests` keeps the convention visible in both the function call
 and the result footer.
 
 ## Nested FIML comparison
@@ -288,8 +279,8 @@ rownames(nested) <- nested_tests
 format(nested, scientific = TRUE, digits = 4)
 ```
 
-The delta default is the forgiving choice when equivalent models have different
-parameter tables. Use exact when the hypothesis is naturally written as a
+The delta default is the more flexible choice when equivalent models have
+different parameter tables. Use exact when the hypothesis is naturally written as a
 literal restriction on one shared set of free parameters.
 
 ## FIML with several groups

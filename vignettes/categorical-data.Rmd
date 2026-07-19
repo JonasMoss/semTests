@@ -50,8 +50,8 @@ ordinal_data[ordered_names] <- lapply(
 )
 ```
 
-The cuts create a tidy teaching example. They are not a recommendation to turn
-continuous measurements into categories.
+The cuts give a reproducible teaching example. They are not a recommendation to
+turn continuous measurements into categories.
 
 ## Overall goodness of fit
 
@@ -75,7 +75,7 @@ from lavaan (`WLSMV`). It also records the categorical parameterization.
 attr(pvalues(fit_ordinal, "PEBA4"), "semtests")
 ```
 
-The `SB` and `SS` results give us a handy sanity check against lavaan's public
+The `SB` and `SS` results are a quick check against lavaan's public
 robust corrections. The eigenvalue methods use more of the reference
 distribution, so they need not give the same p-value.
 

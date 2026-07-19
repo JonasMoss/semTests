@@ -38,8 +38,7 @@ growth_data <- Demo.growth
 
 `Demo.growth` is complete. To exercise FIML, missingness in the later waves `t3`
 and `t4` depends on the first wave `t1`. This gives the example a reproducible
-MAR-like mechanism. It is only a teaching device and says nothing about a real
-missingness process.
+MAR-like mechanism and says nothing about a real missingness process.
 
 ```{r missing}
 set.seed(20260718)
@@ -84,8 +83,8 @@ basis <- growth(
 pvalues_nested(linear, basis, tests = c("SB", "SS", "ALL", "PEBA2"))
 ```
 
-A small p-value would be evidence that the linear shape is too stiff. A large
-one means this comparison has not found a clear reason to bend the trajectory.
+A small p-value would be evidence that the linear shape is too rigid. A large
+one means this comparison found no clear reason to let the trajectory bend.
 The two freed loadings give a two-degree-of-freedom test, so we use `PEBA2`.
 The number of blocks cannot exceed the test degrees of freedom.
 

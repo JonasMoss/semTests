@@ -83,7 +83,7 @@ result <- pvalues(fit_ml, "PEBA4_ML")
 attr(result, "semtests")
 ```
 
-That little record is useful when several kinds of models end up in the same
+That record is useful when several kinds of models end up in the same
 analysis.
 
 ## Nested comparison
@@ -111,8 +111,8 @@ pvalues_nested(m0, m1, method = "2000", tests = c("SB_ML", "PALL_ML"))
 ```
 
 `PALL` is the recommended default for nested comparison. The Satorra--Bentler
-2001 construction is unavailable in this release, so `method = "2001"` points
-you back to `"2000"`.
+2001 construction has been withdrawn because it performs poorly, so
+`method = "2001"` points you back to `"2000"`.
 
 ## GLS and ULS
 
@@ -135,7 +135,7 @@ and `UG` are limited to the complete-data ML setting.
 
 ## Practical checks
 
-A quick preflight check catches many avoidable surprises:
+A quick check on these points catches most avoidable problems:
 
 1. Inspect convergence and admissibility. `semTests` refuses nonconvergence and
    warns when lavaan's post-estimation check fails.

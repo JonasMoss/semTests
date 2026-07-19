@@ -40,8 +40,8 @@ library("lavaan")
 
 ## Choose a focused guide
 
-This vignette gives you the tour. Pick the focused guide that matches your
-data when you want the full story:
+This vignette is a quick tour. Pick the focused guide that matches your
+data when you want more depth:
 
 * `vignette("continuous-data", package = "semTests")` covers complete
   continuous data, the classical ML workflow, GLS/ULS, and nested tests.
@@ -95,7 +95,7 @@ pvalues(fit, c("SB_ML", "pEBA4_ML", "pOLS2_ML"))
 
 The `UG` gamma and the `RLS` statistic belong to continuous, complete-data fits
 from lavaan's ML family. That includes fits requested as `MLM` or `MLR`. Other
-model families get a helpful error if either option is requested.
+model families return an error if either option is requested.
 
 ## Nested model comparison
 
@@ -113,8 +113,8 @@ pvalues_nested(m0, m1)
 ```
 
 `PALL` is the recommended default for nested comparison (Foldnes, Grønneberg,
-and Moss, 2026). `semTests` uses Satorra's 2000 construction. The 2001 method is
-unavailable in this release. Both fits must use the same estimator, options,
+and Moss, 2026). `semTests` uses Satorra's 2000 construction. The 2001 method has been
+withdrawn because it performs poorly. Both fits must use the same estimator, options,
 variables, groups, and observations. If the inputs arrive in reverse order,
 `semTests` warns and swaps them.
 

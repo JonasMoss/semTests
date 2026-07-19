@@ -88,7 +88,7 @@ pvalues_nested(
 ```
 
 The test asks whether the equal-threshold restrictions create a noticeable loss
-of fit. A large p-value means the data have not picked a fight with those
+of fit. A large p-value means the data give no clear reason to reject those
 restrictions. It does not prove that the thresholds are identical.
 
 ## Then the loadings
@@ -129,8 +129,8 @@ attr(
 ```
 
 The result footer records the categorical estimator, the reduction method, and
-the restriction map. That makes it much easier to tell later which test you
-actually ran.
+the restriction map. That makes it easy to tell later which test you
+ran.
 
 ## References
 

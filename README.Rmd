@@ -32,7 +32,7 @@ options(warn = -1)
 
 An R package for robust tests of overall fit and nested model comparisons in structural equation models. It works with `lavaan` and implements the penalized eigenvalue block averaging and penalized regression *p* values of [Foldnes, Moss, and Grønneberg (2025)](https://doi.org/10.1080/10705511.2024.2372028), along with their extension to nested model comparison in [Foldnes, Grønneberg, and Moss (2026)](https://doi.org/10.3758/s13428-026-02968-4).
 
-**News.** `semTests` now supports GLS and ULS for continuous data, DWLS and ULS for categorical data, and continuous FIML with one or several groups. Observed predictors work under joint random-x inference too. Nested comparisons are included. See `?semTests-support` for the details.
+It covers ML, GLS, ULS, categorical DWLS and ULS, and continuous FIML with one or several groups, for both single models and nested comparisons. Observed predictors are supported under joint random-x inference. See `?semTests-support` for the exact list.
 
 ```{r setup, include=FALSE}
 # library("semTests")

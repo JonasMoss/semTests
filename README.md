@@ -18,11 +18,10 @@ regression *p* values of [Foldnes, Moss, and Grønneberg
 extension to nested model comparison in [Foldnes, Grønneberg, and Moss
 (2026)](https://doi.org/10.3758/s13428-026-02968-4).
 
-**News.** `semTests` now supports GLS and ULS for continuous data, DWLS
-and ULS for categorical data, and continuous FIML with one or several
-groups. Observed predictors work under joint random-x inference too.
-Nested comparisons are included. See `?semTests-support` for the
-details.
+It covers ML, GLS, ULS, categorical DWLS and ULS, and continuous FIML with
+one or several groups, for both single models and nested comparisons.
+Observed predictors are supported under joint random-x inference. See
+`?semTests-support` for the exact list.
 
 ## Installation
 
