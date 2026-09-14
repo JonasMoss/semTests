@@ -1,3 +1,10 @@
+# Enforce exact symmetry on a matrix that is symmetric in exact arithmetic
+# but drifts by rounding. Not FIML-specific despite its former name: the
+# geometry, weight and FIML paths all need it.
+symmetrize <- function(x) {
+  (x + t(x)) / 2
+}
+
 # Reduced symmetric products for positive-definite inference metrics.
 # If H = R'R and Q spans ker((R Delta)'), then U = B B', B = R'Q.
 # Only the trailing columns of the QR factor are formed, never the full Q.

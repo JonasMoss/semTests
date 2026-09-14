@@ -82,6 +82,20 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
   # and the fitted object untouched. Default pair optimization is too coarse
   # for differentiating the first-stage functional.
   ns <- asNamespace("lavaan")
+  # These five are not part of lavaan's public interface. There is no exported
+  # route to "recompute the first-stage polychoric map under perturbed sampling
+  # weights with a tighter root", which is what differentiating the first-stage
+  # functional needs. Check them up front so a lavaan change fails here, with a
+  # message naming the cause, rather than deep inside a numerical derivative.
+  required <- c("lav_bvord_cor_twostep_fit", "lav_bvord_cache_from_args",
+                "lav_bvord_min_fns", "lav_samp_step2", "muthen1984")
+  missing <- required[!vapply(required, exists, logical(1),
+                              envir = ns, inherits = FALSE)]
+  if (length(missing)) {
+    stop("Ordinal estimated-weight inference relies on lavaan internals that ",
+         "this lavaan version does not provide: ", paste(missing, collapse=", "),
+         ". Use weight_effect = \"fixed\".", call. = FALSE)
+  }
   local <- new.env(parent=ns)
   pair_fit <- get("lav_bvord_cor_twostep_fit",ns)
   local$lav_bvord_cor_twostep_fit <- function(fit_y1,fit_y2,wt=NULL,
@@ -203,5 +217,5 @@ ls_parameter_evaluation <- function(object,basis,first_stage) {
     J <- J+crossprod(Y)
     E <- E+(n[g]-1)*crossprod(D,b$weight%*%D)
   }
-  list(score=score,score_covariance=fiml_sym(J),expected=fiml_sym(E),nobs=sum(n),group_nobs=n)
+  list(score=score,score_covariance=symmetrize(J),expected=symmetrize(E),nobs=sum(n),group_nobs=n)
 }

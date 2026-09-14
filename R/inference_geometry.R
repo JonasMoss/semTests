@@ -1,6 +1,6 @@
 # Shared profile geometry in summed criterion units.
 inference_solve <- function(A, B = diag(nrow(A))) {
-  root <- inference_chol(fiml_sym(A), "Sensitivity/metric")
+  root <- inference_chol(symmetrize(A), "Sensitivity/metric")
   backsolve(root, forwardsolve(t(root), B))
 }
 
@@ -90,7 +90,7 @@ gaussian_observed_information <- function(X, geometry) {
     C <- sweep(C, 2, geometry$weight, "*")
     H <- rbind(cbind(n*K, C), cbind(t(C), H))
   }
-  fiml_sym(H)
+  symmetrize(H)
 }
 
 # Pattern records retain only observed coordinates. No n by full-moment score
@@ -155,7 +155,7 @@ pattern_score_products <- function(parts, G, score_covariance, tile_rows=256L) {
   }
   score <- colSums(group_score)
   if (score_covariance == "centered") score_cov <- score_cov-crossprod(group_score/sqrt(parts$group_nobs))
-  list(score=score,score_covariance=fiml_sym(score_cov))
+  list(score=score,score_covariance=symmetrize(score_cov))
 }
 
 gaussian_global_score_parts <- function(object, score_covariance, curvature, metric="information") {
@@ -170,7 +170,7 @@ gaussian_global_score_parts <- function(object, score_covariance, curvature, met
   # Model-based information in the covariance slot. Distinct from the empirical
   # products only where the information equality fails, i.e. under missing data.
   if (score_covariance == "expected") {
-    products$score_covariance <- fiml_sym(crossprod(G,E%*%G))
+    products$score_covariance <- symmetrize(crossprod(G,E%*%G))
   }
   nuisance <- pattern_score_products(parts,K,"uncentered")$score
   c(products,list(metric=crossprod(G,M%*%G),nobs=parts$nobs,projection=G,
@@ -178,25 +178,32 @@ gaussian_global_score_parts <- function(object, score_covariance, curvature, met
     group_nobs=parts$group_nobs))
 }
 
-# Only these local functions depend on lavaan's internal model evaluator. No
-# refitting, calls to the original data expression, or changes to user fits.
+# Evaluating the model away from its own estimates, without refitting, without
+# touching the user's fit and without re-running the original data expression.
+# Everything here goes through lavaan's public interface: lavInspect() reads
+# these quantities off the @Model slot, so it reports the perturbed values on a
+# local copy rather than the cached ones. Verified equal to lavaan's internal
+# evaluators at a displaced theta for single-group, multi-group, constrained and
+# categorical fits.
+inference_group_list <- function(x) if (is.list(x)) x else list(x)
+
 inference_model_at <- function(object, theta) {
-  object@Model <- get("lav_model_set_parameters",asNamespace("lavaan"))(object@Model,theta)
+  object@Model <- lavaan::lav_model_set_parameters(object@Model, theta)
   object
 }
 
 inference_implied <- function(object) {
-  get("lav_model_wls_est",asNamespace("lavaan"))(object@Model)
+  inference_group_list(lavaan::lavInspect(object, "wls.est"))
 }
 
 inference_delta <- function(object) {
-  get("lav_model_delta",asNamespace("lavaan"))(object@Model)
+  lapply(inference_group_list(lavaan::lavInspect(object, "delta")), as.matrix)
 }
 
 # Evaluate pattern scores at a local Model, not the cached fitted @implied slot.
 gaussian_parameter_evaluation <- function(object, basis, score_covariance="centered") {
   # lavInspect("implied") reads @implied; refresh only the local copy.
-  object@implied <- get("lav_model_implied",asNamespace("lavaan"))(object@Model)
+  object@implied <- lavaan::lav_model_implied(object@Model)
   parts <- gaussian_pattern_parts(object)
   delta <- do.call(rbind,inference_delta(object)) %*% basis
   out <- pattern_score_products(parts,delta,score_covariance)
@@ -222,7 +229,7 @@ criterion_hessian <- function(gradient, theta, basis, step) {
   }
   asymmetry <- max(abs(out-t(out)))/max(1,max(abs(out)))
   if (asymmetry > 1e-3) stop("Numerical criterion curvature is asymmetric; reduce derivative_step.",call.=FALSE)
-  list(matrix=fiml_sym(out),asymmetry=asymmetry)
+  list(matrix=symmetrize(out),asymmetry=asymmetry)
 }
 
 check_criterion_adapter <- function(object) {
@@ -259,7 +266,7 @@ parameter_inference_parts <- function(object, curvature="observed",score_covaria
     evaluate <- function(x) gaussian_parameter_evaluation(inference_model_at(object,x),basis,score_covariance)
     base <- evaluate(theta)
     at <- inference_model_at(object,theta)
-    at@implied <- get("lav_model_implied",asNamespace("lavaan"))(at@Model)
+    at@implied <- lavaan::lav_model_implied(at@Model)
     records <- gaussian_pattern_parts(at)$records
     gradient <- function(x) gaussian_parameter_gradient(inference_model_at(object,x),basis,records)
   } else {
@@ -281,7 +288,7 @@ parameter_inference_parts <- function(object, curvature="observed",score_covaria
 # statistics, avoiding repeated casewise covariance construction at every
 # parameter perturbation. The empirical score_covariance is evaluated only at the estimate.
 gaussian_parameter_gradient <- function(object,basis,records) {
-  implied <- get("lav_model_implied",asNamespace("lavaan"))(object@Model)
+  implied <- lavaan::lav_model_implied(object@Model)
   delta <- do.call(rbind,inference_delta(object))%*%basis
   total_score <- numeric(nrow(delta))
   means <- isTRUE(object@Options$meanstructure)

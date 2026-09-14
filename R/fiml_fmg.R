@@ -24,11 +24,6 @@ fiml_check_supported <- function(fit, context = "FIML FMG") {
   invisible(TRUE)
 }
 
-#' @keywords internal
-fiml_sym <- function(x) {
-  (x + t(x)) / 2
-}
-
 # Convert a lavaan inspection to one matrix per group.
 fiml_group_matrices <- function(x, fit, what) {
   blocks <- if (is.list(x)) x else list(x)
@@ -245,12 +240,12 @@ fiml_h1_information_lavaan <- function(fit) {
 #' Return the leading symmetric-product eigenvalues without forming AB.
 #' @keywords internal
 fiml_sandwich_eigenvalues <- function(U, Gamma, df) {
-  Gamma <- fiml_sym(Gamma)
+  Gamma <- symmetrize(Gamma)
   eg <- eigen(Gamma, symmetric = TRUE)
   root <- eg$vectors %*%
     diag(sqrt(pmax(eg$values, 0)), nrow(Gamma)) %*%
     t(eg$vectors)
-  reduced <- fiml_sym(root %*% fiml_sym(U) %*% root)
+  reduced <- symmetrize(root %*% symmetrize(U) %*% root)
   ev <- eigen(reduced, symmetric = TRUE, only.values = TRUE)$values
   sort(Re(ev), decreasing = TRUE)[seq_len(df)]
 }
@@ -289,7 +284,7 @@ fiml_lambdas <- function(fit, df,
                                      "FIML residual spectrum")
     } else {
       HD <- H %*% Delta
-      P <- fiml_sym(crossprod(Delta, HD))
+      P <- symmetrize(crossprod(Delta, HD))
       U <- H - HD %*% generalized_inverse(P) %*% t(HD)
       fiml_sandwich_eigenvalues(U, Gamma, df)
     }
@@ -315,8 +310,8 @@ fiml_nested_ingredients <- function(m1,
   }
 
   list(
-    A1 = fiml_sym(crossprod(basis1, information %*% basis1)),
-    B1 = fiml_sym(crossprod(
+    A1 = symmetrize(crossprod(basis1, information %*% basis1)),
+    B1 = symmetrize(crossprod(
       V %*% delta,
       fiml_gamma_matrix(m1) %*% (V %*% delta)
     ))
@@ -346,7 +341,7 @@ fiml_lambdas_nested <- function(m0, m1, df,
   }
 
   Y <- generalized_inverse(ingredients$A1) %*% t(A)
-  C <- fiml_sym(A %*% Y)
-  S <- fiml_sym(t(Y) %*% ingredients$B1 %*% Y)
+  C <- symmetrize(A %*% Y)
+  S <- symmetrize(t(Y) %*% ingredients$B1 %*% Y)
   list(ug_biased = restriction_spectrum(C, S, df, "nested FIML spectrum"))
 }
