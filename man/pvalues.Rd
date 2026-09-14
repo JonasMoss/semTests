@@ -2,10 +2,14 @@
 % Please edit documentation in R/pvalues.R
 \name{pvalues}
 \alias{pvalues}
+\alias{pvalues.lavaan}
 \alias{pvalues_nested}
-\title{Compute robust \emph{p}-values for one or two \code{lavaan} objects}
+\alias{pvalues.semTests_test}
+\title{Compute robust \emph{p}-values for fitted models or matrix tests}
 \usage{
-pvalues(
+pvalues(object, tests, fiml.convention = c("observed", "lavaan"))
+
+\method{pvalues}{lavaan}(
   object,
   tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
   fiml.convention = c("observed", "lavaan")
@@ -19,9 +23,16 @@ pvalues_nested(
   A.method = c("delta", "exact"),
   fiml.convention = c("observed", "lavaan")
 )
+
+\method{pvalues}{semTests_test}(
+  object,
+  tests = if (object$reference == "chisq") "STD" else "ALL",
+  fiml.convention = c("observed", "lavaan")
+)
 }
 \arguments{
-\item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does
+\item{object, m0, m1}{One or two \code{lavaan} objects, or a \code{semTests_test} result
+supplied as \code{object} to \code{pvalues()}. For lavaan fits, \code{pvalues} does
 goodness-of-fit testing on one object, while \code{pvalues_nested} does
 hypothesis testing on two nested models.}
 
@@ -53,6 +64,8 @@ carrying an \code{"semtests"} attribute that records the requested tests,
 requested and base estimator, base-statistic and gamma choices,
 information type, data type, parameterization where applicable, nested
 method and restriction map where applicable, and degrees of freedom.
+For matrix results, the attribute instead records test type, reference law,
+hypothesis, normalization, rank/df, sample size when supplied, and provenance.
 }
 \description{
 Compute one or several \emph{p}-values for a fitted \code{lavaan} model. Available
@@ -61,6 +74,13 @@ and familiar robust corrections. The defaults select the recommended method
 for the fitted model.
 }
 \details{
+\code{pvalues()} also accepts results from \code{\link[=score_test_matrices]{score_test_matrices()}} and
+\code{\link[=wald_test_matrices]{wald_test_matrices()}}. Matrix score results use \code{"ALL"} by default for a
+supplied metric; fully studentized score and Wald results use \code{"STD"}.
+Matrix results accept calibration names without \code{UG}, \code{ML}, or \code{RLS}
+suffixes, and do not accept \code{fiml.convention}. The lavaan methods retain
+their existing defaults and output names.
+
 The \code{tests} argument is a character vector. Each element has one of the forms
 \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or \code{TEST_UG_RLS}.
 For example, \code{SB_UG_RLS}.

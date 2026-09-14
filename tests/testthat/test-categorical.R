@@ -81,7 +81,7 @@ categorical_multigroup <- lavaan::cfa(
   ordered = categorical_fixture$ordered, group = "school"
 )
 
-test_that("biased single-model spectra come directly from lavaan UGamma", {
+test_that("biased single-model spectra match lavaan UGamma", {
   skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   for (estimator in names(categorical_base_fits)) {
     fit <- categorical_base_fits[[estimator]]

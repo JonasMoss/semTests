@@ -283,10 +283,16 @@ fiml_lambdas <- function(fit, df,
         call. = FALSE
       )
     }
-    HD <- H %*% Delta
-    P <- fiml_sym(crossprod(Delta, HD))
-    U <- H - HD %*% generalized_inverse(P) %*% t(HD)
-    fiml_sandwich_eigenvalues(U, Gamma, df)
+    B <- residual_metric_factor(list(H), Delta, df)
+    if (!is.null(B)) {
+      positive_symmetric_eigenvalues(crossprod(B, Gamma %*% B), df,
+                                     "FIML residual spectrum")
+    } else {
+      HD <- H %*% Delta
+      P <- fiml_sym(crossprod(Delta, HD))
+      U <- H - HD %*% generalized_inverse(P) %*% t(HD)
+      fiml_sandwich_eigenvalues(U, Gamma, df)
+    }
   }
 
   list(ug_biased = lambdas)
@@ -342,8 +348,5 @@ fiml_lambdas_nested <- function(m0, m1, df,
   Y <- generalized_inverse(ingredients$A1) %*% t(A)
   C <- fiml_sym(A %*% Y)
   S <- fiml_sym(t(Y) %*% ingredients$B1 %*% Y)
-  ev <- Re(eigen(generalized_inverse(C) %*% S,
-    only.values = TRUE
-  )$values)
-  list(ug_biased = sort(ev, decreasing = TRUE))
+  list(ug_biased = restriction_spectrum(C, S, df, "nested FIML spectrum"))
 }

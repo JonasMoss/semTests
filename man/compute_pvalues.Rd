@@ -14,7 +14,8 @@ compute_pvalues(
   chisq = c("ml", "rls"),
   m1 = NULL,
   A.method = "delta",
-  fiml.convention = "observed"
+  fiml.convention = "observed",
+  cache = NULL
 )
 }
 \description{

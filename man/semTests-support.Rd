@@ -11,6 +11,8 @@ and therefore includes estimators beyond normal-theory ML. The tables below
 give the supported combinations. Configurations outside them are refused at
 the entry point (see \code{\link[=check_supported]{check_supported()}}), and the test suite follows the
 same boundary.
+The newer score/Wald adapters have the narrower scope described separately
+below; the fit-test tables do not establish their support.
 }
 \details{
 \subsection{Single-model (\code{pvalues()})}{\tabular{llllll}{
@@ -93,8 +95,14 @@ normal-theory ML with continuous, complete data, \code{estimator = "ML"},
 elsewhere, and the Du-Bentler correction has no derivation for the other
 families or a fixed covariate design. \code{semTests} refuses either request and
 points you to the standard statistic and biased gamma.
-\item \strong{Categorical and mixed-indicator fits} use lavaan's biased inspected
-\code{UGamma} spectrum and unscaled estimator statistic directly. Supported
+\item For \strong{complete-data normal-likelihood ML}, biased spectra can be computed
+from tiled empirical moment influences when Gamma is not cached. The
+calculation includes mean/covariance cross terms and group proportions.
+Cached or supplied NACOV is retained; sampling weights, alternative Gamma
+normalizations, and other first-stage conventions keep their existing paths.
+\item \strong{Categorical and mixed-indicator fits} use the spectrum equivalent to
+lavaan's biased \code{UGamma} and its unscaled estimator statistic. Expected-
+information fits compute the spectrum in residual space. Supported
 estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
 ULSMV). Nested comparison is restricted to \code{method = "2000"} and
 \code{A.method = "delta"}.
@@ -123,6 +131,37 @@ eigenvalue correction collapses to the identity. Every robust p-value would
 therefore equal the ordinary \code{1 - pchisq(chisq, df)}. Because the correction
 adds nothing, full WLS is refused at the entry point. Fit a DWLS/ULS family
 for a non-degenerate robust test, or read the standard chi-square directly.
+}
+
+\subsection{Score and Wald adapters}{
+
+\code{\link[=score_test]{score_test()}} implements global exact-fit ML/FIML scores with expected or
+observed saturated nuisance sensitivity, raw likelihood scores, and optional
+full studentization. \code{\link[=score_test_nested]{score_test_nested()}} evaluates joint affine releases at
+a restricted fit using full model curvature. \code{\link[=criterion_test_nested]{criterion_test_nested()}} uses
+the same restricted-fit reference for the actual criterion difference.
+
+\code{\link[=wald_test]{wald_test()}} defaults to lavaan's fitted ML/FIML covariance. With
+\code{vcov = "sandwich"}, it constructs the complete criterion sandwich for
+ML/FIML, continuous GLS/WLS/DWLS/ULS and complete all-ordered DWLS/WLS/ULS.
+The new nested criterion adapters share that scope. These APIs retain full
+observed curvature and joint moment/estimated-weight influences. Expected
+sensitivity and fixed weights remain explicit comparators.
+
+These adapters require unweighted single-level raw observations, joint
+random-x inference and affine constraints. Ordinal inference excludes empty
+pairwise cells and uses numerical first-stage derivatives with refined
+polychoric roots. Mixed indicators, pairwise missingness, case weights,
+clusters, bounds and nonlinear constraints remain excluded from the new
+complete-sandwich path. Existing fit-test support above is unchanged.
+Full WLS is admitted locally for criterion inference under misspecification;
+its exact-fit correction refusal in \code{\link[=pvalues]{pvalues()}} is unchanged.
+
+\code{\link[=profile_score_test_matrices]{profile_score_test_matrices()}}, \code{\link[=score_test_matrices]{score_test_matrices()}} and
+\code{\link[=wald_test_matrices]{wald_test_matrices()}} accept independent matrix inputs with explicit units.
+All return an inspectable \code{semTests_test} usable with \code{\link[=pvalues]{pvalues()}}. Fully
+studentized results accept only their chi-square calibration. Numerical parity
+does not establish finite-sample calibration of penalized score procedures.
 }
 }
 \references{

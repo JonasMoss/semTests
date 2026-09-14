@@ -257,6 +257,43 @@ lavaan_lambdas <- function(object, df) {
   )
 }
 
+# The expected-information minimum-discrepancy projection is valid for these
+# fits. Observed model information follows the original lavaan construction.
+uses_residual_factor <- function(fit) {
+  !is_fiml(fit) && !uses_fixed_or_conditional_x(fit) &&
+    length(fit@Options$information) > 0L &&
+    all(fit@Options$information == "expected")
+}
+
+single_model_reduced_lambdas <- function(fit, df, unbiased = 1) {
+  weights <- as.numeric(unlist(fit@SampleStats@nobs)) / fit@SampleStats@ntotal
+  metrics <- lavaan::lavTech(fit, "WLS.V")
+  B <- residual_metric_factor(Map(`*`, metrics, weights),
+                              model_effective_delta(fit), df)
+  if (is.null(B)) return(NULL)
+  if (unbiased == 1) {
+    return(list(ug_biased = positive_symmetric_eigenvalues(
+      projected_gamma(fit, B), df, "single-model residual spectrum")))
+  }
+  gamma <- gamma_from_lavaan(fit)
+  gammas <- list()
+  if (unbiased %in% c(2, 3)) {
+    gammas$ug_unbiased <- gamma_to_gamma_unbiased(gamma, fit)
+  }
+  if (unbiased %in% c(1, 3)) gammas$ug_biased <- gamma
+  sizes <- vapply(metrics, nrow, integer(1))
+  ends <- cumsum(sizes)
+  indices <- Map(seq.int, ends - sizes + 1L, ends)
+  lapply(gammas, function(blocks) {
+    products <- Map(function(G, ix, weight) {
+      Bg <- B[ix, , drop = FALSE]
+      crossprod(Bg, G %*% Bg) / weight
+    }, blocks, indices, weights)
+    positive_symmetric_eigenvalues(Reduce(`+`, products), df,
+                                   "single-model residual spectrum")
+  })
+}
+
 #' Full nested UGamma reference used to validate the reduced implementation.
 #' @keywords internal
 ugamma_nested_reference <- function(m0, m1, unbiased = 1) {
@@ -314,13 +351,17 @@ nested_factor_2000 <- function(m0, m1, a = NULL) {
 #' @return A list of eigenvalue vectors, one per gamma estimate.
 #' @keywords internal
 lambdas_nested <- function(m0, m1, unbiased = 1, df) {
-  gamma_list <- gamma_matrices(m1, unbiased, m0)
   factors <- nested_factor_2000(m0, m1)
-  c_inv <- generalized_inverse(factors$C)
+  if (unbiased == 1) {
+    return(list(ug_biased = restriction_spectrum(
+      factors$C, projected_gamma(m1, factors$D, fallback = m0), df,
+      "nested method-2000 restriction UGamma")))
+  }
+  gamma_list <- gamma_matrices(m1, unbiased, m0)
   lapply(gamma_list, function(gamma_matrix) {
     m_phi <- t(factors$D) %*% gamma_matrix %*% factors$D
-    ugamma_eigenvalues(
-      c_inv %*% m_phi, df,
+    restriction_spectrum(
+      factors$C, m_phi, df,
       context = "nested method-2000 restriction UGamma"
     )
   })

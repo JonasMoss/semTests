@@ -1,9 +1,16 @@
-#' Compute robust *p*-values for one or two `lavaan` objects
+#' Compute robust *p*-values for fitted models or matrix tests
 #'
 #' Compute one or several *p*-values for a fitted `lavaan` model. Available
 #' methods include penalized eigenvalue block averaging, penalized regression,
 #' and familiar robust corrections. The defaults select the recommended method
 #' for the fitted model.
+#'
+#' `pvalues()` also accepts results from [score_test_matrices()] and
+#' [wald_test_matrices()]. Matrix score results use `"ALL"` by default for a
+#' supplied metric; fully studentized score and Wald results use `"STD"`.
+#' Matrix results accept calibration names without `UG`, `ML`, or `RLS`
+#' suffixes, and do not accept `fiml.convention`. The lavaan methods retain
+#' their existing defaults and output names.
 #'
 #' The `tests` argument is a character vector. Each element has one of the forms
 #' `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`, `TEST_UG_ML`, or `TEST_UG_RLS`.
@@ -95,7 +102,8 @@
 #' For nested FIML models, `"lavaan"` reproduces
 #' `lavTestLRT(..., method = "satorra.2000")`.
 #'
-#' @param object,m0,m1 One or two `lavaan` objects. `pvalues` does
+#' @param object,m0,m1 One or two `lavaan` objects, or a `semTests_test` result
+#'   supplied as `object` to `pvalues()`. For lavaan fits, `pvalues` does
 #'   goodness-of-fit testing on one object, while `pvalues_nested` does
 #'   hypothesis testing on two nested models.
 #' @param tests A non-empty character vector of tests. Each element uses one of
@@ -143,6 +151,8 @@
 #'   requested and base estimator, base-statistic and gamma choices,
 #'   information type, data type, parameterization where applicable, nested
 #'   method and restriction map where applicable, and degrees of freedom.
+#'   For matrix results, the attribute instead records test type, reference law,
+#'   hypothesis, normalization, rank/df, sample size when supplied, and provenance.
 #'
 #' @seealso [semTests-support] for the full list of supported configurations.
 #'
@@ -201,6 +211,14 @@
 #' Browne, M. W. (1974). Generalized least squares estimators in the analysis
 #' of covariance structures. *South African Statistical Journal*, 8, 1--24.
 pvalues <- function(object,
+                    tests,
+                    fiml.convention = c("observed", "lavaan")) {
+  UseMethod("pvalues")
+}
+
+#' @rdname pvalues
+#' @export
+pvalues.lavaan <- function(object,
                     tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
                     fiml.convention = c("observed", "lavaan")) {
   # The default is fit-appropriate: the historical RLS default for the classical
@@ -210,11 +228,12 @@ pvalues <- function(object,
   options <- parse_tests(tests)
   check_supported(object)
   fiml.convention <- match.arg(fiml.convention)
+  cache <- new.env(parent = emptyenv())
   result <- unlist(lapply(options, function(option) {
     do.call(
       compute_pvalues,
       c(
-        list(m0 = object),
+        list(m0 = object, cache = cache),
         option,
         list(fiml.convention = fiml.convention)
       )
@@ -232,6 +251,12 @@ pvalues <- function(object,
       parsed_options = options
     )
   )
+}
+
+#' @export
+pvalues.default <- function(object, tests,
+                            fiml.convention = c("observed", "lavaan")) {
+  check_lavaan(object, "object")
 }
 
 #' @rdname pvalues
@@ -274,11 +299,12 @@ pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
 
   check_supported_nested(m0, m1, method, A.method)
 
+  cache <- new.env(parent = emptyenv())
   result <- unlist(lapply(options, function(option) {
     do.call(
       compute_pvalues,
       c(
-        list(m0 = m0, m1 = m1),
+        list(m0 = m0, m1 = m1, cache = cache),
         option,
         list(
           A.method = A.method,
@@ -336,6 +362,7 @@ fit_provenance <- function(fit, nested, method = NA, A.method = NA,
   )
   if (isTRUE(fit@Model@categorical)) {
     out$parameterization <- fit@Options$parameterization
+    # Preserve the reference-law provenance label across equivalent algorithms.
     out$spectrum_source <- "lavaan UGamma"
   }
   if (!is.na(A.method[1])) out$A.method <- A.method
@@ -384,6 +411,10 @@ print.semTests_pvalues <- function(x, ...) {
   y <- unclass(x)
   attr(y, "semtests") <- NULL
   print.default(y, ...)
+  if (!is.null(info$type)) {
+    cat(sprintf("test: %s | reference: %s | df: %s\n", info$type, info$reference, info$df))
+    return(invisible(x))
+  }
   if (!is.null(info)) {
     fiml <- !is.null(info$missing) && info$missing[1] %in% c("ml", "fiml")
     requested <- if (!is.null(info$estimator_requested) &&
@@ -445,16 +476,22 @@ trad_pvalue <- function(df, chisq, lambdas, type = c("std", "sf", "ss", "sb", "p
   as.numeric(pall(chisq, lambdas))
 }
 
-#' Compute p-values for one parsed test specification.
-#' @keywords internal
-compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
-                            chisq = c("ml", "rls"), m1 = NULL,
-                            A.method = "delta",
-                            fiml.convention = "observed") {
-  use_trad <- setdiff(trad, "std")
+# A cache belongs to one public call and one fixed model comparison. Values
+# are evaluated lazily, so standard-only requests never construct a spectrum.
+cached_inference <- function(cache, key, value) {
+  if (is.null(cache)) return(value)
+  if (!exists(key, envir = cache, inherits = FALSE)) {
+    assign(key, value, envir = cache)
+  }
+  get(key, envir = cache, inherits = FALSE)
+}
+
+compute_spectra <- function(m0, m1, unbiased, df, A.method, fiml.convention) {
+  if (is.null(m1) && df > 0L && uses_residual_factor(m0)) {
+    reduced <- single_model_reduced_lambdas(m0, df, unbiased)
+    if (!is.null(reduced)) return(reduced)
+  }
   if (is.null(m1)) {
-    df <- fit_df(m0)
-    chisqs <- make_chisqs(chisq, m0)
     if (is_fiml(m0)) {
       if (unbiased != 1) {
         stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
@@ -484,8 +521,6 @@ compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
     # Fit-shape support (categorical / missing / FIML) is enforced upstream by
     # check_supported_nested(); here we branch on the FIML vs complete-data
     # computation and reject the FIML-incompatible UG gamma (a per-test option).
-    df <- fit_df(m0) - fit_df(m1)
-    chisqs <- make_chisqs(chisq, m0, m1)
     if (is_fiml(m0) || is_fiml(m1)) {
       if (unbiased != 1) {
         stop("The unbiased (Du-Bentler) gamma is not defined for FIML; ",
@@ -513,6 +548,41 @@ compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
         "semTests_error_unstable_spectrum"
       )
     }
+  }
+
+  lambdas_list
+}
+
+#' Compute p-values for one parsed test specification.
+#' @keywords internal
+compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
+                            chisq = c("ml", "rls"), m1 = NULL,
+                            A.method = "delta",
+                            fiml.convention = "observed", cache = NULL) {
+  use_trad <- setdiff(trad, "std")
+  df <- cached_inference(cache, "df", {
+    fit_df(m0) - if (is.null(m1)) 0 else fit_df(m1)
+  })
+  # Resolve aliases before caching: AUTO and explicit RLS/ML share a statistic.
+  chisq[chisq == "auto"] <- if (is_classic_nt(m0)) "rls" else "ml"
+  chisq <- unique(chisq)
+  chisqs <- unlist(lapply(chisq, function(kind) {
+    cached_inference(cache, paste0("statistic_", kind), {
+      if (is.null(m1)) make_chisqs(kind, m0) else make_chisqs(kind, m0, m1)
+    })
+  }))
+  # Keep unsupported suffixes invalid even if the requested STD calibration
+  # itself does not consume Gamma.
+  if (unbiased != 1 && !is_classic_nt(m0)) {
+    stop("The unbiased (Du-Bentler) gamma is not defined for this fit; ",
+         "drop `UG` from the test name. See `?semTests-support`.", call. = FALSE)
+  }
+  needs_spectrum <- length(use_trad) + length(eba) + length(peba) + length(pols) > 0L
+  lambdas_list <- if (needs_spectrum) {
+    cached_inference(cache, paste0("spectrum_", unbiased),
+      compute_spectra(m0, m1, unbiased, df, A.method, fiml.convention))
+  } else {
+    list()
   }
 
   block_options <- list(EBA = eba, pEBA = peba)
@@ -579,4 +649,50 @@ compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
   }
 
   return_value
+}
+
+#' @rdname pvalues
+#' @export
+pvalues.semTests_test <- function(object,
+                                  tests = if (object$reference == "chisq") "STD" else "ALL",
+                                  fiml.convention = c("observed", "lavaan")) {
+  if (!missing(fiml.convention)) {
+    semtests_abort("fiml.convention does not apply to supplied matrix tests.",
+                  "semTests_error_invalid_tests")
+  }
+  options <- parse_tests(tests)
+  values <- vapply(options, function(option) {
+    if (option$unbiased != 1 || option$chisq != "auto") {
+      semtests_abort("Matrix test calibrations do not accept UG, ML, or RLS suffixes.",
+                    "semTests_error_invalid_tests")
+    }
+    if (object$reference == "chisq" && !identical(option$trad, "std")) {
+      semtests_abort("Fully studentized score and Wald tests accept only STD calibration.",
+                    "semTests_error_invalid_tests")
+    }
+    if (any(c(option$peba, option$eba) > object$df)) {
+      semtests_abort("The number of eigenvalue blocks exceeds the test degrees of freedom.",
+                    "semTests_error_invalid_tests")
+    }
+    T <- object$statistic
+    lambda <- object$eigenvalues
+    if (!is.null(option$trad)) {
+      switch(option$trad,
+        std = stats::pchisq(T, object$df, lower.tail = FALSE),
+        sb = stats::pchisq(T / mean(lambda), object$df, lower.tail = FALSE),
+        all = object$p_value,
+        trad_pvalue(object$df, T, lambda, option$trad))
+    } else if (!is.null(option$peba)) {
+      peba_pvalue(T, lambda, option$peba)
+    } else if (!is.null(option$eba)) {
+      eba_pvalue(T, lambda, option$eba)
+    } else {
+      pols_pvalue(T, lambda, option$pols)
+    }
+  }, numeric(1))
+  names(values) <- tolower(tests)
+  as_semtests(values, list(type = object$type, reference = object$reference,
+                           df = object$df, rank = object$rank, hypothesis = object$hypothesis,
+                           normalization = object$normalization, nobs = object$nobs,
+                           requested_tests = tests, provenance = object$provenance))
 }

@@ -7,6 +7,8 @@
 #' give the supported combinations. Configurations outside them are refused at
 #' the entry point (see [check_supported()]), and the test suite follows the
 #' same boundary.
+#' The newer score/Wald adapters have the narrower scope described separately
+#' below; the fit-test tables do not establish their support.
 #'
 #' @details
 #'
@@ -85,8 +87,14 @@
 #'   elsewhere, and the Du-Bentler correction has no derivation for the other
 #'   families or a fixed covariate design. `semTests` refuses either request and
 #'   points you to the standard statistic and biased gamma.
-#' * **Categorical and mixed-indicator fits** use lavaan's biased inspected
-#'   `UGamma` spectrum and unscaled estimator statistic directly. Supported
+#' * For **complete-data normal-likelihood ML**, biased spectra can be computed
+#'   from tiled empirical moment influences when Gamma is not cached. The
+#'   calculation includes mean/covariance cross terms and group proportions.
+#'   Cached or supplied NACOV is retained; sampling weights, alternative Gamma
+#'   normalizations, and other first-stage conventions keep their existing paths.
+#' * **Categorical and mixed-indicator fits** use the spectrum equivalent to
+#'   lavaan's biased `UGamma` and its unscaled estimator statistic. Expected-
+#'   information fits compute the spectrum in residual space. Supported
 #'   estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
 #'   ULSMV). Nested comparison is restricted to `method = "2000"` and
 #'   `A.method = "delta"`.
@@ -113,6 +121,36 @@
 #' therefore equal the ordinary `1 - pchisq(chisq, df)`. Because the correction
 #' adds nothing, full WLS is refused at the entry point. Fit a DWLS/ULS family
 #' for a non-degenerate robust test, or read the standard chi-square directly.
+#'
+#' ## Score and Wald adapters
+#'
+#' [score_test()] implements global exact-fit ML/FIML scores with expected or
+#' observed saturated nuisance sensitivity, raw likelihood scores, and optional
+#' full studentization. [score_test_nested()] evaluates joint affine releases at
+#' a restricted fit using full model curvature. [criterion_test_nested()] uses
+#' the same restricted-fit reference for the actual criterion difference.
+#'
+#' [wald_test()] defaults to lavaan's fitted ML/FIML covariance. With
+#' `vcov = "sandwich"`, it constructs the complete criterion sandwich for
+#' ML/FIML, continuous GLS/WLS/DWLS/ULS and complete all-ordered DWLS/WLS/ULS.
+#' The new nested criterion adapters share that scope. These APIs retain full
+#' observed curvature and joint moment/estimated-weight influences. Expected
+#' sensitivity and fixed weights remain explicit comparators.
+#'
+#' These adapters require unweighted single-level raw observations, joint
+#' random-x inference and affine constraints. Ordinal inference excludes empty
+#' pairwise cells and uses numerical first-stage derivatives with refined
+#' polychoric roots. Mixed indicators, pairwise missingness, case weights,
+#' clusters, bounds and nonlinear constraints remain excluded from the new
+#' complete-sandwich path. Existing fit-test support above is unchanged.
+#' Full WLS is admitted locally for criterion inference under misspecification;
+#' its exact-fit correction refusal in [pvalues()] is unchanged.
+#'
+#' [profile_score_test_matrices()], [score_test_matrices()] and
+#' [wald_test_matrices()] accept independent matrix inputs with explicit units.
+#' All return an inspectable `semTests_test` usable with [pvalues()]. Fully
+#' studentized results accept only their chi-square calibration. Numerical parity
+#' does not establish finite-sample calibration of penalized score procedures.
 #'
 #' @references
 #'

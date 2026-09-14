@@ -23,6 +23,12 @@ with one or several groups, for both single models and nested
 comparisons. Observed predictors are supported under joint random-x
 inference. See `?semTests-support` for the exact list.
 
+The development version also provides score, Wald, and
+criterion-difference tests, including inference on parameter
+restrictions under structural misspecification in supported settings.
+See the [score and Wald vignette](vignettes/score-wald.Rmd) for the
+hypotheses and interface.
+
 ## Installation
 
 Install the released version from CRAN:
