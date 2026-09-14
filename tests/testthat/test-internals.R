@@ -246,3 +246,52 @@ test_that("FIML keeps compatibility with lavaan simple-constraint bases", {
   empty@Model@ceq.simple.K <- matrix(numeric(), 0L, npar)
   expect_equal(model_parameter_basis(empty), diag(npar))
 })
+
+test_that("model_parameter_basis evaluates nonlinear constraints at the estimates", {
+  # lavaan stores ceq.JAC as evaluated during setup, i.e. at the starting
+  # values. That is correct for a linear constraint, whose Jacobian is
+  # constant, and wrong for a nonlinear one. The basis must span the tangent
+  # space of the restriction at the solution.
+  d <- lavaan::HolzingerSwineford1939
+  fit <- lavaan::cfa("f =~ x1 + a*x2 + b*x3 + x4\na*b == 0.5", d,
+                     meanstructure = TRUE)
+  skip_if_not(lavaan::lavInspect(fit, "converged"))
+
+  basis <- model_parameter_basis(fit)
+  theta <- lavaan::coef(fit)
+  # d(a*b)/d(a,b) = (b, a) at the estimates.
+  gradient <- numeric(length(theta))
+  gradient[1:2] <- c(theta[["b"]], theta[["a"]])
+
+  # The basis spans the constraint's null space, so the gradient is orthogonal
+  # to every basis direction.
+  expect_equal(max(abs(crossprod(basis, gradient))), 0, tolerance = 1e-8)
+
+  # The stored Jacobian is stale here, so it would fail this same check.
+  stale <- as.numeric(fit@Model@ceq.JAC)
+  expect_gt(max(abs(stale - gradient)), 1e-3)
+})
+
+test_that("model_parameter_basis matches lavaan's parser for linear constraints", {
+  d <- lavaan::HolzingerSwineford1939
+  for (syntax in c("f =~ x1 + x2 + x3 + x4",
+                   "f =~ x1 + a*x2 + b*x3 + x4\na == b",
+                   "f =~ x1 + a*x2 + a*x3 + x4",
+                   "f =~ x1 + 0.5*x2 + x3 + x4")) {
+    fit <- lavaan::cfa(syntax, d, meanstructure = TRUE)
+    ours <- model_parameter_basis(fit)
+    parsed <- lavaan::lav_constraints_parse(
+      partable = lavaan::parTable(fit), constraints = NULL,
+      theta = lavaan::lav_model_get_parameters(fit@Model))$ceq.JAC
+    theirs <- if (!is.null(parsed) && nrow(parsed)) {
+      get_orthogonal_complement(t(parsed))
+    } else {
+      diag(fit@Model@nx.free)
+    }
+    expect_equal(dim(ours), dim(theirs))
+    # Compare the subspaces, not the bases: both are only defined up to an
+    # orthogonal rotation of their columns.
+    project <- function(x) x %*% generalized_inverse(x)
+    expect_equal(max(abs(project(ours) - project(theirs))), 0, tolerance = 1e-8)
+  }
+})

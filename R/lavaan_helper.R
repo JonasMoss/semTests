@@ -51,7 +51,18 @@ model_parameter_basis <- function(fit) {
     return(qr.Q(qr(basis)))
   }
   if (methods::.hasSlot(model, "ceq.JAC") && nrow(model@ceq.JAC) > 0L) {
-    return(get_orthogonal_complement(t(as.matrix(model@ceq.JAC))))
+    # model@ceq.JAC is the constraint Jacobian as evaluated during setup, i.e.
+    # at the starting values. A linear constraint has a constant Jacobian, so
+    # the stored matrix is correct for it. A nonlinear one does not, and the
+    # tangent space of the restriction is then taken at the wrong point. Re-
+    # evaluate at the estimates. lav_model_get_parameters() returns the free
+    # vector in the same ordering as ceq.JAC's columns.
+    jacobian <- lavaan::lav_constraints_parse(
+      partable = lavaan::parTable(fit),
+      constraints = NULL,
+      theta = lavaan::lav_model_get_parameters(model)
+    )$ceq.JAC
+    return(get_orthogonal_complement(t(as.matrix(jacobian))))
   }
   diag(model@nx.free)
 }
