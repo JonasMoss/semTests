@@ -78,6 +78,23 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
   if (any(vapply(seq_len(p),function(j) !identical(sort(unique(X[,j])),as.numeric(seq_len(levels[j]))),logical(1))))
     stop("Ordinal categories must be consecutive and nonempty.",call.=FALSE)
   opt <- object@Options
+  observed <- as.numeric(object@SampleStats@WLS.obs[[g]])
+  V <- as.matrix(fiml_group_matrices(lavaan::lavInspect(object,"wls.v"),object,"weights")[[g]])
+
+  # Moment influence, in closed form. Thresholds and polychorics are stacked in
+  # that order in WLS.obs, so split them back out to index by variable.
+  sizes <- levels - 1
+  offsets <- c(0, cumsum(sizes))
+  thresholds <- lapply(seq_len(p), function(j) observed[offsets[j] + seq_len(sizes[j])])
+  Z <- ordinal_moment_influence(X, thresholds, observed[-seq_len(sum(sizes))])
+
+  # Fixed weights need no derivative of the weight functional, and the moment
+  # influence above is already exact, so nothing below is reached.
+  if (weight_effect != "estimated") {
+    return(list(observed=observed, weight=V, influence=Z,
+                correction=function(residual) matrix(0,n,length(residual)), nobs=n))
+  }
+
   # Tighten only this local numerical evaluator, leaving the lavaan namespace
   # and the fitted object untouched. Default pair optimization is too coarse
   # for differentiating the first-stage functional.
@@ -151,18 +168,17 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
          "Use pvalues_nested() for categorical nested comparisons.",
          call. = FALSE)
   }
-  observed <- as.numeric(object@SampleStats@WLS.obs[[g]])
-  V <- as.matrix(fiml_group_matrices(lavaan::lavInspect(object,"wls.v"),object,"weights")[[g]])
   if (!isTRUE(all.equal(base$moment,observed,tolerance=2e-6,check.attributes=FALSE)) ||
       !isTRUE(all.equal(as.numeric(base$weight),as.numeric(V),tolerance=2e-6,check.attributes=FALSE)))
     stop("The fitted ordinal first stage does not match the native frequency weight map.",call.=FALSE)
   patterns <- split(seq_len(n),apply(X,1,paste,collapse=":"))
-  Z <- matrix(0,n,length(observed))
   dW <- vector("list",length(patterns))
   for (j in seq_along(patterns)) {
     rows <- patterns[[j]]
-    # A larger probability step plus Richardson extrapolation suppresses
-    # the polychoric optimizer noise amplified by very small perturbations.
+    # Only the weight functional is differentiated here; the moment influence
+    # above is exact. A larger probability step plus Richardson extrapolation
+    # suppresses the polychoric optimizer noise that small perturbations
+    # amplify.
     h <- sqrt(step)*length(rows)/n
     direction <- rep(-1,n)
     direction[rows] <- n/length(rows)-1
@@ -170,22 +186,16 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
     minus <- map(1-h*direction)
     plus_half <- map(1+h/2*direction)
     minus_half <- map(1-h/2*direction)
-    coarse <- (plus$moment-minus$moment)/(2*h)
-    fine <- (plus_half$moment-minus_half$moment)/h
-    Z[rows,] <- matrix((4*fine-coarse)/3,length(rows),length(observed),byrow=TRUE)
-    if (weight_effect=="estimated") {
-      coarse_W <- (plus$weight-minus$weight)/(2*h)
-      fine_W <- (plus_half$weight-minus_half$weight)/h
-      if (max(abs(fine_W-coarse_W)) > .005*max(1,abs(fine_W)))
-        stop("Ordinal weight derivatives are unstable at this step; inspect the first-stage fit.",call.=FALSE)
-      derivative <- (4*fine_W-coarse_W)/3
-      dW[[j]] <- if (opt$estimator=="DWLS") diag(derivative) else derivative
-    }
+    coarse_W <- (plus$weight-minus$weight)/(2*h)
+    fine_W <- (plus_half$weight-minus_half$weight)/h
+    if (max(abs(fine_W-coarse_W)) > .005*max(1,abs(fine_W)))
+      stop("Ordinal weight derivatives are unstable at this step; inspect the first-stage fit.",call.=FALSE)
+    derivative <- (4*fine_W-coarse_W)/3
+    dW[[j]] <- if (opt$estimator=="DWLS") diag(derivative) else derivative
   }
-  Z <- sweep(Z,2,colMeans(Z),"-")
   correction <- function(residual) {
     out <- matrix(0,n,length(residual))
-    if (weight_effect=="estimated") for (j in seq_along(patterns)) {
+    for (j in seq_along(patterns)) {
       rows <- patterns[[j]]
       value <- if (opt$estimator=="DWLS") dW[[j]]*residual else drop(dW[[j]]%*%residual)
       out[rows,] <- matrix(value,length(rows),length(residual),byrow=TRUE)

@@ -161,9 +161,14 @@ test_that("multi-category first-stage derivatives are stable and retain native w
     expected <- (as.numeric(f@Data@X[[1]][,j]<=k)-stats::pnorm(thresholds[q]))/stats::dnorm(thresholds[q])
     expect_equal(a$influence[,q],expected,tolerance=1e-7)
   }
-  # The estimator's derivative sensitivity need not equal the OPG curvature used
-  # in lavaan's WEIGHT map away from a bivariate normal population.
-  expect_gt(max(abs(crossprod(a$influence)/nrow(d)-f@SampleStats@NACOV[[1]])),.01)
+  # The influence uses the outer-product bread, which is lavaan's categorical
+  # Gamma convention, so it reproduces NACOV rather than merely approximating
+  # it. Under latent bivariate normality the pair model is correctly specified,
+  # the information identity holds, and this agrees asymptotically with the
+  # exact-Jacobian bread. The two differ in finite samples only once a table
+  # exceeds 2x2, where (a-1)+(b-1)+1 parameters stop saturating its ab-1 cells.
+  expect_equal(crossprod(a$influence)/nrow(d), f@SampleStats@NACOV[[1]],
+               tolerance = 1e-8, ignore_attr = TRUE)
 })
 
 test_that("unequal-group LS curvature follows the fitted N-minus-one criterion", {

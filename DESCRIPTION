@@ -34,7 +34,8 @@ Depends:
   R (>= 3.5.0)
 Imports:
   lavaan (>= 0.7-2),
-  methods
+  methods,
+  pbivnorm
 Suggests:
   testthat (>= 3.0.0),
   knitr,
