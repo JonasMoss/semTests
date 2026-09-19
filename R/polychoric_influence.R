@@ -129,7 +129,7 @@ pair_scores <- function(code_u, code_v, tau_u, tau_v, rho) {
 #' `[thresholds; lower-triangle polychorics]`, groupwise centered, whose
 #' empirical covariance is the first-stage Gamma.
 #' @keywords internal
-ordinal_moment_influence <- function(X, thresholds, rho, step = 1e-6) {
+ordinal_moment_influence <- function(X, thresholds, rho, parts = FALSE) {
   n <- nrow(X)
   p <- ncol(X)
   sizes <- vapply(thresholds, length, integer(1))
@@ -152,18 +152,102 @@ ordinal_moment_influence <- function(X, thresholds, rho, step = 1e-6) {
   # with A22 and A21 the pair likelihood's own information quantities, taken as
   # outer products, which the information identity licenses within the pair.
   COR <- matrix(0, n, n_pair)
+  detail <- if (parts) vector("list", n_pair) else NULL
   for (k in seq_len(n_pair)) {
     u <- pairs[k, 1L]
     v <- pairs[k, 2L]
     ps <- pair_scores(X[, u], X[, v], thresholds[[u]], thresholds[[v]], rho[k])
     a22 <- mean(ps$rho^2)
-    carry <- TH[, offsets[u] + seq_len(sizes[u]), drop = FALSE] %*%
-        crossprod(ps$tau_u, ps$rho) / n +
-      TH[, offsets[v] + seq_len(sizes[v]), drop = FALSE] %*%
-        crossprod(ps$tau_v, ps$rho) / n
+    c_u <- crossprod(ps$tau_u, ps$rho) / n
+    c_v <- crossprod(ps$tau_v, ps$rho) / n
+    carry <- TH[, offsets[u] + seq_len(sizes[u]), drop = FALSE] %*% c_u +
+      TH[, offsets[v] + seq_len(sizes[v]), drop = FALSE] %*% c_v
     COR[, k] <- (ps$rho - drop(carry)) / a22
+    if (parts) {
+      detail[[k]] <- list(u = u, v = v, score = ps$rho, tau_u = ps$tau_u,
+                          tau_v = ps$tau_v, a22 = a22, c_u = c_u, c_v = c_v)
+    }
   }
 
   influence <- cbind(TH, COR)
-  sweep(influence, 2L, colMeans(influence), "-")
+  influence <- sweep(influence, 2L, colMeans(influence), "-")
+  if (!parts) return(influence)
+  list(influence = influence, TH = TH, detail = detail, pairs = pairs,
+       sizes = sizes, offsets = offsets, n_threshold = n_threshold)
+}
+
+# Derivative of the first-stage weight matrix along the empirical measure.
+#
+# Perturbing the empirical measure toward a case moves Gamma = E[phi phi'] three
+# ways, and the third is easy to miss:
+#
+#   1. the outer product itself,            phi_i phi_i' - Gamma
+#   2. the estimated thresholds and
+#      correlations,                        dphi/dkappa . phi_i
+#   3. the bread inside phi                 a22 and the carry coefficients are
+#                                           themselves sample means, so the
+#                                           measure moves them directly
+#
+# Channel 3 is why a kappa-only derivative sits at a stable wrong ratio rather
+# than converging. All three are below; only channel 2 needs finite differences,
+# and those are taken on a closed-form function of kappa, not a re-solved
+# polychoric optimizer.
+ordinal_weight_influence <- function(X, thresholds, rho, step = 1e-5) {
+  n <- nrow(X)
+  p <- length(thresholds)
+  built <- ordinal_moment_influence(X, thresholds, rho, parts = TRUE)
+  phi <- built$influence
+  gamma <- crossprod(phi) / n
+  m <- ncol(phi)
+  offsets <- built$offsets
+  sizes <- built$sizes
+  n_threshold <- built$n_threshold
+
+  # Channels 1 and 3, in closed form. E[phi_k dphi_k/deps_i] for the threshold
+  # block is zero: a threshold influence has no bread and no sample mean in it.
+  cross <- matrix(0, n, m)
+  for (k in seq_along(built$detail)) {
+    d <- built$detail[[k]]
+    column <- n_threshold + k
+    phi_k <- phi[, column]
+    iu <- offsets[d$u] + seq_len(sizes[d$u])
+    iv <- offsets[d$v] + seq_len(sizes[d$v])
+    # E_j[phi_tau,j phi_rho,j], the weights the moved carry coefficients hit.
+    g_u <- crossprod(built$TH[, iu, drop = FALSE], phi_k) / n
+    g_v <- crossprod(built$TH[, iv, drop = FALSE], phi_k) / n
+    # Von Mises derivatives of the sample means that make up the bread.
+    d_cu <- sweep(d$tau_u * d$score, 2L, drop(d$c_u), "-")
+    d_cv <- sweep(d$tau_v * d$score, 2L, drop(d$c_v), "-")
+    d_a22 <- d$score^2 - d$a22
+    cross[, column] <- 2 * (
+      -(drop(d_cu %*% g_u) + drop(d_cv %*% g_v)) / d$a22 -
+        gamma[column, column] * d_a22 / d$a22)
+  }
+
+  # Channel 2. kappa moves by phi_i, so accumulate dGamma/dkappa_c weighted by
+  # each case's own influence in that coordinate.
+  kappa <- c(unlist(thresholds, use.names = FALSE), rho)
+  unpack <- function(k) {
+    list(thresholds = lapply(seq_len(p),
+                             function(j) k[offsets[j] + seq_len(sizes[j])]),
+         rho = k[-seq_len(n_threshold)])
+  }
+  kappa_channel <- matrix(0, m, m)
+  quadratic <- function(k) {
+    u <- unpack(k)
+    colSums(ordinal_moment_influence(X, u$thresholds, u$rho)^2) / n
+  }
+  for (cc in seq_len(m)) {
+    h <- step * max(1, abs(kappa[cc]))
+    shift <- function(delta) quadratic(`[<-`(kappa, cc, kappa[cc] + delta))
+    # Richardson extrapolation. The integrand is closed form and smooth, so the
+    # O(h^4) estimate is essentially step-free, which matters because the step
+    # is user-visible and results should not move with it.
+    coarse <- (shift(h) - shift(-h)) / (2 * h)
+    fine <- (shift(h / 2) - shift(-h / 2)) / h
+    kappa_channel[, cc] <- (4 * fine - coarse) / 3
+  }
+
+  diagonal <- sweep(phi^2, 2L, diag(gamma), "-") + cross + phi %*% t(kappa_channel)
+  list(gamma = gamma, diagonal = diagonal, phi = phi)
 }

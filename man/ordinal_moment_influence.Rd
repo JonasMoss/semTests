@@ -4,7 +4,7 @@
 \alias{ordinal_moment_influence}
 \title{Analytic per-case influence of the ordinal first stage.}
 \usage{
-ordinal_moment_influence(X, thresholds, rho, step = 1e-06)
+ordinal_moment_influence(X, thresholds, rho, parts = FALSE)
 }
 \description{
 Returns the \code{n} by \code{m} influence function of the moment vector

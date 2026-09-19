@@ -94,6 +94,27 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
     return(list(observed=observed, weight=V, influence=Z,
                 correction=function(residual) matrix(0,n,length(residual)), nobs=n))
   }
+  # ULS holds the weight fixed at the identity, so it has no weight influence
+  # either, whatever weight_effect says.
+  if (opt$estimator == "ULS") {
+    return(list(observed=observed, weight=V, influence=Z,
+                correction=function(residual) matrix(0,n,length(residual)), nobs=n))
+  }
+  # DWLS weights by the reciprocal of Gamma's diagonal, so the weight influence
+  # needs only that diagonal, and it too has a closed form.
+  if (opt$estimator == "DWLS") {
+    wi <- ordinal_weight_influence(X, thresholds, observed[-seq_len(sum(sizes))],
+                                   step = sqrt(step))
+    scale <- diag(wi$gamma)^2
+    correction <- function(residual) {
+      out <- sweep(sweep(-wi$diagonal, 2L, scale, "/"), 2L, residual, "*")
+      sweep(out, 2L, colMeans(out), "-")
+    }
+    return(list(observed=observed, weight=V, influence=Z,
+                correction=correction, nobs=n))
+  }
+  # Full WLS inverts all of Gamma, so its weight influence needs the whole
+  # derivative rather than the diagonal. That one still goes numerically.
 
   # Tighten only this local numerical evaluator, leaving the lavaan namespace
   # and the fitted object untouched. Default pair optimization is too coarse
