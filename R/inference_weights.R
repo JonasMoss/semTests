@@ -104,8 +104,17 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
   }
   local <- new.env(parent=ns)
   pair_fit <- get("lav_bvord_cor_twostep_fit",ns)
+  # The refined pair fit reaches muthen1984 only through lexical scoping: it
+  # calls lav_samp_step2, which calls lav_bvord_cor_twostep_fit, and both are
+  # re-parented into `local` below. If lavaan ever resolves either by a route
+  # that does not consult `local`, the shadow is bypassed and the derivative is
+  # silently computed at lavaan's coarse tolerance instead. Count the calls so
+  # that failure is loud. The existing agreement check against WLS.obs cannot
+  # catch it: both tolerances agree at the unperturbed weights.
+  local$refined_calls <- 0L
   local$lav_bvord_cor_twostep_fit <- function(fit_y1,fit_y2,wt=NULL,
                                                 zero_cell_flag=FALSE,...) {
+    local$refined_calls <- local$refined_calls + 1L
     initial <- pair_fit(fit_y1=fit_y1,fit_y2=fit_y2,wt=wt,
                         zero_cell_flag=zero_cell_flag,...)
     cache <- get("lav_bvord_cache_from_args",ns)(fit_y1=fit_y1,fit_y2=fit_y2,wt=wt)
@@ -135,6 +144,13 @@ ordinal_first_stage <- function(object,g,weight_effect,step) {
     list(moment=c(unlist(a$TH),a$COR[lower.tri(a$COR)]),weight=V)
   }
   base <- map(rep(1,n))
+  if (local$refined_calls == 0L) {
+    stop("The refined polychoric root was never reached, so first-stage ",
+         "derivatives would be taken at lavaan's default pair tolerance. ",
+         "This lavaan version resolves its two-step fit differently. ",
+         "Use pvalues_nested() for categorical nested comparisons.",
+         call. = FALSE)
+  }
   observed <- as.numeric(object@SampleStats@WLS.obs[[g]])
   V <- as.matrix(fiml_group_matrices(lavaan::lavInspect(object,"wls.v"),object,"weights")[[g]])
   if (!isTRUE(all.equal(base$moment,observed,tolerance=2e-6,check.attributes=FALSE)) ||
