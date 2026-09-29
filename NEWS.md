@@ -1,23 +1,4 @@
-# semTests 1.0.0
-
-## Development performance improvements
-
-* Requests for several p-values share statistics and eigenvalue spectra within
-  each call. Standard-only requests skip spectrum construction. Test ordering,
-  duplicate requests, and calibration formulas are preserved.
-* Expected-information single-model spectra use a symmetric residual-space
-  factorization with groupwise covariance products. The observed-convention
-  FIML spectrum uses the same reduction when its saturated metric is positive
-  definite. Nested spectra use Cholesky solves when their metric permits it.
-  Existing full-matrix constructions remain available as references and for
-  conventions that do not admit these factorizations.
-* Complete-data normal-likelihood ML can project empirical moment influences
-  in row tiles when Gamma is not already cached, avoiding its full construction.
-  Cached or user-supplied Gamma is reused. Biased nested covariance products
-  are accumulated by group without a global block-diagonal Gamma matrix.
-
-Earlier versions marked several estimators as experimental. This release
-promotes them to stable.
+# semTests (development version)
 
 ## New features
 
@@ -57,6 +38,38 @@ promotes them to stable.
   under missing data, where the expectation also runs over the missingness
   patterns.
 
+## Performance
+
+* Requests for several p-values share statistics and eigenvalue spectra within
+  each call. Standard-only requests skip spectrum construction. Test ordering,
+  duplicate requests, and calibration formulas are preserved.
+* Expected-information single-model spectra use a symmetric residual-space
+  factorization with groupwise covariance products. The observed-convention
+  FIML spectrum uses the same reduction when its saturated metric is positive
+  definite. Nested spectra use Cholesky solves when their metric permits it.
+  Existing full-matrix constructions remain available as references and for
+  conventions that do not admit these factorizations.
+* Complete-data normal-likelihood ML can project empirical moment influences
+  in row tiles when Gamma is not already cached, avoiding its full construction.
+  Cached or user-supplied Gamma is reused. Biased nested covariance products
+  are accumulated by group without a global block-diagonal Gamma matrix.
+
+## Bug fixes
+
+* Nested comparisons involving a nonlinear equality constraint used a constraint
+  Jacobian evaluated at the starting values rather than the estimates, so the
+  restriction was taken at the wrong point. Linear constraints were unaffected,
+  their Jacobian being constant, and continuous data was protected by lavaan
+  refusing nonlinear equality constraints upstream; categorical nested tests
+  were affected.
+
+# semTests 1.0.0
+
+Earlier versions marked several estimators as experimental. This release
+promotes them to stable.
+
+## New features
+
 * GLS, ULS, categorical DWLS and ULS, mixed continuous and ordinal indicators,
   and FIML, each with one or several groups, now work for both single models and
   nested comparisons.
@@ -70,12 +83,6 @@ promotes them to stable.
 
 * The reweighted least-squares statistic was read as `NULL` under lavaan 0.7-2
   and is now correct. semTests requires `lavaan (>= 0.7-2)`.
-* Nested comparisons involving a nonlinear equality constraint used a constraint
-  Jacobian evaluated at the starting values rather than the estimates, so the
-  restriction was taken at the wrong point. Linear constraints were unaffected,
-  their Jacobian being constant, and continuous data was protected by lavaan
-  refusing nonlinear equality constraints upstream; categorical nested tests
-  were affected.
 
 ## Removed
 
