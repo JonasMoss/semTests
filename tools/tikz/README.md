@@ -1,6 +1,6 @@
 # Vignette model diagrams
 
-`score-wald-models.tex` is the editable TikZ source. The vignette includes the
+`restriction-models.tex` is the editable TikZ source. The vignette includes the
 committed SVG for HTML and PDF for LaTeX output, so building the R package does
 not require TikZ or a PDF-to-SVG converter.
 
@@ -9,9 +9,9 @@ and Poppler:
 
 ```sh
 mkdir -p /tmp/semtests-vignette-tikz
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory=/tmp/semtests-vignette-tikz tools/tikz/score-wald-models.tex
-cp /tmp/semtests-vignette-tikz/score-wald-models.pdf vignettes/figures/score-wald-models.pdf
-pdftocairo -svg vignettes/figures/score-wald-models.pdf vignettes/figures/score-wald-models.svg
+pdflatex -interaction=nonstopmode -halt-on-error -output-directory=/tmp/semtests-vignette-tikz tools/tikz/restriction-models.tex
+cp /tmp/semtests-vignette-tikz/restriction-models.pdf vignettes/figures/restriction-models.pdf
+pdftocairo -svg vignettes/figures/restriction-models.pdf vignettes/figures/restriction-models.svg
 ```
 
 Both panels have identical scaling and geometry. Only the x2/x3 loadings are

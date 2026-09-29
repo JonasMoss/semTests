@@ -13,5 +13,3 @@ README_cache
 \.Rhistory$
 ^\.claude$
 ^\.lintr$
-^vignettes/score-wald\.Rmd$
-^vignettes/score-wald\.R$

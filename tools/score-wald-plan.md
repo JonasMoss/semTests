@@ -8,6 +8,7 @@ runners. Score and criterion tests are distinct tests with their own options
 and stay behind `semtest()` unchanged. The complete parameter sandwich that
 the removed Wald adapter exposed is still built by `parameter_inference_parts()`
 for the nested tests, and `tools/magmaan-criterion-validation.R` still checks it.
+The vignette is now `vignettes/score-criterion.Rmd` and is part of the build.
 
 References to Wald below are historical.
 

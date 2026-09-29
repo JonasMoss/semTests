@@ -38,6 +38,9 @@
   under missing data, where the expectation also runs over the missingness
   patterns.
 
+* A new vignette, `vignette("score-criterion", package = "semTests")`, explains
+  the score and criterion tests, their hypotheses, and their settings.
+
 ## Performance
 
 * Requests for several p-values share statistics and eigenvalue spectra within

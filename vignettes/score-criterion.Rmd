@@ -1,0 +1,373 @@
+---
+title: "Score and criterion tests"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Score and criterion tests}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(semTests)
+```
+
+## What do you want to test?
+
+Suppose a factor model has two loadings, `a` and `b`, and we want to test
+whether they are equal. We can examine the score after imposing equality, or
+compare the fitting criteria with and without equality. Both are tests of a
+**restriction within a model**. Testing whether the whole model fits the
+population moments exactly is a separate question.
+
+`semtest()` builds all of these tests. Its first argument is the model fitted
+under the null. The second, when present, is the alternative.
+
+| Question | Call | Fits needed |
+|:--|:--|:--|
+| Does the whole model fit exactly? | `semtest(fit)` | The proposed model |
+| Can the equality restriction be released? | `semtest(restricted, fit)` | The restricted model and an alternative specification |
+| Does equality leave the population minimum criterion unchanged? | `semtest(restricted, fit, statistic = "criterion")` | Both models |
+
+`pvalues_nested()` also compares nested models, but it tests a different null:
+that both models fit exactly, using Satorra's (2000) construction. The nested
+tests in this vignette allow the larger model to be misspecified, as explained
+below, so the two need not agree.
+
+We first work through the equality restriction using complete continuous data.
+
+## One restriction, two tests
+
+```{r models, echo=FALSE, out.width="100%", fig.alt="Two one-factor models with four indicators. The unrestricted model has loadings a and b on x2 and x3; the restricted model uses the same loading on both paths.", fig.cap="The same factor model before and after imposing equality. Blue paths identify the restriction. Residuals are uncorrelated; intercepts and variances are omitted from the drawing."}
+knitr::include_graphics(if (knitr::is_latex_output()) {
+  "figures/restriction-models.pdf"
+} else {
+  "figures/restriction-models.svg"
+})
+```
+
+The first loading is fixed to 1 in both models, so their factor scales agree.
+The loadings of `x2` and `x3` are labelled `a` and `b`. Our null is `a = b`;
+the loading of `x4`, variances, and intercepts remain free in both models.
+
+```{r fits}
+d <- lavaan::HolzingerSwineford1939
+model <- "f =~ x1 + a*x2 + b*x3 + x4"
+fit <- lavaan::cfa(model, d, meanstructure = TRUE)
+restricted <- lavaan::cfa(paste(model, "a == b", sep = "\n"),
+                          d, meanstructure = TRUE)
+lavaan::coef(fit)[c("a", "b")]
+```
+
+### Score: evaluate the restricted fit
+
+The score test starts where `a = b` has been imposed. It measures the evidence
+for moving away from equality, after accounting for the other free parameters.
+This adjustment for the other parameters is what **profile** means here.
+
+```{r score}
+score <- semtest(restricted, fit)
+score
+```
+
+Only the restricted fit needs to be optimized. We reuse `fit` to supply the
+alternative parameterization, but an unfitted template works as well:
+
+```{r template}
+template <- lavaan::cfa(model, d, meanstructure = TRUE, do.fit = FALSE)
+semtest(restricted, template)
+```
+
+Nested models must use the same data, criterion, factor scaling, and aligned
+parameterization. Keeping the same model syntax and adding an equality
+constraint, as above, makes that relationship explicit.
+
+### Criterion difference: compare both fits
+
+This test uses the increase in the fitted criterion caused by equality. Both
+models must be optimized. The reference distribution is calculated at the
+restricted fit.
+
+```{r criterion}
+criterion <- semtest(restricted, fit, statistic = "criterion")
+criterion
+```
+
+For this regular nested comparison, the null says the population minimum
+criterion is unchanged by the restriction. Under the common-target assumptions
+discussed below, that is the same equality restriction the score test
+addresses. Their sample statistics and p-values need not coincide.
+
+```{r comparison, echo=FALSE}
+comparison <- data.frame(
+  Test = c("Score", "Criterion difference"),
+  Statistic = c(score$statistic, criterion$statistic),
+  `p-value` = c(score$p_value, criterion$p_value),
+  check.names = FALSE
+)
+knitr::kable(comparison, digits = 4)
+```
+
+For example, the score p-value is `r format.pval(score$p_value, digits = 3)`.
+At a 5% threshold, this test
+`r if (score$p_value < .05) "rejects equality of the two loadings" else "does not reject equality of the two loadings"`.
+Failure to reject would not establish equality, and neither restriction test
+establishes that the whole factor model fits exactly.
+
+## What if the factor model is misspecified?
+
+A model can fail to reproduce the population moments even at its best-fitting
+parameter value. That value is the **pseudo-parameter**: the minimizer of the
+population fitting criterion. Under structural misspecification, `a = b`
+refers to its two loadings, rather than to parameters of a true factor model.
+The target can depend on the fitting criterion.
+
+For nested inference, we require a shared criterion and, under the null, a
+common population minimizer in the restricted model. We also need the usual
+local regularity conditions, including identification and suitable curvature.
+A sandwich calculation does not remove those requirements.
+
+It helps to distinguish four issues:
+
+* **Nonnormality:** the observations need not follow a normal distribution,
+  even when the model reproduces their means and covariances.
+* **Structural misspecification:** the model cannot reproduce the target
+  moments; restrictions concern the criterion's pseudo-parameter.
+* **Missing data:** FIML uses the observed-data likelihood contributions.
+  Its population target also depends on the observation process and assumptions.
+* **Estimated fitting weights:** for weighted least squares, the criterion's
+  weight matrix is estimated from the same data as the sample moments.
+
+The unified treatment of restriction tests has established foundations in
+Satorra (1989), and scaled and adjusted restricted tests under nonnormality
+are developed in Satorra (2000). The particular missing-data, fixed-
+misspecification, and estimated-weight developments used here are also the
+subject of manuscripts in preparation; see the research status below.
+
+## How the statistic and its reference are formed
+
+Two separate decisions shape a score test: which matrix weights its quadratic
+form, and how the underlying matrices are estimated. `semtest()` takes the
+first as its `weight` argument. The second belongs to `inference_control()`,
+whose settings can also be passed to `semtest()` directly.
+
+Write \(s\) for the score at the restricted fit, \(H\) for the curvature of
+the fitting criterion (how the score changes with the parameters), and \(J\)
+for the covariance of the score. Profiling uses \(H\) to remove the directions
+in which the restricted model can still move. Call the profiled score
+\(\tilde s\), its covariance \(\tilde J\), and the profiled weight matrix
+\(\tilde M\). The statistic is
+\[
+T = \tilde s^{\mathsf T} \tilde M^{-1} \tilde s .
+\]
+Its reference distribution is a weighted sum of independent \(\chi^2_1\)
+variables, weighted by the eigenvalues of \(\tilde M^{-1} \tilde J\).
+Here **curvature means the derivative matrix \(H\)**, not its inverse.
+
+`weight` chooses \(M\):
+
+* `"curvature"`, the default, uses \(H\) itself.
+* `"expected_curvature"` uses the expected curvature even when \(H\) is the
+  observed curvature. This keeps observed curvature in the profiling, which
+  the limit requires when the model may be misspecified, while weighting by
+  the more stable expected matrix.
+* `"score_covariance"` uses \(J\). Every eigenvalue is then 1, and \(T\) has
+  a chi-square reference: the score is fully studentized.
+
+The criterion difference always weights by curvature, so `weight` does not
+apply to it.
+
+With a single restriction there is a single eigenvalue, and all three
+weightings give the same p-value, although the statistics differ. The choice
+matters when several restrictions are tested jointly. Here all three free
+loadings are held equal:
+
+```{r weights}
+model3 <- "f =~ x1 + a*x2 + b*x3 + c*x4"
+fit3 <- lavaan::cfa(model3, d, meanstructure = TRUE)
+equal3 <- lavaan::cfa(paste(model3, "a == b", "b == c", sep = "\n"),
+                      d, meanstructure = TRUE)
+weights <- c("curvature", "expected_curvature", "score_covariance")
+do.call(rbind, lapply(weights, function(w) {
+  test <- semtest(equal3, fit3, weight = w)
+  data.frame(weight = w, statistic = test$statistic, df = test$df,
+             reference = test$reference, p_value = test$p_value)
+}))
+```
+
+### Conventions: `inference_control()`
+
+```{r control}
+inference_control()
+```
+
+* `curvature` chooses observed or expected \(H\). The two agree in probability
+  when the model is correctly specified and can differ when it is not.
+* `score_covariance` chooses how \(J\) is estimated. `"centered"` subtracts
+  the score means within each group and stays valid when the score does not
+  have mean zero. `"uncentered"` uses raw score products, which is consistent
+  only when the score has mean zero. `"expected"` uses model-based information
+  instead; see the missing-data section below.
+* `weight_effect` decides whether estimating the fitting weights counts as a
+  source of sampling variability. It matters only for least squares.
+* `derivative_step`, `tolerance`, and `keep` control the numerical work.
+
+`curvature` and `score_covariance` are shown as `<by test>`: each test picks
+the convention suited to its null. Overall fit assumes the model holds, since
+that is its hypothesis, and uses expected curvature with uncentered score
+products. Nested tests allow the larger model to be misspecified, and use
+observed curvature with centered products. Supplying a value overrides the
+choice. These two calls are equivalent:
+
+```{r control-override}
+semtest(equal3, fit3, curvature = "expected")
+semtest(equal3, fit3, control = inference_control(curvature = "expected"))
+```
+
+For nested tests, expected curvature is a comparator, not a complete
+correction when the larger model may be misspecified.
+
+### Choosing a p-value calibration
+
+Each test returns a `semTests_test` object holding its statistic, eigenvalues,
+reference distribution, and default p-value. `pvalues()` evaluates other
+calibrations from that object, without recomputing anything from the fits:
+
+```{r calibrations}
+test3 <- semtest(equal3, fit3)
+test3$eigenvalues
+pvalues(test3, c("ALL", "SB", "SS", "PEBA2"))
+```
+
+`ALL` evaluates the weighted chi-square distribution itself. `SB` and `SS` are
+the Satorra--Bentler scaled and scaled-and-shifted approximations, and
+`PEBA2` is penalized eigenvalue block averaging with two blocks. These are
+calibrations of the same statistic. They do not change its curvature, score
+covariance, or weight. Fully studentized tests accept only `STD`, since their
+reference is already chi-square.
+
+Penalized methods such as `PEBA2` are available for research comparisons.
+Their availability does not establish their finite-sample performance for
+score tests in every setting.
+
+## Global exact fit
+
+Return now to the separate question: does the unrestricted factor model fit
+the population moments exactly?
+
+```{r global}
+global <- semtest(fit)
+global
+pvalues(global, c("SB", "ALL"))
+```
+
+This compares the fitted model with saturated means and covariances, using
+likelihood scores at the fitted moments. Rejection concerns the whole model,
+not specifically the equality of `a` and `b`. A robust reference can
+accommodate nonnormality; it does not turn exact fit into a null allowing
+fixed structural misfit.
+
+For overall fit, `curvature` refers to the curvature of the saturated model.
+The classical discrepancy statistic for the same question is what
+`pvalues(fit)` computes, so `semtest()` does not duplicate it:
+`statistic = "criterion"` requires an alternative.
+
+## Missing data and estimated fitting weights
+
+| Setting | Overall fit | Nested score and criterion |
+|:--|:--:|:--:|
+| Complete continuous ML | Yes | Yes |
+| Continuous FIML | Yes | Yes |
+| Complete continuous GLS/WLS/DWLS/ULS | No | Yes |
+| Complete all-ordered DWLS/WLS/ULS | No | Yes |
+
+`pvalues()` and `pvalues_nested()` keep their own scope; see
+`?semTests-support`.
+
+For FIML, likelihood scores are observed-data scores for each missingness
+pattern. See `vignette("fiml-missing-data", package = "semTests")` for the
+missing-data workflow. Under complete data the information equality makes
+`score_covariance = "expected"` the same matrix as the expected curvature, so
+the test reduces to the uncorrected chi-square, `tests = "STD"`. Under missing
+data the equality can fail, because the expectation also runs over the
+missingness patterns, and the setting gives a distinct test:
+
+```{r fiml}
+d_missing <- d
+set.seed(1)
+d_missing$x2[sample(nrow(d), 60)] <- NA
+fit_fiml <- lavaan::cfa(model, d_missing, meanstructure = TRUE,
+                        missing = "fiml")
+pvalues(semtest(fit_fiml), c("SB", "ALL"))
+pvalues(semtest(fit_fiml, score_covariance = "expected"), c("SB", "ALL"))
+```
+
+For least squares, **fitting weights** are the matrix weighting discrepancies
+between observed and model-implied moments. They are not sampling weights.
+Their estimation can contribute to sampling variability when the structural
+model is misspecified. The contribution vanishes at exact fit.
+
+Here is the equality of all three loadings, fitted by continuous DWLS:
+
+```{r weights-dwls}
+fit_dwls <- lavaan::cfa(model3, d, meanstructure = TRUE, estimator = "DWLS",
+                        ordered = FALSE)
+equal_dwls <- lavaan::cfa(paste(model3, "a == b", "b == c", sep = "\n"), d,
+                          meanstructure = TRUE, estimator = "DWLS",
+                          ordered = FALSE)
+semtest(equal_dwls, fit_dwls, weight = "score_covariance")
+semtest(equal_dwls, fit_dwls, weight = "score_covariance",
+        weight_effect = "fixed")
+```
+
+The default, `weight_effect = "estimated"`, includes the joint influence of
+the sample moments and the estimated fitting weights. `"fixed"` treats those
+weights as known. That is a comparator, not generally the complete correction
+under structural misspecification. Similarly, expected curvature alone does
+not generally supply the complete correction. Least-squares tests require
+centered score covariance, which is the nested default.
+
+These tests currently exclude sampling weights, clusters, nonlinear
+constraints, and parameter bounds. The ordinal path requires complete,
+all-ordered data with nonempty pairwise cells; it does not support mixed
+indicators or pairwise missingness. See the categorical-data vignette for
+background on ordinal fitting.
+
+## Inspecting a result, and research status
+
+Pass `keep = TRUE` to retain the numerical ingredients in `$ingredients`, and
+inspect `$diagnostics` and `$provenance` when checking a calculation. For
+example, the nuisance stationarity norm checks that the restricted fit is a
+stationary point of its own criterion:
+
+```{r inspect}
+score$diagnostics$nuisance_stationarity_norm
+```
+
+Stationarity and curvature diagnostics assess the local calculation. Agreement
+with another implementation does not by itself establish finite-sample
+calibration.
+
+For ordinal data, the first-stage influence of the thresholds and polychoric
+correlations is computed in closed form, using lavaan's score-product
+convention for the first-stage weight. The derivative of the estimated weight
+is also closed form for DWLS and ULS. Full WLS differentiates its weight
+numerically, which can be slow with many distinct response patterns.
+
+Two ongoing manuscript projects provide the context for these constructions:
+a manuscript on FIML goodness-of-fit inference, and a manuscript on inference
+under structural misspecification, including estimated fitting weights. Both
+are **in preparation**; formal bibliographic entries are pending. The examples
+illustrate the interface and targets, rather than claiming finite-sample
+validity for every combination of settings.
+
+## References
+
+Satorra, A. (1989). Alternative test criteria in covariance structure analysis:
+A unified approach. *Psychometrika*, **54**, 131--151.
+<https://doi.org/10.1007/BF02294453>.
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample analysis
+of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, & A. Satorra
+(Eds.), *Innovations in Multivariate Statistical Analysis* (pp. 233--247).
+Kluwer Academic Publishers. <https://doi.org/10.1007/978-1-4615-4603-0_17>.
