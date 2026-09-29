@@ -27,7 +27,8 @@ The development version also provides score and criterion-difference
 tests through `semtest()`, including inference on parameter restrictions
 under structural misspecification in supported settings. See the [score
 and criterion vignette](vignettes/score-criterion.Rmd) for the
-hypotheses and interface.
+hypotheses and interface. It also deprecates the `fiml.convention`
+argument; see `NEWS.md`.
 
 ## Installation
 

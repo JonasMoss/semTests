@@ -10,6 +10,11 @@ the removed Wald adapter exposed is still built by `parameter_inference_parts()`
 for the nested tests, and `tools/magmaan-criterion-validation.R` still checks it.
 The vignette is now `vignettes/score-criterion.Rmd` and is part of the build.
 
+B3 below was decided differently: `fiml.convention` is kept for one release
+with a deprecation warning (class `semTests_warning_deprecated`) rather than
+removed, because the released 1.0.0 NEWS pointed users at
+`fiml.convention = "lavaan"`.
+
 References to Wald below are historical.
 
 ## Current implementation status

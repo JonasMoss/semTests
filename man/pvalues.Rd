@@ -43,9 +43,14 @@ take a positive integer number of blocks (for example, \code{"pEBA4"}), no
 greater than the test df. \code{pOLS} takes a finite positive penalty (for
 example, \code{"pOLS2"}).}
 
-\item{fiml.convention}{For FIML fits, use the fully observed-information
-convention (\code{"observed"}, the default) or reproduce lavaan 0.7-2's
-inspected robust-test spectrum (\code{"lavaan"}).}
+\item{fiml.convention}{Deprecated, and will be removed in a future release.
+For FIML fits, use the fully observed-information convention
+(\code{"observed"}, the default) or reproduce lavaan 0.7-2's inspected
+robust-test spectrum (\code{"lavaan"}). Supplying it, with either value, gives
+a warning of class \code{semTests_warning_deprecated}. The \code{"lavaan"} spectrum
+changes with the fit's \code{information} and \code{h1.information} options; use
+\code{\link[lavaan:lavTest]{lavaan::lavTest()}} or \code{\link[lavaan:lavTestLRT]{lavaan::lavTestLRT()}} to reproduce lavaan's own
+tests.}
 
 \item{method}{Nested reduction method. Only Satorra's \code{"2000"} construction
 (the paper-recommended default) is available. The Satorra--Bentler \code{"2001"}
@@ -158,10 +163,10 @@ estimator, fitting conventions, variables, groups, sample sizes, raw data,
 and missingness mask. \code{semTests} checks comparability. The substantive
 nesting argument remains part of the analysis.
 
-For FIML, \code{fiml.convention = "observed"} (the default) uses observed
-saturated and model information throughout. An independent implementation
-validates this construction. The \code{"lavaan"} option reproduces lavaan
-0.7-2's robust-test construction. For a single model it uses lavaan's
+For FIML, semTests uses observed saturated and model information
+throughout. An independent implementation validates this construction.
+The deprecated \code{fiml.convention} argument can instead select \code{"lavaan"},
+which reproduces lavaan 0.7-2's robust-test construction. For a single model it uses lavaan's
 inspected \code{UGamma}. For nested models it uses lavaan's H1 weight convention
 and selected model information. The returned object records the convention,
 which keeps this inferential choice visible in saved results.

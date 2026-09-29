@@ -88,10 +88,10 @@
 #' and missingness mask. `semTests` checks comparability. The substantive
 #' nesting argument remains part of the analysis.
 #'
-#' For FIML, `fiml.convention = "observed"` (the default) uses observed
-#' saturated and model information throughout. An independent implementation
-#' validates this construction. The `"lavaan"` option reproduces lavaan
-#' 0.7-2's robust-test construction. For a single model it uses lavaan's
+#' For FIML, semTests uses observed saturated and model information
+#' throughout. An independent implementation validates this construction.
+#' The deprecated `fiml.convention` argument can instead select `"lavaan"`,
+#' which reproduces lavaan 0.7-2's robust-test construction. For a single model it uses lavaan's
 #' inspected `UGamma`. For nested models it uses lavaan's H1 weight convention
 #' and selected model information. The returned object records the convention,
 #' which keeps this inferential choice visible in saved results.
@@ -121,9 +121,14 @@
 #'   moment-tangent restriction map. `"delta"` is the default and applies to a
 #'   wider range of equivalent model parameterizations. Categorical nested
 #'   models support `"delta"` only.
-#' @param fiml.convention For FIML fits, use the fully observed-information
-#'   convention (`"observed"`, the default) or reproduce lavaan 0.7-2's
-#'   inspected robust-test spectrum (`"lavaan"`).
+#' @param fiml.convention Deprecated, and will be removed in a future release.
+#'   For FIML fits, use the fully observed-information convention
+#'   (`"observed"`, the default) or reproduce lavaan 0.7-2's inspected
+#'   robust-test spectrum (`"lavaan"`). Supplying it, with either value, gives
+#'   a warning of class `semTests_warning_deprecated`. The `"lavaan"` spectrum
+#'   changes with the fit's `information` and `h1.information` options; use
+#'   [lavaan::lavTest()] or [lavaan::lavTestLRT()] to reproduce lavaan's own
+#'   tests.
 #' @name pvalues
 #' @export
 #' @examples
@@ -224,10 +229,12 @@ pvalues.lavaan <- function(object,
   # The default is fit-appropriate: the historical RLS default for the classical
   # normal-theory ML case, the suffix-free form (standard statistic, biased
   # gamma) otherwise.
+  supplied <- !missing(fiml.convention)
   check_lavaan(object, "object")
   options <- parse_tests(tests)
   check_supported(object)
   fiml.convention <- match.arg(fiml.convention)
+  if (supplied) warn_fiml_convention_deprecated(fiml.convention)
   cache <- new.env(parent = emptyenv())
   result <- unlist(lapply(options, function(option) {
     do.call(
@@ -253,6 +260,23 @@ pvalues.lavaan <- function(object,
   )
 }
 
+# fiml.convention is kept for one release so existing code keeps running. Its
+# "lavaan" option is a passthrough to lavaan's own robust-test matrices, which
+# move with the fit's information and h1.information options, so the same call
+# can return different numbers for the same data.
+warn_fiml_convention_deprecated <- function(value) {
+  semtests_warn(paste0(
+    "`fiml.convention` is deprecated and will be removed in a future release. ",
+    if (identical(value, "lavaan")) {
+      paste0("Its \"lavaan\" option reads lavaan's robust-test matrices, which ",
+             "change with the fit's `information` and `h1.information` ",
+             "options. To reproduce lavaan's own tests, use lavaan::lavTest() ",
+             "or lavaan::lavTestLRT().")
+    } else {
+      "\"observed\" is already the default; drop the argument."
+    }), c("semTests_warning_deprecated", "deprecatedWarning"))
+}
+
 #' @export
 pvalues.default <- function(object, tests,
                             fiml.convention = c("observed", "lavaan")) {
@@ -265,9 +289,11 @@ pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
                            tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
                            A.method = c("delta", "exact"),
                            fiml.convention = c("observed", "lavaan")) {
+  supplied <- !missing(fiml.convention)
   method <- match.arg(method)
   A.method <- match.arg(A.method)
   fiml.convention <- match.arg(fiml.convention)
+  if (supplied) warn_fiml_convention_deprecated(fiml.convention)
 
   # Class gate first: the df computation below reads m0@test / m1@test, which
   # would otherwise die on a cryptic S4 slot error for a non-lavaan argument.

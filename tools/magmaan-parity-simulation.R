@@ -206,7 +206,7 @@ run_fiml <- function(seed) {
 
     mag_single <- magmaan::fmg_tests(mag_h1, tests = single_tests)
     out["single"] <- p_diff(
-      semTests::pvalues(lav_h1, single_tests, fiml.convention = "observed"),
+      semTests::pvalues(lav_h1, single_tests),
       mag_single$p_value
     )
     mag_nested <- magmaan::fmg_nested(
@@ -215,7 +215,7 @@ run_fiml <- function(seed) {
     out["nested"] <- p_diff(
       semTests::pvalues_nested(
         lav_h0, lav_h1, tests = nested_tests,
-        A.method = "delta", fiml.convention = "observed"
+        A.method = "delta"
       ),
       mag_nested$p_value
     )

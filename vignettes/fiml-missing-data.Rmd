@@ -96,25 +96,22 @@ FIML too. Calling a predictor random is still a modeling decision. If `ageyr`
 should instead be treated as a fixed design variable, this example is not a
 substitute for a conditional analysis.
 
-## Keep the two information choices separate
+## lavaan's information option does not change the result
 
-Two similarly named controls do different jobs:
+lavaan's `information` fit option selects the model information that lavaan
+stores and uses for its own inference. `semTests` does not inherit it. For FIML
+it uses observed saturated and observed model information throughout, and
+requests these matrices explicitly. A lavaan fit created with expected
+information therefore gives the same `semTests` result.
 
-1. lavaan's `information` fit option selects the model information stored and
-   used for lavaan's own inference.
-2. `fiml.convention` selects the information matrices that `semTests` uses for
-   its reference distribution.
-
-The `semTests` default, `"observed"`, uses observed saturated and observed model
-information throughout. `semTests` requests these matrices explicitly. A
-lavaan fit created with expected information therefore keeps the same
-observed-convention result.
-
-Choose `"lavaan"` when the goal is compatibility with lavaan's own robust
-construction. For one model, it reproduces `lavInspect(fit, "UGamma")`. For a
-nested pair, it reproduces lavaan's public Satorra-2000 construction. In that
-compatibility path, `information = "expected"` controls the model-information
-part of the calculation.
+Earlier releases offered `fiml.convention = "lavaan"` to reproduce lavaan's own
+robust construction: `lavInspect(fit, "UGamma")` for one model, and lavaan's
+Satorra-2000 test for a nested pair. That argument is deprecated and will be
+removed. It read lavaan's matrices as they were, and those change with the
+fit's `information` and `h1.information` options, so the same call on the same
+data could return different numbers depending on how the model was fitted. To
+reproduce lavaan's numbers, use `lavaan::lavTest()` or `lavaan::lavTestLRT()`
+directly.
 
 ## Why observed information is the default
 
@@ -167,8 +164,7 @@ overall, with its advantage largest under heavy tails and misspecification, so
 `semTests` uses observed information by default. The study targets parameter
 interval coverage, not the null calibration of the goodness-of-fit p-values
 themselves, which have their own deterministic and seeded checks under
-`tools/`. The `"lavaan"` convention remains available when the goal is to
-reproduce lavaan's spectrum.
+`tools/`.
 
 ## Comparing observed and expected model information
 
@@ -192,32 +188,22 @@ still change the reference distribution:
 tests <- c("SB", "SS", "PEBA4")
 
 comparison <- cbind(
-  observed_fit__observed_convention = as.numeric(
-    pvalues(fit_observed, tests, fiml.convention = "observed")
-  ),
-  observed_fit__lavaan_convention = as.numeric(
-    pvalues(fit_observed, tests, fiml.convention = "lavaan")
-  ),
-  expected_fit__observed_convention = as.numeric(
-    pvalues(fit_expected, tests, fiml.convention = "observed")
-  ),
-  expected_fit__lavaan_convention = as.numeric(
-    pvalues(fit_expected, tests, fiml.convention = "lavaan")
-  )
+  observed_fit = as.numeric(pvalues(fit_observed, tests)),
+  expected_fit = as.numeric(pvalues(fit_expected, tests))
 )
 rownames(comparison) <- tests
 format(comparison, scientific = TRUE, digits = 4)
 ```
 
-The two observed-convention columns agree because `semTests` explicitly
-requests observed information. The lavaan-convention columns can differ because
-that path respects the model-information choice stored in the fit.
+The two columns agree because `semTests` explicitly requests observed
+information. lavaan's own robust tests follow the model-information choice
+stored in each fit, so they can differ between the two fits.
 
 Observed information reflects the realized missingness patterns and sample
 curvature. Expected information averages curvature under the fitted model.
 They can be close in well-behaved settings. Missingness and non-normality can
-pull them apart. `semTests` keeps the convention visible in both the function call
-and the result footer.
+pull them apart. The result footer records the information convention with the
+p-values.
 
 ## Nested FIML comparison
 
@@ -249,20 +235,13 @@ of free parameters:
 ```{r nested-comparison}
 nested_tests <- c("SB", "SS", "PEBA2")
 nested <- cbind(
-  observed_delta = as.numeric(pvalues_nested(
+  delta = as.numeric(pvalues_nested(
     m0, m1,
-    tests = nested_tests,
-    A.method = "delta", fiml.convention = "observed"
+    tests = nested_tests, A.method = "delta"
   )),
-  observed_exact = as.numeric(pvalues_nested(
+  exact = as.numeric(pvalues_nested(
     m0, m1,
-    tests = nested_tests,
-    A.method = "exact", fiml.convention = "observed"
-  )),
-  lavaan_delta = as.numeric(pvalues_nested(
-    m0, m1,
-    tests = nested_tests,
-    A.method = "delta", fiml.convention = "lavaan"
+    tests = nested_tests, A.method = "exact"
   ))
 )
 rownames(nested) <- nested_tests
@@ -272,6 +251,10 @@ format(nested, scientific = TRUE, digits = 4)
 The delta default is the more flexible choice when equivalent models have
 different parameter tables. Use exact when the hypothesis is naturally written as a
 literal restriction on one shared set of free parameters.
+
+lavaan's own version of this comparison is
+`lavTestLRT(m1, m0, method = "satorra.2000")`. It follows the fits'
+information options, so it need not agree with the `semTests` columns.
 
 ## FIML with several groups
 
@@ -304,7 +287,6 @@ A reproducible FIML analysis should report:
 
 * the missingness pattern and its substantive justification
 * lavaan's estimator and `information` option
-* the `semTests` `fiml.convention`
 * the nested `A.method`, when applicable
 * the requested p-value method and base statistic
 

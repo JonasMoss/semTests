@@ -48,8 +48,8 @@ data when you want more depth:
 * `vignette("categorical-data", package = "semTests")` covers ordered and mixed
   indicators, pairwise missingness, and categorical nested comparison.
 * `vignette("fiml-missing-data", package = "semTests")` covers continuous FIML,
-  the finite-sample evidence for the observed-information default, the lavaan
-  compatibility convention, and nested restriction maps.
+  the finite-sample evidence for observed information, how it relates to
+  lavaan's information options, and nested restriction maps.
 * `vignette("latent-growth", package = "semTests")` gives FIML a more applied
   outing in a latent growth model.
 * `vignette("measurement-invariance", package = "semTests")` walks through
@@ -151,10 +151,9 @@ fit_fiml <- cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
 ```
 
-Observed information is the default, following Savalei (2010). The choice and
-the optional lavaan-compatibility convention are explained in
-`vignette("fiml-missing-data", package = "semTests")`, along with nested FIML
-examples.
+FIML uses observed information, following Savalei (2010). The choice is
+explained in `vignette("fiml-missing-data", package = "semTests")`, along with
+nested FIML examples.
 
 ### Ordered and mixed indicators
 

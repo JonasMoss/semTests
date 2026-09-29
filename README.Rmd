@@ -34,7 +34,7 @@ An R package for robust tests of overall fit and nested model comparisons in str
 
 It covers ML, GLS, ULS, categorical DWLS and ULS, and continuous FIML with one or several groups, for both single models and nested comparisons. Observed predictors are supported under joint random-x inference. See `?semTests-support` for the exact list.
 
-The development version also provides score and criterion-difference tests through `semtest()`, including inference on parameter restrictions under structural misspecification in supported settings. See the [score and criterion vignette](vignettes/score-criterion.Rmd) for the hypotheses and interface.
+The development version also provides score and criterion-difference tests through `semtest()`, including inference on parameter restrictions under structural misspecification in supported settings. See the [score and criterion vignette](vignettes/score-criterion.Rmd) for the hypotheses and interface. It also deprecates the `fiml.convention` argument; see `NEWS.md`.
 
 ```{r setup, include=FALSE}
 # library("semTests")

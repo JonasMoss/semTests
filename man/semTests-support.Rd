@@ -49,8 +49,9 @@ DWLS/ULS fits, FIML missing-data fits, and their nested comparisons -- are
 also marked stable: each is validated to numerical tolerance against an
 independent implementation (magmaan) across a simulation battery, in addition
 to the deterministic implementation tests every available row carries. The
-\code{fiml.convention = "lavaan"} option reproduces lavaan's own spectrum for
-compatibility rather than as an independently validated construction.
+deprecated \code{fiml.convention = "lavaan"} option reproduces lavaan's own
+spectrum for compatibility rather than as an independently validated
+construction.
 Configurations outside the tables are refused at the entry point.
 }
 
@@ -115,9 +116,9 @@ inference.
 only. \code{UG} and \code{RLS} are refused. FIML supports one or several groups with
 continuous data. Observed exogenous predictors are supported under joint
 random-x inference, using \code{fixed.x = FALSE} and \code{conditional.x = FALSE}.
-\code{fiml.convention = "observed"} (the default) uses observed saturated and
-model information, following the recommendation of Kenward and Molenberghs
-(1998), and is independently validated against magmaan. \code{"lavaan"}
+semTests uses observed saturated and model information, following the
+recommendation of Kenward and Molenberghs (1998), and is independently
+validated against magmaan. The deprecated \code{fiml.convention = "lavaan"}
 reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
 expected H1 weight.
 }

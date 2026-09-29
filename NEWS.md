@@ -41,6 +41,17 @@
 * A new vignette, `vignette("score-criterion", package = "semTests")`, explains
   the score and criterion tests, their hypotheses, and their settings.
 
+## Deprecated
+
+* `fiml.convention` is deprecated and will be removed in a future release.
+  Supplying it, with either value, now gives a warning of class
+  `semTests_warning_deprecated`; results are unchanged. Its `"lavaan"` option
+  read lavaan's robust-test matrices as they were, and those change with the
+  fit's `information` and `h1.information` options, so the same call on the
+  same data could return different numbers depending on how the model was
+  fitted. To reproduce lavaan's own tests, use `lavaan::lavTest()` or
+  `lavaan::lavTestLRT()`.
+
 ## Performance
 
 * Requests for several p-values share statistics and eigenvalue spectra within

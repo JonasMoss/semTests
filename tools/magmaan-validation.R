@@ -617,9 +617,7 @@ validate_fiml <- function() {
     sort(magmaan_tests$eigenvalues[[1L]]),
     spectrum_tolerance, layer = "spectrum"
   )
-  semtests_pvalues <- semTests::pvalues(
-    lavaan_h1, single_tests, fiml.convention = "observed"
-  )
+  semtests_pvalues <- semTests::pvalues(lavaan_h1, single_tests)
   check_names(
     "FIML single-model labels",
     names(semtests_pvalues), magmaan_tests$label
@@ -660,8 +658,7 @@ validate_fiml <- function() {
     )
     semtests_pvalues <- semTests::pvalues_nested(
       lavaan_h0, lavaan_h1, tests = nested_tests,
-      A.method = A.method,
-      fiml.convention = "observed"
+      A.method = A.method
     )
     check_names(
       paste("FIML nested labels,", A.method),
@@ -716,9 +713,7 @@ validate_multigroup_fiml <- function() {
     sort(magmaan_tests$eigenvalues[[1L]]),
     multigroup_spectrum_tolerance, layer = "spectrum"
   )
-  semtests_pvalues <- semTests::pvalues(
-    lavaan_h1, single_tests, fiml.convention = "observed"
-  )
+  semtests_pvalues <- semTests::pvalues(lavaan_h1, single_tests)
   check_names(
     "Multigroup FIML single-model labels",
     names(semtests_pvalues), magmaan_tests$label
@@ -759,8 +754,7 @@ validate_multigroup_fiml <- function() {
     )
     semtests_pvalues <- semTests::pvalues_nested(
       lavaan_h0, lavaan_h1, tests = nested_tests,
-      A.method = A.method,
-      fiml.convention = "observed"
+      A.method = A.method
     )
     check_names(
       paste("Multigroup FIML nested labels,", A.method),
@@ -822,9 +816,7 @@ validate_random_x_fiml <- function() {
     sort(magmaan_tests$eigenvalues[[1L]]),
     spectrum_tolerance, layer = "spectrum"
   )
-  semtests_pvalues <- semTests::pvalues(
-    lavaan_h1, single_tests, fiml.convention = "observed"
-  )
+  semtests_pvalues <- semTests::pvalues(lavaan_h1, single_tests)
   check_names(
     "Random-x FIML single-model labels",
     names(semtests_pvalues), magmaan_tests$label
@@ -865,8 +857,7 @@ validate_random_x_fiml <- function() {
     )
     semtests_pvalues <- semTests::pvalues_nested(
       lavaan_h0, lavaan_h1, tests = nested_tests,
-      A.method = A.method,
-      fiml.convention = "observed"
+      A.method = A.method
     )
     check_names(
       paste("Random-x FIML nested labels,", A.method),
