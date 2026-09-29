@@ -85,7 +85,7 @@ new_inference_test <- function(type, statistic, eigenvalues, reference, hypothes
 #' score test. Its default here is `"ALL"`, the unpenalized mixture law.
 #' Penalized calibrations are available for research comparisons; numerical
 #' agreement does not establish their calibration for a new score procedure.
-#' Fully studentized score and Wald results accept only `"STD"`.
+#' Fully studentized score results accept only `"STD"`.
 #'
 #' @param score Nonempty numeric efficient-score vector in tested coordinates.
 #' @param metric Positive-definite quadratic metric, or `NULL` for full
@@ -156,70 +156,6 @@ score_test_matrices <- function(score, metric = NULL, score_covariance,
                        tolerance = tolerance, studentized = studentized),
     ingredients = if (keep) list(score = score, metric = metric, score_covariance = score_covariance,
                                  units = "sum") else NULL)
-}
-
-#' Linear Wald test from parameter estimates and sampling covariance
-#'
-#' Test `R %*% theta = rhs` using the supplied **sampling covariance** of theta.
-#' The statistic is the restriction contrast whitened by `R %*% vcov %*% t(R)`.
-#' There is no additional sample-size multiplication. To use an asymptotic
-#' covariance for `sqrt(n) * theta`, divide it by `n` before calling this function.
-#'
-#' The full covariance may be positive semidefinite, as with constrained
-#' parameterizations, but the restriction covariance must be positive definite.
-#' Redundant restrictions are rejected. Inference under fixed misspecification
-#' requires the caller to supply the complete sandwich covariance for the actual
-#' pseudo-parameter. This function does not estimate it.
-#'
-#' @param theta Numeric vector of parameter estimates.
-#' @param R Numeric restriction matrix, one row per tested restriction, with
-#'   columns in the same positional order as theta and vcov.
-#' @param vcov Sampling covariance matrix in theta's positional order.
-#' @param rhs Numeric vector of null values, one per restriction; `NULL` means zeros.
-#' @inheritParams score_test_matrices
-#' @return A `semTests_test` result with a chi-square reference; see
-#'   [score_test_matrices()] for its fields.
-#' @keywords internal
-#' @examples
-#' w <- semTests:::wald_test_matrices(c(.4, .2), matrix(c(1, -1), 1), diag(c(.02, .03)))
-#' pvalues(w)
-wald_test_matrices <- function(theta, R, vcov, rhs = NULL,
-                                hypothesis = "R theta = rhs", keep = FALSE,
-                                tolerance = 1e-10) {
-  inference_options(hypothesis, keep, tolerance)
-  theta <- inference_vector(theta, "theta")
-  V <- inference_symmetric(vcov, length(theta), "vcov", tolerance)
-  if (!is.matrix(R) || !is.numeric(R) || ncol(R) != length(theta) ||
-      !nrow(R) || any(!is.finite(R))) {
-    semtests_abort("R must be a finite matrix with one column per parameter.",
-                  "semTests_error_invalid_inference")
-  }
-  row_scale <- sqrt(rowSums(R^2))
-  if (any(row_scale == 0) ||
-      qr(t(sweep(R, 1L, row_scale, "/")), tol = tolerance)$rank != nrow(R)) {
-    semtests_abort("R contains redundant restrictions.", "semTests_error_unstable_spectrum")
-  }
-  rhs <- if (is.null(rhs)) rep(0, nrow(R)) else inference_vector(rhs, "rhs")
-  if (length(rhs) != nrow(R)) {
-    semtests_abort("rhs must have one value per restriction.", "semTests_error_invalid_inference")
-  }
-  values <- eigen(V, symmetric = TRUE, only.values = TRUE)$values
-  if (any(values < -tolerance * max(abs(values)))) {
-    semtests_abort("vcov must be positive semidefinite.", "semTests_error_invalid_inference")
-  }
-  contrast <- drop(R %*% theta) - rhs
-  restriction_covariance <- R %*% V %*% t(R)
-  root <- inference_chol((restriction_covariance + t(restriction_covariance)) / 2,
-                         "Restriction covariance")
-  statistic <- sum(forwardsolve(t(root), contrast)^2)
-  if (!is.finite(statistic)) {
-    semtests_abort("Wald quadratic overflowed.", "semTests_error_invalid_inference")
-  }
-  new_inference_test("wald", statistic, rep(1, nrow(R)), "chisq", hypothesis,
-    normalization = "sampling covariance", nobs = NULL,
-    diagnostics = list(restriction_rcond = rcond(restriction_covariance), tolerance = tolerance),
-    ingredients = if (keep) list(theta = theta, R = R, rhs = rhs, vcov = V,
-                                 contrast = contrast, restriction_covariance = restriction_covariance) else NULL)
 }
 
 #' @export

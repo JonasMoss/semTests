@@ -1,5 +1,16 @@
 # Efficient inference, score and Wald implementation plan
 
+## Status update, 2026-09-29
+
+The Wald test has been removed from the package: `wald_test()`,
+`wald_test_matrices()`, their tests, and the Wald checks in the `tools/`
+runners. Score and criterion tests are distinct tests with their own options
+and stay behind `semtest()` unchanged. The complete parameter sandwich that
+the removed Wald adapter exposed is still built by `parameter_inference_parts()`
+for the nested tests, and `tools/magmaan-criterion-validation.R` still checks it.
+
+References to Wald below are historical.
+
 ## Current implementation status
 
 Interface naming: `curvature` selects the sensitivity matrix and

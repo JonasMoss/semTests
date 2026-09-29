@@ -130,7 +130,7 @@ ml_global_score_parts <- function(object, score_covariance, tile_rows = 256L) {
 #' selects expected or observed *saturated* curvature for nuisance projection,
 #' matching magmaan's global-score convention. This is an exact-fit null.
 #' For full model curvature and restricted pseudo-target inference under fixed
-#' misspecification, use [score_test_nested()] or [wald_test()].
+#' misspecification, use [score_test_nested()].
 #'
 #' Supports normal-likelihood ML/MLM/MLR and FIML, one or several groups,
 #' affine equalities, unweighted raw data, and joint random-x inference.
@@ -185,118 +185,6 @@ score_test <- function(object, metric = c("information", "sandwich", "observed")
     result$ingredients$projection <- parts$projection
     result$ingredients$tangent <- parts$tangent
     result$ingredients$information_blocks <- parts$information
-  }
-  result
-}
-
-#' Linear Wald restrictions with fitted or complete-sandwich covariance
-#'
-#' Test `R theta = rhs`. The default `vcov = "fitted"` uses lavaan's stored
-#' sampling covariance for ML/FIML, preserving its SE/information conventions.
-#' `vcov = "sandwich"` constructs a new criterion-based sandwich. Its default
-#' observed sensitivity includes full model curvature. Gaussian case scores
-#' include fitted-mean residual contributions; LS includes joint moment and
-#' estimated-weight influences, with their cross covariance.
-#'
-#' Complete-sandwich inference supports ML/FIML, continuous GLS/WLS/DWLS/ULS,
-#' and complete all-ordered DWLS/WLS/ULS, with affine equalities and unweighted
-#' raw observations. The ordinal path differentiates lavaan's native empirical
-#' frequency functional, refines polychoric roots, and uses Richardson
-#' extrapolation. It is a numerical reference implementation, potentially slow
-#' with many distinct response patterns. Empty pairwise cells, mixed indicators,
-#' sampling weights, clusters and nonlinear constraints are excluded.
-#'
-#' The ordinal weight map retains lavaan's score-product curvature. The influence
-#' of its first-stage estimator uses actual derivative sensitivity. These are
-#' distinct under first-stage misspecification; see the developer validation
-#' notes for the corresponding magmaan comparison.
-#'
-#' Fixed misspecification inference concerns the criterion's pseudo-parameter,
-#' which need not equal a generating-model parameter. `curvature = "expected"`
-#' and `weight_effect = "fixed"` are explicit comparators, not complete
-#' corrections. There is no second eigenvalue correction after studentization.
-#'
-#' @param object A converged supported `lavaan` fit.
-#' @param R Restriction matrix with columns in positional `lavaan::coef(object)`
-#'   order. Names are not used to reorder columns.
-#' @param rhs Null restriction values, or `NULL` for zero.
-#' @param hypothesis Description of the linear hypothesis and population target.
-#' @param keep Retain parameter covariance and estimating-equation matrices.
-#' @param tolerance Matrix validation tolerance.
-#' @param vcov `"fitted"` or a newly constructed `"sandwich"` covariance.
-#' @param curvature Observed or expected criterion sensitivity for the new
-#'   sandwich. Ignored when `vcov = "fitted"`.
-#' @param score_covariance Group-centered or uncentered Gaussian score products.
-#'   LS requires `"centered"`. Ignored when `vcov = "fitted"`.
-#' @param weight_effect Include estimated weights or treat them as fixed when
-#'   constructing an LS sandwich. Ignored for ML and fitted covariance.
-#' @param derivative_step Relative central-difference step for criterion
-#'   curvature. The ordinal probability perturbation uses its square root times
-#'   the response-pattern frequency, with Richardson extrapolation.
-#' @return A `semTests_test` with chi-square reference, parameter order and
-#'   covariance conventions. Complete-sandwich results also report stationarity
-#'   and numerical curvature asymmetry. No parameter refitting is performed.
-#' @keywords internal
-#' @examples
-#' fit <- lavaan::cfa("f =~ x1 + a*x2 + b*x3 + x4",
-#'                    lavaan::HolzingerSwineford1939, estimator = "MLM")
-#' R <- matrix(0, 1, length(lavaan::coef(fit)))
-#' R[1, match(c("a", "b"), names(lavaan::coef(fit)))] <- c(1, -1)
-#' pvalues(semTests:::wald_test(fit, R))
-wald_test <- function(object, R, rhs = NULL, hypothesis = "R theta = rhs",
-                       keep = FALSE, tolerance = 1e-10,
-                       vcov = c("fitted", "sandwich"),
-                       curvature = c("observed", "expected"),
-                       score_covariance = c("centered", "uncentered", "expected"),
-                       weight_effect = c("estimated", "fixed"),
-                       derivative_step = 1e-4) {
-  vcov <- match.arg(vcov)
-  curvature <- match.arg(curvature)
-  score_covariance <- match.arg(score_covariance)
-  weight_effect <- match.arg(weight_effect)
-  if (vcov == "fitted") check_ml_inference_adapter(object, "wald_test()", allow_fiml = TRUE)
-  else check_criterion_adapter(object)
-  if (vcov == "sandwich" && object@Options$estimator != "ML" && score_covariance != "centered")
-    stop("LS requires centered first-stage influence functions.", call. = FALSE)
-  inference_options(hypothesis, keep, tolerance)
-  theta <- lavaan::coef(object)
-  if (is.matrix(R) && is.numeric(R) && ncol(R) == length(theta) &&
-      nrow(R) > 0L && all(is.finite(R))) {
-    scales <- sqrt(rowSums(R^2))
-    if (all(scales > 0)) {
-      reduced <- sweep(R, 1L, scales, "/") %*% model_parameter_basis(object)
-      singular <- svd(reduced, nu = 0, nv = 0)$d
-      if (sum(singular > tolerance * max(1, singular)) != nrow(R)) {
-        semtests_abort("R contains restrictions already fixed or dependent in the fitted model.",
-                      "semTests_error_unstable_spectrum")
-      }
-    }
-  }
-  parts <- NULL
-  V <- if (vcov == "fitted") {
-    tryCatch(lavaan::lavInspect(object, "vcov"), error = function(e) NULL)
-  } else {
-    parts <- parameter_inference_parts(object, curvature, score_covariance, weight_effect, derivative_step)
-    inverse <- inference_solve(parts$curvature)
-    B <- model_parameter_basis(object)
-    B %*% inverse %*% parts$score_covariance %*% inverse %*% t(B)
-  }
-  if (is.null(V) || !length(V)) {
-    semtests_abort("wald_test() requires a fitted sampling covariance; refit with standard errors.",
-                  "semTests_error_invalid_inference")
-  }
-  result <- wald_test_matrices(theta, R, as.matrix(V), rhs,
-    hypothesis = hypothesis, keep = keep, tolerance = tolerance)
-  result$nobs <- object@SampleStats@ntotal
-  result$provenance <- c(result$provenance, list(lavaan_version = as.character(utils::packageVersion("lavaan")),
-    estimator = requested_estimator(object), se = object@Options$se,
-    information = object@Options$information, parameter_names = names(theta)))
-  result$provenance$backend <- if (vcov == "fitted") "lavaan fitted covariance" else "semTests complete criterion sandwich"
-  if (!is.null(parts)) {
-    result$provenance <- c(result$provenance, parts$provenance)
-    result$diagnostics$stationarity_norm <- max(abs(parts$score))/parts$nobs
-    result$diagnostics$curvature_asymmetry <- parts$curvature_asymmetry
-    if (keep) result$ingredients$estimating_equations <- parts
   }
   result
 }

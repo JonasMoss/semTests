@@ -84,7 +84,7 @@ nested_criterion_embedding <- function(object, alternative, tolerance) {
 #'   supplies a comparator for LS. Ignored for ML.
 #' @param derivative_step Relative central-difference step for full curvature.
 #'   Ordinal frequency perturbations use its square root times pattern frequency
-#'   with Richardson extrapolation; see [wald_test()].
+#'   with Richardson extrapolation.
 #' @param hypothesis Description of the common pseudo-target null.
 #' @param keep Retain profile matrices and estimating-equation ingredients.
 #' @param tolerance Matrix validation tolerance.

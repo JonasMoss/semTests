@@ -12,6 +12,14 @@ check<-function(case,quantity,actual,expected,tolerance) {
   rows[[length(rows)+1L]]<<-data.frame(case,quantity,gap,tolerance)
   if(gap>tolerance) stop(case," ",quantity," gap ",gap)
 }
+# The complete parameter sandwich that the nested score and criterion tests
+# are built from, in lavaan's positional coef() order.
+sandwich_vcov<-function(fit,weight_effect='estimated') {
+  parts<-parameter_inference_parts(fit,'observed','centered',weight_effect,1e-4)
+  inverse<-inference_solve(parts$curvature)
+  B<-model_parameter_basis(fit)
+  B%*%inverse%*%parts$score_covariance%*%inverse%*%t(B)
+}
 model<-'f =~ x1+a*x2+b*x3+x4'
 dat<-lavaan::HolzingerSwineford1939[,paste0('x',1:4)]
 for(est in c('GLS','WLS','ULS')) {
@@ -23,13 +31,8 @@ for(est in c('GLS','WLS','ULS')) {
   scale<-ifelse(pt$op=='~~',nrow(dat)/(nrow(dat)-1),1)
   V<-crossprod(ref$influence)*tcrossprod(scale)
   Vf<-crossprod(ref$influence_naive)*tcrossprod(scale)
-  R<-matrix(0,1,length(lavaan::coef(fit)));R[1,1:2]<-c(1,-1)
-  actual<-wald_test(fit,R,vcov='sandwich',keep=TRUE)
-  fixed<-wald_test(fit,R,vcov='sandwich',weight_effect='fixed',keep=TRUE)
-  check(est,'complete covariance',actual$ingredients$vcov,V,2e-6)
-  check(est,'fixed covariance',fixed$ingredients$vcov,Vf,2e-6)
-  native<-magmaan::magmaan_core$infer_wald_test_theta(mag$theta*scale,R,V,0)
-  check(est,'Wald',actual$statistic,native$chi2,2e-4)
+  check(est,'complete covariance',sandwich_vcov(fit),V,2e-6)
+  check(est,'fixed covariance',sandwich_vcov(fit,'fixed'),Vf,2e-6)
 }
 for(categories in c(2L,3L)) {
   d<-dat
@@ -37,22 +40,19 @@ for(categories in c(2L,3L)) {
   fit<-lavaan::cfa(model,d,ordered=names(d))
   mag<-magmaan::magmaan(magmaan::model_spec(model),d,estimator='DWLS',ordered=names(d))
   ref<-magmaan::magmaan_core$robust_ordinal_ij(mag,mag$ordinal_stats)
-  R<-matrix(0,1,length(lavaan::coef(fit)));R[1,1:2]<-c(1,-1)
-  actual<-wald_test(fit,R,vcov='sandwich',keep=TRUE)
+  vcov<-sandwich_vcov(fit)
   if(categories>2L) {
     # magmaan stores an OPG first-stage influence. semTests differentiates the
     # actual two-step estimator. Record the native gap, then align ONLY this
     # first-stage influence to isolate the independently coded weight calculus.
     diagnostics[[length(diagnostics)+1L]] <- data.frame(categories,
-      native_covariance_gap=max(abs(actual$ingredients$vcov-ref$vcov)))
+      native_covariance_gap=max(abs(vcov-ref$vcov)))
     first<-ordinal_first_stage(fit,1,"estimated",1e-4)
     mag$ordinal_stats$moment_influence[[1]]<-first$influence
     ref<-magmaan::magmaan_core$robust_ordinal_ij(mag,mag$ordinal_stats)
   }
   label<-if(categories==2L) "independent complete covariance" else "complete covariance with aligned first-stage influence"
-  check(paste0('ordinal-',categories),label,actual$ingredients$vcov,ref$vcov,2e-5)
-  native<-magmaan::magmaan_core$infer_wald_test_theta(mag$theta,R,ref$vcov,0)
-  check(paste0('ordinal-',categories),'Wald',actual$statistic,native$chi2,2e-4)
+  check(paste0('ordinal-',categories),label,vcov,ref$vcov,2e-5)
   null<-paste(model,'a==b',sep='\n')
   fit0<-lavaan::cfa(null,d,ordered=names(d))
   mag0<-magmaan::magmaan(magmaan::model_spec(null),d,estimator='DWLS',ordered=names(d))

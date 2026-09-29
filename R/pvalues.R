@@ -1,16 +1,16 @@
-#' Compute robust *p*-values for fitted models or matrix tests
+#' Compute robust *p*-values for fitted models and test objects
 #'
 #' Compute one or several *p*-values for a fitted `lavaan` model. Available
 #' methods include penalized eigenvalue block averaging, penalized regression,
 #' and familiar robust corrections. The defaults select the recommended method
 #' for the fitted model.
 #'
-#' `pvalues()` also accepts results from [score_test_matrices()] and
-#' [wald_test_matrices()]. Matrix score results use `"ALL"` by default for a
-#' supplied metric; fully studentized score and Wald results use `"STD"`.
-#' Matrix results accept calibration names without `UG`, `ML`, or `RLS`
-#' suffixes, and do not accept `fiml.convention`. The lavaan methods retain
-#' their existing defaults and output names.
+#' `pvalues()` also accepts the test objects returned by [semtest()]. Tests
+#' with a weighted chi-square reference use `"ALL"` by default; fully
+#' studentized tests (`weight = "score_covariance"`) have a chi-square
+#' reference and accept only `"STD"`. Test objects accept calibration names
+#' without `UG`, `ML`, or `RLS` suffixes, and do not accept `fiml.convention`.
+#' The lavaan methods retain their existing defaults and output names.
 #'
 #' The `tests` argument is a character vector. Each element has one of the forms
 #' `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`, `TEST_UG_ML`, or `TEST_UG_RLS`.
@@ -103,7 +103,7 @@
 #' `lavTestLRT(..., method = "satorra.2000")`.
 #'
 #' @param object,m0,m1 One or two `lavaan` objects, or a `semTests_test` result
-#'   supplied as `object` to `pvalues()`. For lavaan fits, `pvalues` does
+#'   from [semtest()] supplied as `object` to `pvalues()`. For lavaan fits, `pvalues` does
 #'   goodness-of-fit testing on one object, while `pvalues_nested` does
 #'   hypothesis testing on two nested models.
 #' @param tests A non-empty character vector of tests. Each element uses one of
@@ -667,7 +667,7 @@ pvalues.semTests_test <- function(object,
                     "semTests_error_invalid_tests")
     }
     if (object$reference == "chisq" && !identical(option$trad, "std")) {
-      semtests_abort("Fully studentized score and Wald tests accept only STD calibration.",
+      semtests_abort("Fully studentized score tests accept only STD calibration.",
                     "semTests_error_invalid_tests")
     }
     if (any(c(option$peba, option$eba) > object$df)) {

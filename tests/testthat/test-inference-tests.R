@@ -36,26 +36,6 @@ test_that("score normalization and invertible coordinate changes preserve infere
   expect_equal(scaled$p_value, x$p_value, tolerance = 1e-8)
 })
 
-test_that("Wald uses sampling covariance and supports constrained parameter covariance", {
-  theta <- c(.4, -.2, .7)
-  V <- diag(c(.02, .03, 0))
-  R <- rbind(c(1, -1, 0), c(0, 1, 0))
-  rhs <- c(.1, -.3)
-  x <- wald_test_matrices(theta, R, V, rhs, keep = TRUE)
-  d <- drop(R %*% theta) - rhs
-  T <- drop(crossprod(d, solve(R %*% V %*% t(R), d)))
-  expect_equal(x$statistic, T)
-  expect_equal(x$p_value, pchisq(T, 2, lower.tail = FALSE))
-  expect_equal(x$ingredients$contrast, d)
-  A <- matrix(c(2, .1, .4, 1), 2)
-  changed <- wald_test_matrices(theta, A %*% R, V, drop(A %*% rhs))
-  expect_equal(changed$statistic, T)
-  P <- diag(c(2, 3, 4))
-  changed <- wald_test_matrices(drop(P %*% theta), R %*% solve(P),
-                                P %*% V %*% t(P), rhs)
-  expect_equal(changed$statistic, T)
-})
-
 test_that("matrix calibrations preserve names and reject incompatible choices", {
   s <- score_test_matrices(c(1, 2), diag(2), diag(c(1, 2)))
   specs <- c("SB", "ALL", "PEBA2", "SB", "SS", "PALL", "SF", "EBA2", "POLS2")
@@ -68,10 +48,10 @@ test_that("matrix calibrations preserve names and reject incompatible choices", 
   expect_error(pvalues(s, "SB_UG"), "suffixes")
   expect_error(pvalues(s, "PEBA3"), "degrees of freedom")
   expect_error(pvalues(s, fiml.convention = "observed"), "does not apply")
-  w <- wald_test_matrices(c(10, 10), diag(2), diag(2))
-  expect_gt(as.numeric(pvalues(w)), 0) # Avoid cancellation in the far tail.
-  expect_equal(as.numeric(pvalues(w)), pchisq(200, 2, lower.tail = FALSE))
-  expect_error(pvalues(w, "PEBA2"), "only STD")
+  studentized <- score_test_matrices(c(10, 10), score_covariance = diag(2))
+  expect_gt(as.numeric(pvalues(studentized)), 0) # Avoid cancellation in the far tail.
+  expect_equal(as.numeric(pvalues(studentized)), pchisq(200, 2, lower.tail = FALSE))
+  expect_error(pvalues(studentized, "PEBA2"), "only STD")
   expect_error(pvalues(score_test_matrices(c(1, 2), score_covariance = diag(2)), "SB"), "only STD")
 })
 
@@ -93,8 +73,5 @@ test_that("matrix kernels fail clearly for invalid or unidentified inputs", {
   expect_error(score_test_matrices(c(1, 2), diag(2), diag(c(1, -1))), "positive definite")
   expect_error(score_test_matrices(1, score_covariance = matrix(1), normalization = "mean"), "nobs")
   expect_error(score_test_matrices(1, score_covariance = matrix(1), nobs = -1), "positive integer")
-  expect_error(wald_test_matrices(c(1, 2), rbind(c(1, 0), c(1, 0)), diag(2)), "redundant")
-  expect_error(wald_test_matrices(c(1, 2), diag(2), diag(c(1, -1))), "semidefinite")
-  expect_error(wald_test_matrices(c(1, 2), diag(2), diag(2), rhs = 0), "one value")
-  expect_error(wald_test_matrices(c(1, 2), diag(2), diag(2), keep = NA), "logical keep")
+  expect_error(score_test_matrices(c(1, 2), diag(2), diag(2), keep = NA), "logical keep")
 })

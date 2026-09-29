@@ -27,12 +27,10 @@ for(i in seq_len(reps)) {
     f<-lavaan::sem(model,d,fixed.x=FALSE,meanstructure=TRUE)
     f0<-lavaan::sem(paste(model,'b==.4',sep='\n'),d,fixed.x=FALSE,meanstructure=TRUE)
     quality(f,f0)
-    R<-matrix(0,1,length(lavaan::coef(f)));R[1,match('b',names(lavaan::coef(f)))]<-1
-    w<-wald_test(f,R,rhs=.4,vcov='sandwich')
     s<-score_test_nested(f0,f,keep=TRUE)
     full<-score_test_matrices(s$ingredients$score,NULL,s$ingredients$score_covariance)
     stat<-2*s$nobs*(lavaan::fitMeasures(f0,'fmin')-lavaan::fitMeasures(f,'fmin'))
-    c(wald=w$p_value,score=full$p_value,curvature_score=s$p_value,
+    c(score=full$p_value,curvature_score=s$p_value,
       criterion=pvalue_all(as.numeric(stat),s$eigenvalues))
   })
 }
@@ -52,17 +50,10 @@ for(i in seq_len(reps)) {
     f<-do.call(lavaan::cfa,args)
     f0<-do.call(lavaan::cfa,c(args,list(group.equal='loadings')))
     quality(f,f0)
-    pt<-lavaan::parTable(f)
-    R<-matrix(0,4,length(lavaan::coef(f)))
-    for(j in 1:4) {
-      ix<-pt$free[pt$op=='=~' & pt$rhs==paste0('x',j)]
-      R[j,ix]<-c(1,-1)
-    }
-    w<-wald_test(f,R,vcov='sandwich')
     s<-score_test_nested(f0,f,keep=TRUE)
     full<-score_test_matrices(s$ingredients$score,NULL,s$ingredients$score_covariance)
     stat<-2*s$nobs*(lavaan::fitMeasures(f0,'fmin')-lavaan::fitMeasures(f,'fmin'))
-    c(wald=w$p_value,score=full$p_value,curvature_score=s$p_value,
+    c(score=full$p_value,curvature_score=s$p_value,
       criterion=pvalue_all(as.numeric(stat),s$eigenvalues))
   })
   if(i%%25==0) cat("Ordinal attempts:",i,"/",reps,"\n")

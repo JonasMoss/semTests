@@ -1,7 +1,5 @@
 #!/usr/bin/env Rscript
 # Independent fits and independently extracted ML global-score ingredients.
-# The Wald checks intentionally share lavaan's fitted covariance with the C++
-# primitive; they do not certify a new covariance estimator.
 stopifnot(requireNamespace("magmaan", quietly = TRUE),
           requireNamespace("pkgload", quietly = TRUE))
 pkgload::load_all(".", quiet = TRUE, export_all = FALSE)
@@ -49,13 +47,6 @@ for (case in names(cases)) {
   check(case, "SB", as.numeric(semTests::pvalues(score, "SB")), reference$p_mean_scaled, 1e-4)
   check(case, "sandwich", sandwich$statistic, reference$statistic_sandwich, 2e-3)
   check(case, "sandwich p", sandwich$p_value, reference$p_sandwich, 1e-4)
-  theta <- lavaan::coef(fit)
-  R <- matrix(0, 1, length(theta)); R[1, 1:2] <- c(1, -1)
-  wald <- semTests::wald_test(fit, R)
-  native <- magmaan::magmaan_core$infer_wald_test_theta(
-    as.numeric(theta), R, as.matrix(lavaan::lavInspect(fit, "vcov")), 0)
-  check(case, "Wald supplied-covariance statistic", wald$statistic, native$chi2, 1e-8)
-  check(case, "Wald supplied-covariance p", wald$p_value, native$pvalue, 1e-8)
 }
 out <- do.call(rbind, rows)
 dir.create("workspace", showWarnings = FALSE)

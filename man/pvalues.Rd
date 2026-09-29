@@ -5,7 +5,7 @@
 \alias{pvalues.lavaan}
 \alias{pvalues_nested}
 \alias{pvalues.semTests_test}
-\title{Compute robust \emph{p}-values for fitted models or matrix tests}
+\title{Compute robust \emph{p}-values for fitted models and test objects}
 \usage{
 pvalues(object, tests, fiml.convention = c("observed", "lavaan"))
 
@@ -32,7 +32,7 @@ pvalues_nested(
 }
 \arguments{
 \item{object, m0, m1}{One or two \code{lavaan} objects, or a \code{semTests_test} result
-supplied as \code{object} to \code{pvalues()}. For lavaan fits, \code{pvalues} does
+from \code{\link[=semtest]{semtest()}} supplied as \code{object} to \code{pvalues()}. For lavaan fits, \code{pvalues} does
 goodness-of-fit testing on one object, while \code{pvalues_nested} does
 hypothesis testing on two nested models.}
 
@@ -74,12 +74,12 @@ and familiar robust corrections. The defaults select the recommended method
 for the fitted model.
 }
 \details{
-\code{pvalues()} also accepts results from \code{\link[=score_test_matrices]{score_test_matrices()}} and
-\code{\link[=wald_test_matrices]{wald_test_matrices()}}. Matrix score results use \code{"ALL"} by default for a
-supplied metric; fully studentized score and Wald results use \code{"STD"}.
-Matrix results accept calibration names without \code{UG}, \code{ML}, or \code{RLS}
-suffixes, and do not accept \code{fiml.convention}. The lavaan methods retain
-their existing defaults and output names.
+\code{pvalues()} also accepts the test objects returned by \code{\link[=semtest]{semtest()}}. Tests
+with a weighted chi-square reference use \code{"ALL"} by default; fully
+studentized tests (\code{weight = "score_covariance"}) have a chi-square
+reference and accept only \code{"STD"}. Test objects accept calibration names
+without \code{UG}, \code{ML}, or \code{RLS} suffixes, and do not accept \code{fiml.convention}.
+The lavaan methods retain their existing defaults and output names.
 
 The \code{tests} argument is a character vector. Each element has one of the forms
 \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or \code{TEST_UG_RLS}.

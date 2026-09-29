@@ -32,7 +32,7 @@ supplies a comparator for LS. Ignored for ML.}
 
 \item{derivative_step}{Relative central-difference step for full curvature.
 Ordinal frequency perturbations use its square root times pattern frequency
-with Richardson extrapolation; see \code{\link[=wald_test]{wald_test()}}.}
+with Richardson extrapolation.}
 
 \item{hypothesis}{Description of the common pseudo-target null.}
 

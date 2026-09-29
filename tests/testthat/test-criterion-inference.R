@@ -64,10 +64,6 @@ test_that("complete ML sandwich uses the actual model Hessian and scores", {
   half <- parameter_inference_parts(f,derivative_step=5e-5)
   expect_equal(parts$curvature,half$curvature,tolerance=2e-6)
   expect_gt(max(abs(parts$curvature-parts$expected)),.01)
-  R <- matrix(0,1,length(lavaan::coef(f))); R[1,1] <- 1
-  w <- wald_test(f,R,vcov="sandwich",keep=TRUE)
-  expected <- inference_solve(parts$curvature)%*%parts$score_covariance%*%inference_solve(parts$curvature)
-  expect_equal(as.numeric(w$ingredients$vcov),as.numeric(B%*%expected%*%t(B)),tolerance=1e-9)
 })
 
 test_that("nested score accepts an unoptimized affine template and checks embedding", {
@@ -136,12 +132,12 @@ test_that("ordinal numerical IJ converges and estimated weights matter off null"
   expect_equal(first$correction(r),half$correction(r),tolerance=1e-5)
   expect_gt(max(abs(first$correction(r))),1e-4)
   expect_equal(first$correction(0*r),matrix(0,nrow(d),length(r)))
-  R <- matrix(0,1,length(lavaan::coef(f)));R[1,1]<-1
-  out <- wald_test(f,R,vcov="sandwich",keep=TRUE)
-  fixed <- wald_test(f,R,vcov="sandwich",weight_effect="fixed")
-  expect_true(is.finite(out$p_value))
-  expect_gt(abs(out$statistic-fixed$statistic),1e-5)
-  expect_error(wald_test(f,R,vcov="sandwich",score_covariance ="uncentered"),"centered")
+  out <- parameter_inference_parts(f,weight_effect="estimated")
+  fixed <- parameter_inference_parts(f,weight_effect="fixed")
+  expect_true(all(is.finite(out$score_covariance)))
+  expect_gt(max(abs(out$score_covariance-fixed$score_covariance)),1e-5*max(abs(fixed$score_covariance)))
+  f0 <- lavaan::cfa('f =~ x1+a*x2+a*x3+x4',d,ordered=names(d))
+  expect_error(semtest(f0,f,score_covariance="uncentered"),"centered")
 })
 
 test_that("multi-category first-stage derivatives are stable and retain native weights", {

@@ -44,7 +44,7 @@ By default the quadratic uses expected saturated Fisher information. \code{curva
 selects expected or observed \emph{saturated} curvature for nuisance projection,
 matching magmaan's global-score convention. This is an exact-fit null.
 For full model curvature and restricted pseudo-target inference under fixed
-misspecification, use \code{\link[=score_test_nested]{score_test_nested()}} or \code{\link[=wald_test]{wald_test()}}.
+misspecification, use \code{\link[=score_test_nested]{score_test_nested()}}.
 
 Supports normal-likelihood ML/MLM/MLR and FIML, one or several groups,
 affine equalities, unweighted raw data, and joint random-x inference.

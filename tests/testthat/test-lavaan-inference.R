@@ -66,21 +66,6 @@ test_that("global score projection removes the model tangent across groups", {
   }
 })
 
-test_that("Wald adapter agrees with lavaan's fitted-covariance Wald test", {
-  model <- "f =~ x1 + a*x2 + b*x3 + x4"
-  for (est in c("ML", "MLM", "MLR")) {
-    fit <- lavaan::cfa(model, lavaan::HolzingerSwineford1939, estimator = est)
-    R <- matrix(0, 1, length(lavaan::coef(fit)))
-    R[1, match(c("a", "b"), names(lavaan::coef(fit)))] <- c(1, -1)
-    out <- wald_test(fit, R, keep = TRUE)
-    ref <- lavaan::lavTestWald(fit, constraints = "a == b")
-    expect_equal(out$statistic, as.numeric(ref$stat), tolerance = 1e-10)
-    expect_equal(out$p_value, as.numeric(ref$p.value), tolerance = 1e-10)
-    expect_identical(out$provenance$se, fit@Options$se)
-    expect_identical(out$provenance$parameter_names, names(lavaan::coef(fit)))
-  }
-})
-
 test_that("adapters reject unsupported inference instead of changing its meaning", {
   expect_error(score_test(m1_), "complete-data normal-likelihood ML")
   fit <- object
@@ -89,11 +74,4 @@ test_that("adapters reject unsupported inference instead of changing its meaning
   fit <- object
   fit@Model@ceq.nonlinear.idx <- 1L
   expect_error(score_test(fit), "affine equality")
-  fit <- lavaan::cfa("f =~ x1 + a*x2 + a*x3 + x4",
-                     lavaan::HolzingerSwineford1939, estimator = "MLM")
-  R <- matrix(0, 1, length(lavaan::coef(fit)))
-  R[1, which(names(lavaan::coef(fit)) == "a")] <- c(1, -1)
-  expect_error(wald_test(fit, R), "already fixed")
-  fit <- lavaan::cfa(hs_model, lavaan::HolzingerSwineford1939, se = "none")
-  expect_error(wald_test(fit, matrix(1, 1, length(lavaan::coef(fit)))), "sampling covariance")
 })

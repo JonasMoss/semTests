@@ -59,20 +59,8 @@ for (estimator in c("ML", "FIML")) {
     check(paste(prefix, "public studentized p"), studentized$p_value, z$p_sandwich)
   }
 }
-theta <- c(0.4, -0.2, 0.7)
-V <- matrix(c(2, .2, .1, .2, 1, .3, .1, .3, 1.5), 3) / 200
-R <- rbind(c(1, -1, 0), c(0, 1, -1))
-q <- c(.1, -.3)
-z <- magmaan::magmaan_core$infer_wald_test_theta(theta, R, V, q)
-contrast <- drop(R %*% theta) - q
-reference <- drop(crossprod(contrast, solve(R %*% V %*% t(R), contrast)))
-check("linear Wald statistic", z$chi2, reference)
-check("linear Wald p", z$pvalue, pchisq(reference, nrow(R), lower.tail = FALSE))
-wald <- semTests::wald_test_matrices(theta, R, V, q)
-check("public Wald statistic", wald$statistic, z$chi2)
-check("public Wald p", as.numeric(semTests::pvalues(wald)), z$pvalue)
 dir.create("workspace", showWarnings = FALSE)
-write.csv(do.call(rbind, rows), "workspace/magmaan-score-wald-planning.csv",
+write.csv(do.call(rbind, rows), "workspace/magmaan-score-validation.csv",
           row.names = FALSE)
 print(do.call(rbind, rows), row.names = FALSE)
 cat(length(rows), "primitive checks passed; adapter and calibration remain untested.\n")

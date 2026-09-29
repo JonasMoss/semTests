@@ -63,7 +63,7 @@ score covariance is the caller's choice and must match the intended method.
 score test. Its default here is \code{"ALL"}, the unpenalized mixture law.
 Penalized calibrations are available for research comparisons; numerical
 agreement does not establish their calibration for a new score procedure.
-Fully studentized score and Wald results accept only \code{"STD"}.
+Fully studentized score results accept only \code{"STD"}.
 }
 \examples{
 s <- semTests:::score_test_matrices(c(1, 2), diag(2), diag(c(1, 2)))

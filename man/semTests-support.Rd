@@ -11,8 +11,9 @@ and therefore includes estimators beyond normal-theory ML. The tables below
 give the supported combinations. Configurations outside them are refused at
 the entry point (see \code{\link[=check_supported]{check_supported()}}), and the test suite follows the
 same boundary.
-The newer score/Wald adapters have the narrower scope described separately
-below; the fit-test tables do not establish their support.
+The score and criterion tests built by \code{\link[=semtest]{semtest()}} have the narrower scope
+described separately below; the fit-test tables do not establish their
+support.
 }
 \details{
 \subsection{Single-model (\code{pvalues()})}{\tabular{llllll}{
@@ -133,35 +134,34 @@ adds nothing, full WLS is refused at the entry point. Fit a DWLS/ULS family
 for a non-degenerate robust test, or read the standard chi-square directly.
 }
 
-\subsection{Score and Wald adapters}{
+\subsection{Score and criterion tests (\code{semtest()})}{
 
-\code{\link[=score_test]{score_test()}} implements global exact-fit ML/FIML scores with expected or
-observed saturated nuisance sensitivity, raw likelihood scores, and optional
-full studentization. \code{\link[=score_test_nested]{score_test_nested()}} evaluates joint affine releases at
-a restricted fit using full model curvature. \code{\link[=criterion_test_nested]{criterion_test_nested()}} uses
-the same restricted-fit reference for the actual criterion difference.
+Without an alternative, \code{\link[=semtest]{semtest()}} builds a global exact-fit score test
+from Gaussian likelihood scores. It supports ML/MLM/MLR and FIML with
+continuous indicators, one or several groups. Least-squares estimators and
+categorical data are not supported for overall fit.
 
-\code{\link[=wald_test]{wald_test()}} defaults to lavaan's fitted ML/FIML covariance. With
-\code{vcov = "sandwich"}, it constructs the complete criterion sandwich for
-ML/FIML, continuous GLS/WLS/DWLS/ULS and complete all-ordered DWLS/WLS/ULS.
-The new nested criterion adapters share that scope. These APIs retain full
-observed curvature and joint moment/estimated-weight influences. Expected
-sensitivity and fixed weights remain explicit comparators.
+With an alternative, \code{\link[=semtest]{semtest()}} builds nested score and criterion-difference
+tests of affine releases at the restricted fit. These support ML/FIML,
+continuous GLS/WLS/DWLS/ULS, and complete all-ordered DWLS/WLS/ULS, with one
+or several groups. By default they use full observed curvature and the joint
+influence of the sample moments and the estimated fitting weights. Expected
+curvature and fixed weights, selected through \code{\link[=inference_control]{inference_control()}}, are
+comparators rather than complete corrections under misspecification.
 
-These adapters require unweighted single-level raw observations, joint
-random-x inference and affine constraints. Ordinal inference excludes empty
-pairwise cells and uses numerical first-stage derivatives with refined
-polychoric roots. Mixed indicators, pairwise missingness, case weights,
-clusters, bounds and nonlinear constraints remain excluded from the new
-complete-sandwich path. Existing fit-test support above is unchanged.
-Full WLS is admitted locally for criterion inference under misspecification;
-its exact-fit correction refusal in \code{\link[=pvalues]{pvalues()}} is unchanged.
+Both require unweighted single-level raw observations, joint random-x
+inference and affine equality constraints. Ordinal inference requires
+nonempty pairwise cells. Its first-stage influence is computed in closed
+form; the estimated-weight derivative is closed form for DWLS and ULS and
+numerical for full WLS. Mixed indicators, pairwise missingness, case
+weights, clusters, bounds and nonlinear constraints are excluded. Full WLS
+is admitted for nested inference under misspecification; its exact-fit
+correction refusal in \code{\link[=pvalues]{pvalues()}} is unchanged.
 
-\code{\link[=profile_score_test_matrices]{profile_score_test_matrices()}}, \code{\link[=score_test_matrices]{score_test_matrices()}} and
-\code{\link[=wald_test_matrices]{wald_test_matrices()}} accept independent matrix inputs with explicit units.
-All return an inspectable \code{semTests_test} usable with \code{\link[=pvalues]{pvalues()}}. Fully
-studentized results accept only their chi-square calibration. Numerical parity
-does not establish finite-sample calibration of penalized score procedures.
+Every result is an inspectable \code{semTests_test} usable with \code{\link[=pvalues]{pvalues()}}.
+Fully studentized results accept only their chi-square calibration.
+Numerical parity with an independent implementation does not establish the
+finite-sample calibration of penalized score procedures.
 }
 }
 \references{

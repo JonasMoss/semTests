@@ -101,16 +101,16 @@ rejection rates.
 ## Inference implementation and timing
 
 The phased [inference plan](score-wald-plan.md) covers computation reuse,
-reduced matrix algorithms, and score/Wald extensions.
+reduced matrix algorithms, and the score and criterion extensions. Its Wald
+test was later removed from the package; the plan keeps the history.
 
 Run `Rscript tools/inference-timing.R` to compare call-local sharing with the
 pre-sharing Git revision; `REPS` controls repetitions. It checks numerical and
 metadata agreement before timing and writes results under `workspace/`.
-Run `Rscript tools/magmaan-score-wald-validation.R` for optional score/Wald
-primitive checks. These check formulas using magmaan ingredients, not yet an
-independent lavaan adapter or simulation calibration.
-The script also checks the exported `score_test_matrices()` and
-`wald_test_matrices()` interfaces and their `pvalues()` methods against magmaan.
+Run `Rscript tools/magmaan-score-validation.R` for optional score primitive
+checks. These check formulas using magmaan ingredients, not yet an independent
+lavaan adapter or simulation calibration. The script also checks the internal
+`score_test_matrices()` kernel and its `pvalues()` method against magmaan.
 
 Run `OPENBLAS_NUM_THREADS=1 Rscript tools/residual-spectrum-timing.R` to compare
 full and reduced single-model spectra on identical fitted models. `P` sets
@@ -126,8 +126,7 @@ information are saved under `workspace/`.
 
 `Rscript tools/magmaan-lavaan-inference-validation.R` compares the complete-data
 ML `score_test()` adapter against independent magmaan fits in five configurations.
-It also checks `wald_test()` against magmaan's primitive using the same fitted
-lavaan covariance. Results and installed-code fingerprints are saved under
+Results and installed-code fingerprints are saved under
 `workspace/`; this is a numerical parity check, not a calibration simulation.
 
 ## Complete criterion inference
@@ -140,8 +139,9 @@ INFERENCE_REPS=200 Rscript tools/inference-calibration.R
 
 The FIML runner checks independently extracted global scores for expected and
 observed saturated projection, single and unequal groups. The criterion runner
-checks continuous GLS/WLS/ULS complete and fixed-weight covariances, binary DWLS
-complete Wald and restriction-release score tests, and a three-category case.
+checks continuous GLS/WLS/ULS complete and fixed-weight parameter covariances,
+the binary DWLS complete covariance and restriction-release score tests, and a
+three-category case.
 Continuous covariance parameters are explicitly converted between magmaan's N
 and lavaan's N-1 sample-covariance conventions. The LS quadratic uses lavaan's
 N-1 criterion scale; full studentization cancels that scalar in one group.
@@ -160,7 +160,7 @@ The calibration runner uses an analytic misspecified-mean ML pseudo-slope of
 0.4, and two independent identical ordinal populations with a misspecified
 one-factor DWLS model. Equality of the pseudo-loadings follows from identical
 populations and the shared criterion. It records every attempt and failure,
-reports Monte Carlo standard errors, and compares sandwich Wald/score,
+reports Monte Carlo standard errors, and compares the fully studentized score,
 curvature-weighted score and criterion difference. This small preflight does
 not certify a paper's design, pEBA calibration, or performance across settings.
 
