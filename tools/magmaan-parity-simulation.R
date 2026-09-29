@@ -15,8 +15,8 @@
 #
 # CELLS is a comma-separated filter of cell names (default "all").
 
-if (!requireNamespace("magmaan", quietly = TRUE)) {
-  stop("Install magmaan's r-package/ before running this optional check.",
+if (!requireNamespace("magmaanlab", quietly = TRUE)) {
+  stop("Install magmaanlab (magmaan's r-package/) before running this optional check.",
        call. = FALSE)
 }
 if (!requireNamespace("pkgload", quietly = TRUE)) {
@@ -146,25 +146,25 @@ run_continuous_ls <- function(seed, estimator, gamma) {
       if (is.list(value)) value <- value[[1L]]
       weight <- as.matrix(value)
     }
-    spec_h1 <- magmaan::model_spec(h1_model)
-    spec_h0 <- magmaan::model_spec(h0_model)
-    mag_h1 <- magmaan::magmaan(
-      spec_h1, magmaan::df_to_data(data, spec_h1, scaling = "n-1"),
+    spec_h1 <- magmaanlab::model_spec(h1_model)
+    spec_h0 <- magmaanlab::model_spec(h0_model)
+    mag_h1 <- magmaanlab::fit_model(
+      spec_h1, magmaanlab::df_to_data(data, spec_h1, scaling = "n-1"),
       estimator = estimator, W = weight
     )
-    mag_h0 <- magmaan::magmaan(
-      spec_h0, magmaan::df_to_data(data, spec_h0, scaling = "n-1"),
+    mag_h0 <- magmaanlab::fit_model(
+      spec_h0, magmaanlab::df_to_data(data, spec_h0, scaling = "n-1"),
       estimator = estimator, W = weight
     )
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests(
+    mag_single <- magmaanlab::fmg_tests(
       mag_h1, tests = single_tests, gamma = gamma, weight = weight
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested(
+    mag_nested <- magmaanlab::fmg_nested(
       mag_h1, mag_h0, data = data, tests = nested_tests,
       A.method = "delta", gamma = gamma, weight = weight
     )
@@ -200,16 +200,16 @@ run_fiml <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    mag_h1 <- magmaan::magmaan(h1_model, data, estimator = "FIML")
-    mag_h0 <- magmaan::magmaan(h0_model, data, estimator = "FIML")
+    mag_h1 <- magmaanlab::fit_model(h1_model, data, estimator = "FIML")
+    mag_h0 <- magmaanlab::fit_model(h0_model, data, estimator = "FIML")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests(mag_h1, tests = single_tests)
+    mag_single <- magmaanlab::fmg_tests(mag_h1, tests = single_tests)
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests),
       mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested(
+    mag_nested <- magmaanlab::fmg_nested(
       mag_h1, mag_h0, tests = nested_tests, A.method = "delta"
     )
     out["nested"] <- p_diff(
@@ -250,24 +250,24 @@ run_categorical <- function(seed, pairwise,
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    spec_h1 <- magmaan::model_spec(h1_model, ordered = ordered_names)
-    spec_h0 <- magmaan::model_spec(h0_model, ordered = ordered_names)
-    stats <- magmaan::magmaan_core$data_ordinal_stats_from_df(
+    spec_h1 <- magmaanlab::model_spec(h1_model, ordered = ordered_names)
+    spec_h0 <- magmaanlab::model_spec(h0_model, ordered = ordered_names)
+    stats <- magmaanlab::magmaan_core$data_ordinal_stats_from_df(
       data, spec_h1, ordered = ordered_names, missing = missing,
       pd_gamma = "overlap",
       full_wls_weight = identical(magmaan_estimator, "WLS")
     )
-    mag_h1 <- magmaan::magmaan(spec_h1, stats, estimator = magmaan_estimator)
-    mag_h0 <- magmaan::magmaan(spec_h0, stats, estimator = magmaan_estimator)
+    mag_h1 <- magmaanlab::fit_model(spec_h1, stats, estimator = magmaan_estimator)
+    mag_h0 <- magmaanlab::fit_model(spec_h0, stats, estimator = magmaan_estimator)
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests_ordinal(
+    mag_single <- magmaanlab::fmg_tests_ordinal(
       mag_h1, stats, tests = single_tests, weight = magmaan_estimator
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested_ordinal(
+    mag_nested <- magmaanlab::fmg_nested_ordinal(
       mag_h1, mag_h0, stats, tests = nested_tests, weight = magmaan_estimator,
       A.method = "delta"
     )
@@ -302,29 +302,29 @@ run_multigroup_categorical <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    spec_h1 <- magmaan::model_spec(
+    spec_h1 <- magmaanlab::model_spec(
       h1_model, ordered = ordered_names, group = "group",
       group_labels = labels
     )
-    spec_h0 <- magmaan::model_spec(
+    spec_h0 <- magmaanlab::model_spec(
       h1_model, ordered = ordered_names, group = "group",
       group_labels = labels, group_equal = "loadings"
     )
-    stats <- magmaan::magmaan_core$data_ordinal_stats_from_df(
+    stats <- magmaanlab::magmaan_core$data_ordinal_stats_from_df(
       data, spec_h1, ordered = ordered_names, group = "group",
       missing = "listwise", pd_gamma = "overlap", full_wls_weight = FALSE
     )
-    mag_h1 <- magmaan::magmaan(spec_h1, stats, estimator = "DWLS")
-    mag_h0 <- magmaan::magmaan(spec_h0, stats, estimator = "DWLS")
+    mag_h1 <- magmaanlab::fit_model(spec_h1, stats, estimator = "DWLS")
+    mag_h0 <- magmaanlab::fit_model(spec_h0, stats, estimator = "DWLS")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests_ordinal(
+    mag_single <- magmaanlab::fmg_tests_ordinal(
       mag_h1, stats, tests = single_tests, weight = "DWLS"
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested_ordinal(
+    mag_nested <- magmaanlab::fmg_nested_ordinal(
       mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
       A.method = "delta"
     )
@@ -358,27 +358,27 @@ run_mixed_categorical <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    spec_h1 <- magmaan::model_spec(
+    spec_h1 <- magmaanlab::model_spec(
       h1_model, ordered = ord3, meanstructure = TRUE
     )
-    spec_h0 <- magmaan::model_spec(
+    spec_h0 <- magmaanlab::model_spec(
       h0_model, ordered = ord3, meanstructure = TRUE
     )
-    stats <- magmaan::magmaan_core$data_mixed_ordinal_stats_from_df(
+    stats <- magmaanlab::magmaan_core$data_mixed_ordinal_stats_from_df(
       data, spec_h1, ordered = ord3, missing = "listwise",
       full_wls_weight = FALSE
     )
-    mag_h1 <- magmaan::magmaan(spec_h1, stats, estimator = "DWLS")
-    mag_h0 <- magmaan::magmaan(spec_h0, stats, estimator = "DWLS")
+    mag_h1 <- magmaanlab::fit_model(spec_h1, stats, estimator = "DWLS")
+    mag_h0 <- magmaanlab::fit_model(spec_h0, stats, estimator = "DWLS")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests_mixed_ordinal(
+    mag_single <- magmaanlab::fmg_tests_mixed_ordinal(
       mag_h1, stats, tests = single_tests, weight = "DWLS"
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested_mixed_ordinal(
+    mag_nested <- magmaanlab::fmg_nested_mixed_ordinal(
       mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
       A.method = "delta"
     )
@@ -423,7 +423,7 @@ cat(sprintf(
   "semTests %s | lavaan %s | magmaan %s\n",
   as.character(utils::packageVersion("semTests")),
   as.character(utils::packageVersion("lavaan")),
-  as.character(utils::packageVersion("magmaan"))
+  as.character(utils::packageVersion("magmaanlab"))
 ))
 cat(sprintf(
   "reps = %d | N = %d | cores = %d | tests = SB, SS, ALL, PEBA(min(4,df))\n\n",
@@ -468,7 +468,7 @@ summary_table <- do.call(rbind, summary_rows)
 summary_table$reps <- reps
 summary_table$sample_n <- n
 summary_table$lavaan_version <- as.character(utils::packageVersion("lavaan"))
-summary_table$magmaan_version <- as.character(utils::packageVersion("magmaan"))
+summary_table$magmaan_version <- as.character(utils::packageVersion("magmaanlab"))
 
 if (nzchar(sim_output)) {
   dir.create(dirname(sim_output), recursive = TRUE, showWarnings = FALSE)

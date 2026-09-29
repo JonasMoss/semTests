@@ -15,6 +15,14 @@ with a deprecation warning (class `semTests_warning_deprecated`) rather than
 removed, because the released 1.0.0 NEWS pointed users at
 `fiml.convention = "lavaan"`.
 
+The compiled magmaan R package was renamed `magmaanlab` (magmaan commit
+1866196e), and its estimate-only `magmaan()` is now `fit_model()`. The runners
+now call `magmaanlab`; with that rename alone the 97-check / 824-value gate,
+the score, lavaan-adapter, FIML-score and criterion runners, and a 5-draw
+parity-simulation smoke run all pass. The three-category ordinal covariance
+now agrees without the aligned first-stage substitution (gap 3.2e-8), because
+the closed-form influence uses the same outer-product bread as magmaan.
+
 References to Wald below are historical.
 
 ## Current implementation status

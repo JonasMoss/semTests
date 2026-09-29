@@ -10,7 +10,10 @@ Rscript tools/magmaan-validation.R
 ```
 
 This opt-in check loads the current semTests source tree and compares it with
-magmaan's independent C++23 implementation. It covers:
+magmaan's independent C++23 implementation. All `magmaan-*.R` runners call the
+compiled methods package `magmaanlab`, built from the magmaan repository's
+`r-package/` directory (`just r-install` there). The pure-R `magmaan` package
+in that repository is a user-facing layer and is not used here. It covers:
 
 - every shared p-value transform (`STD`, `SB`, `SS`, `SF`, `ALL`, `PALL`,
   `EBA`, `pEBA`, and several `pOLS` penalties) on identical fixed spectra;
@@ -146,15 +149,13 @@ Continuous covariance parameters are explicitly converted between magmaan's N
 and lavaan's N-1 sample-covariance conventions. The LS quadratic uses lavaan's
 N-1 criterion scale; full studentization cancels that scalar in one group.
 
-**First-stage convention:** magmaan's installed ordinal object stores an OPG
-first-stage influence. The actual polychoric estimator has derivative
-sensitivity; semTests differentiates that estimator. The three-category fixture
-therefore records the native covariance gap and then supplies the derivative
-influence to magmaan to isolate its independently implemented weight correction.
-This is an aligned-input comparison for that fixture, not independent extraction
-parity. The fitted moments and weight map agree. Binary fixtures use the native
-magmaan influence without replacement. No magmaan source or installed code is
-modified. CSVs distinguish these checks and fingerprint the installed binary.
+**First-stage convention:** both libraries use the outer-product first-stage
+bread for the ordinal moment influence, which is lavaan's categorical Gamma
+convention. Binary and three-category fixtures are therefore compared without
+substituting either side's influence. Before semTests computed this influence
+in closed form it differentiated the two-step estimator instead, and the
+three-category fixture needed an aligned-input comparison. No magmaan source or
+installed code is modified. The session file fingerprints the installed binary.
 
 The calibration runner uses an analytic misspecified-mean ML pseudo-slope of
 0.4, and two independent identical ordinal populations with a misspecified

@@ -13,9 +13,9 @@ if (!requireNamespace("pkgload", quietly = TRUE)) {
   stop("Install pkgload to validate the current semTests source tree.",
        call. = FALSE)
 }
-if (!requireNamespace("magmaan", quietly = TRUE)) {
+if (!requireNamespace("magmaanlab", quietly = TRUE)) {
   stop(
-    "Install magmaan's r-package/ directory before running this optional check.",
+    "Install magmaanlab (magmaan's r-package/ directory) before running this optional check.",
     call. = FALSE
   )
 }
@@ -25,11 +25,11 @@ required_magmaan_exports <- c(
 missing_magmaan_exports <- required_magmaan_exports[
   !vapply(
     required_magmaan_exports,
-    exists, logical(1), envir = asNamespace("magmaan"), inherits = FALSE
+    exists, logical(1), envir = asNamespace("magmaanlab"), inherits = FALSE
   )
 ]
 fmg_formals <- if (!length(missing_magmaan_exports)) {
-  names(formals(get("fmg_tests", envir = asNamespace("magmaan"))))
+  names(formals(get("fmg_tests", envir = asNamespace("magmaanlab"))))
 } else {
   character()
 }
@@ -249,7 +249,7 @@ validate_transforms <- function() {
       semtests[i] <- semtests_pvalue(
         method$semtests, case$statistic, case$spectrum, method$param
       )
-      magmaan[i] <- magmaan::magmaan_core$robust_fmg_test(
+      magmaan[i] <- magmaanlab::magmaan_core$robust_fmg_test(
         case$statistic, length(case$spectrum), case$spectrum,
         method = method$magmaan, param = method$param
       )$p_value
@@ -298,8 +298,8 @@ validate_classical_ml <- function() {
   data <- lavaan::HolzingerSwineford1939
   lavaan_h1 <- lavaan::cfa(fiml_h1, data, estimator = "MLM")
   lavaan_h0 <- lavaan::cfa(fiml_h0, data, estimator = "MLM")
-  magmaan_h1 <- magmaan::magmaan(fiml_h1, data, estimator = "ML")
-  magmaan_h0 <- magmaan::magmaan(fiml_h0, data, estimator = "ML")
+  magmaan_h1 <- magmaanlab::fit_model(fiml_h1, data, estimator = "ML")
+  magmaan_h0 <- magmaanlab::fit_model(fiml_h0, data, estimator = "ML")
   check_converged("Classical ML", magmaan_h1, magmaan_h0)
 
   df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
@@ -310,7 +310,7 @@ validate_classical_ml <- function() {
     tests_for_df(df, "rls", unbiased = TRUE)
   ))
   semtests_single <- semTests::pvalues(lavaan_h1, single_tests)
-  magmaan_single <- magmaan::fmg_tests(magmaan_h1, tests = single_tests)
+  magmaan_single <- magmaanlab::fmg_tests(magmaan_h1, tests = single_tests)
   check_names(
     "Classical single-model labels",
     names(semtests_single), magmaan_single$label
@@ -374,7 +374,7 @@ validate_classical_ml <- function() {
   # semTests' complete-data method-2000 construction is the local
   # moment-tangent map. magmaan must use `delta` explicitly; its `exact`
   # default is a different restriction construction.
-  magmaan_nested <- magmaan::fmg_nested(
+  magmaan_nested <- magmaanlab::fmg_nested(
     magmaan_h1, magmaan_h0, data = data,
     tests = nested_tests, A.method = "delta"
   )
@@ -432,11 +432,11 @@ validate_classical_nested_multigroup <- function() {
     fiml_h1, data, group = "school", group.equal = "loadings",
     estimator = "MLM", meanstructure = TRUE
   )
-  magmaan_h1 <- magmaan::magmaan(
+  magmaan_h1 <- magmaanlab::fit_model(
     fiml_h1, data, estimator = "ML", groups = "school",
     meanstructure = TRUE
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     fiml_h1, data, estimator = "ML", groups = "school",
     group_equal = "loadings", meanstructure = TRUE
   )
@@ -452,7 +452,7 @@ validate_classical_nested_multigroup <- function() {
   semtests <- semTests::pvalues_nested(
     lavaan_h0, lavaan_h1, method = "2000", tests = tests
   )
-  magmaan <- magmaan::fmg_nested(
+  magmaan <- magmaanlab::fmg_nested(
     magmaan_h1, magmaan_h0, data = magmaan_h1$raw_data$X,
     tests = tests, A.method = "delta"
   )
@@ -500,21 +500,21 @@ validate_continuous_ls <- function(estimator) {
   } else {
     NULL
   }
-  magmaan_spec <- magmaan::model_spec(fiml_h1)
-  magmaan_h0_spec <- magmaan::model_spec(fiml_h0)
+  magmaan_spec <- magmaanlab::model_spec(fiml_h1)
+  magmaan_h0_spec <- magmaanlab::model_spec(fiml_h0)
   # lavaan's continuous LS sample covariance uses the N-1 convention. Magmaan
   # defaults to N for data-frame fits, so request the matching public data
   # convention explicitly instead of treating the scaling difference as an
   # implementation discrepancy.
-  magmaan_data <- magmaan::df_to_data(
+  magmaan_data <- magmaanlab::df_to_data(
     data, magmaan_spec, scaling = "n-1"
   )
-  magmaan_fit <- magmaan::magmaan(
+  magmaan_fit <- magmaanlab::fit_model(
     magmaan_spec, magmaan_data, estimator = estimator, W = weight
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     magmaan_h0_spec,
-    magmaan::df_to_data(data, magmaan_h0_spec, scaling = "n-1"),
+    magmaanlab::df_to_data(data, magmaan_h0_spec, scaling = "n-1"),
     estimator = estimator, W = weight
   )
   check_converged(
@@ -529,7 +529,7 @@ validate_continuous_ls <- function(estimator) {
   # lavaan's ULS family defaults to robust.sem.nt (normal-theory Gamma);
   # GLS uses empirical Gamma. Exercise both public magmaan routes.
   gamma <- if (identical(estimator, "ULS")) "normal" else "empirical"
-  magmaan_tests <- magmaan::fmg_tests(
+  magmaan_tests <- magmaanlab::fmg_tests(
     magmaan_fit, tests = tests, gamma = gamma, weight = weight
   )
   check_close(
@@ -559,7 +559,7 @@ validate_continuous_ls <- function(estimator) {
   semtests_nested <- semTests::pvalues_nested(
     lavaan_h0, lavaan_fit, method = "2000", tests = nested_tests
   )
-  magmaan_nested <- magmaan::fmg_nested(
+  magmaan_nested <- magmaanlab::fmg_nested(
     magmaan_fit, magmaan_h0, data = data, tests = nested_tests,
     A.method = "delta", gamma = gamma, weight = weight
   )
@@ -601,8 +601,8 @@ validate_fiml <- function() {
     fiml_h0, data, missing = "fiml", estimator = "MLR",
     meanstructure = TRUE
   )
-  magmaan_h1 <- magmaan::magmaan(fiml_h1, data, estimator = "FIML")
-  magmaan_h0 <- magmaan::magmaan(fiml_h0, data, estimator = "FIML")
+  magmaan_h1 <- magmaanlab::fit_model(fiml_h1, data, estimator = "FIML")
+  magmaan_h0 <- magmaanlab::fit_model(fiml_h0, data, estimator = "FIML")
   check_converged("FIML", magmaan_h1, magmaan_h0)
 
   df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
@@ -610,7 +610,7 @@ validate_fiml <- function() {
   semtests_spectrum <- semtests_internal("fiml_lambdas")(
     lavaan_h1, df, fiml.convention = "observed"
   )$ug_biased
-  magmaan_tests <- magmaan::fmg_tests(magmaan_h1, tests = single_tests)
+  magmaan_tests <- magmaanlab::fmg_tests(magmaan_h1, tests = single_tests)
   check_close(
     "FIML single-model spectrum",
     sort(semtests_spectrum),
@@ -646,7 +646,7 @@ validate_fiml <- function() {
       A.method = A.method,
       fiml.convention = "observed"
     )$ug_biased
-    magmaan_nested <- magmaan::fmg_nested(
+    magmaan_nested <- magmaanlab::fmg_nested(
       magmaan_h1, magmaan_h0,
       tests = nested_tests, A.method = A.method
     )
@@ -689,11 +689,11 @@ validate_multigroup_fiml <- function() {
     fiml_h1, data, group = "school", group.equal = "loadings",
     missing = "fiml", estimator = "MLR", meanstructure = TRUE
   )
-  magmaan_h1 <- magmaan::magmaan(
+  magmaan_h1 <- magmaanlab::fit_model(
     fiml_h1, data, groups = "school",
     estimator = "FIML", meanstructure = TRUE
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     fiml_h1, data, groups = "school", group_equal = "loadings",
     estimator = "FIML", meanstructure = TRUE
   )
@@ -704,7 +704,7 @@ validate_multigroup_fiml <- function() {
   semtests_spectrum <- semtests_internal("fiml_lambdas")(
     lavaan_h1, df, fiml.convention = "observed"
   )$ug_biased
-  magmaan_tests <- magmaan::fmg_tests(
+  magmaan_tests <- magmaanlab::fmg_tests(
     magmaan_h1, tests = single_tests
   )
   check_close(
@@ -742,7 +742,7 @@ validate_multigroup_fiml <- function() {
       A.method = A.method,
       fiml.convention = "observed"
     )$ug_biased
-    magmaan_nested <- magmaan::fmg_nested(
+    magmaan_nested <- magmaanlab::fmg_nested(
       magmaan_h1, magmaan_h0,
       tests = nested_tests, A.method = A.method
     )
@@ -788,14 +788,14 @@ validate_random_x_fiml <- function() {
     missing = "fiml", estimator = "MLR",
     fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
   )
-  magmaan_h1 <- magmaan::magmaan(
-    magmaan::model_spec(
+  magmaan_h1 <- magmaanlab::fit_model(
+    magmaanlab::model_spec(
       random_x_h1, fixed_x = FALSE, meanstructure = TRUE
     ),
     data, estimator = "FIML"
   )
-  magmaan_h0 <- magmaan::magmaan(
-    magmaan::model_spec(
+  magmaan_h0 <- magmaanlab::fit_model(
+    magmaanlab::model_spec(
       random_x_h0, fixed_x = FALSE, meanstructure = TRUE
     ),
     data, estimator = "FIML"
@@ -807,7 +807,7 @@ validate_random_x_fiml <- function() {
   semtests_spectrum <- semtests_internal("fiml_lambdas")(
     lavaan_h1, df, fiml.convention = "observed"
   )$ug_biased
-  magmaan_tests <- magmaan::fmg_tests(
+  magmaan_tests <- magmaanlab::fmg_tests(
     magmaan_h1, tests = single_tests
   )
   check_close(
@@ -845,7 +845,7 @@ validate_random_x_fiml <- function() {
       A.method = A.method,
       fiml.convention = "observed"
     )$ug_biased
-    magmaan_nested <- magmaan::fmg_nested(
+    magmaan_nested <- magmaanlab::fmg_nested(
       magmaan_h1, magmaan_h0,
       tests = nested_tests, A.method = A.method
     )
@@ -936,24 +936,24 @@ validate_categorical <- function(pairwise,
     estimator = lavaan_estimator, missing = missing
   )
 
-  magmaan_spec_h1 <- magmaan::model_spec(
+  magmaan_spec_h1 <- magmaanlab::model_spec(
     categorical_h1, ordered = ordered_names
   )
-  magmaan_spec_h0 <- magmaan::model_spec(
+  magmaan_spec_h0 <- magmaanlab::model_spec(
     categorical_h0, ordered = ordered_names
   )
   # lavaan 0.7-2's pairwise Gamma uses observation-overlap denominators.
-  magmaan_stats <- magmaan::magmaan_core$data_ordinal_stats_from_df(
+  magmaan_stats <- magmaanlab::magmaan_core$data_ordinal_stats_from_df(
     data, magmaan_spec_h1,
     ordered = ordered_names,
     missing = missing,
     pd_gamma = "overlap",
     full_wls_weight = identical(magmaan_estimator, "WLS")
   )
-  magmaan_h1 <- magmaan::magmaan(
+  magmaan_h1 <- magmaanlab::fit_model(
     magmaan_spec_h1, magmaan_stats, estimator = magmaan_estimator
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     magmaan_spec_h0, magmaan_stats, estimator = magmaan_estimator
   )
   check_converged(paste("Categorical", label), magmaan_h1, magmaan_h0)
@@ -963,7 +963,7 @@ validate_categorical <- function(pairwise,
   semtests_spectrum <- semtests_internal("lavaan_lambdas")(
     lavaan_h1, df
   )$ug_biased
-  magmaan_tests <- magmaan::fmg_tests_ordinal(
+  magmaan_tests <- magmaanlab::fmg_tests_ordinal(
     magmaan_h1, magmaan_stats,
     tests = single_tests, weight = magmaan_estimator
   )
@@ -995,7 +995,7 @@ validate_categorical <- function(pairwise,
     lavaan_h0, lavaan_h1,
     unbiased = 1L, df = nested_df
   )$ug_biased
-  magmaan_nested <- magmaan::fmg_nested_ordinal(
+  magmaan_nested <- magmaanlab::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
     tests = nested_tests, weight = magmaan_estimator, A.method = "delta"
   )
@@ -1048,23 +1048,23 @@ validate_mixed_categorical <- function() {
     ordered = ordered_names, estimator = "WLSMV",
     meanstructure = TRUE
   )
-  magmaan_spec_h1 <- magmaan::model_spec(
+  magmaan_spec_h1 <- magmaanlab::model_spec(
     categorical_h1,
     ordered = ordered_names, meanstructure = TRUE
   )
-  magmaan_spec_h0 <- magmaan::model_spec(
+  magmaan_spec_h0 <- magmaanlab::model_spec(
     categorical_h0,
     ordered = ordered_names, meanstructure = TRUE
   )
-  magmaan_stats <- magmaan::magmaan_core$data_mixed_ordinal_stats_from_df(
+  magmaan_stats <- magmaanlab::magmaan_core$data_mixed_ordinal_stats_from_df(
     data, magmaan_spec_h1,
     ordered = ordered_names, missing = "listwise",
     full_wls_weight = FALSE
   )
-  magmaan_h1 <- magmaan::magmaan(
+  magmaan_h1 <- magmaanlab::fit_model(
     magmaan_spec_h1, magmaan_stats, estimator = "DWLS"
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     magmaan_spec_h0, magmaan_stats, estimator = "DWLS"
   )
   check_converged("Mixed categorical DWLS", magmaan_h1, magmaan_h0)
@@ -1074,7 +1074,7 @@ validate_mixed_categorical <- function() {
   semtests_spectrum <- semtests_internal("lavaan_lambdas")(
     lavaan_h1, df
   )$ug_biased
-  magmaan_tests <- magmaan::fmg_tests_mixed_ordinal(
+  magmaan_tests <- magmaanlab::fmg_tests_mixed_ordinal(
     magmaan_h1, magmaan_stats,
     tests = tests, weight = "DWLS"
   )
@@ -1106,7 +1106,7 @@ validate_mixed_categorical <- function() {
     lavaan_h0, lavaan_h1,
     unbiased = 1L, df = nested_df
   )$ug_biased
-  magmaan_nested <- magmaan::fmg_nested_mixed_ordinal(
+  magmaan_nested <- magmaanlab::fmg_nested_mixed_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
     tests = nested_tests, weight = "DWLS", A.method = "delta"
   )
@@ -1148,27 +1148,27 @@ validate_multigroup_categorical <- function() {
     ordered = ordered_names, group = "school",
     group.equal = "loadings", estimator = "WLSMV"
   )
-  magmaan_spec_h1 <- magmaan::model_spec(
+  magmaan_spec_h1 <- magmaanlab::model_spec(
     categorical_h1,
     ordered = ordered_names,
     group = "school", group_labels = group_labels
   )
-  magmaan_spec_h0 <- magmaan::model_spec(
+  magmaan_spec_h0 <- magmaanlab::model_spec(
     categorical_h1,
     ordered = ordered_names,
     group = "school", group_labels = group_labels,
     group_equal = "loadings"
   )
-  magmaan_stats <- magmaan::magmaan_core$data_ordinal_stats_from_df(
+  magmaan_stats <- magmaanlab::magmaan_core$data_ordinal_stats_from_df(
     data, magmaan_spec_h1,
     ordered = ordered_names, group = "school",
     missing = "listwise", pd_gamma = "overlap",
     full_wls_weight = FALSE
   )
-  magmaan_h1 <- magmaan::magmaan(
+  magmaan_h1 <- magmaanlab::fit_model(
     magmaan_spec_h1, magmaan_stats, estimator = "DWLS"
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     magmaan_spec_h0, magmaan_stats, estimator = "DWLS"
   )
   check_converged("Multigroup categorical DWLS", magmaan_h1, magmaan_h0)
@@ -1178,7 +1178,7 @@ validate_multigroup_categorical <- function() {
   semtests_spectrum <- semtests_internal("lavaan_lambdas")(
     lavaan_h1, df
   )$ug_biased
-  magmaan_tests <- magmaan::fmg_tests_ordinal(
+  magmaan_tests <- magmaanlab::fmg_tests_ordinal(
     magmaan_h1, magmaan_stats,
     tests = single_tests, weight = "DWLS"
   )
@@ -1210,7 +1210,7 @@ validate_multigroup_categorical <- function() {
     lavaan_h0, lavaan_h1,
     unbiased = 1L, df = nested_df
   )$ug_biased
-  magmaan_nested <- magmaan::fmg_nested_ordinal(
+  magmaan_nested <- magmaanlab::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
     tests = nested_tests, weight = "DWLS", A.method = "delta"
   )
@@ -1258,47 +1258,47 @@ validate_random_x_complete <- function() {
     }
     lavaan_h1 <- do.call(lavaan::cfa, lavaan_h1_args)
     lavaan_h0 <- do.call(lavaan::cfa, lavaan_h0_args)
-    magmaan_spec_h1 <- magmaan::model_spec(
+    magmaan_spec_h1 <- magmaanlab::model_spec(
       random_x_h1, fixed_x = FALSE, meanstructure = TRUE
     )
-    magmaan_spec_h0 <- magmaan::model_spec(
+    magmaan_spec_h0 <- magmaanlab::model_spec(
       random_x_h0, fixed_x = FALSE, meanstructure = TRUE
     )
 
     if (estimator == "ML") {
-      magmaan_h1 <- magmaan::magmaan(
+      magmaan_h1 <- magmaanlab::fit_model(
         magmaan_spec_h1, data, estimator = "ML"
       )
-      magmaan_h0 <- magmaan::magmaan(
+      magmaan_h0 <- magmaanlab::fit_model(
         magmaan_spec_h0, data, estimator = "ML"
       )
-      magmaan_tests <- magmaan::fmg_tests(
+      magmaan_tests <- magmaanlab::fmg_tests(
         magmaan_h1, tests = "SB_ML"
       )
-      magmaan_nested <- magmaan::fmg_nested(
+      magmaan_nested <- magmaanlab::fmg_nested(
         magmaan_h1, magmaan_h0,
         data = data, tests = "SB_ML", A.method = "delta"
       )
     } else {
       gamma <- if (estimator == "ULS") "normal" else "empirical"
-      magmaan_h1 <- magmaan::magmaan(
+      magmaan_h1 <- magmaanlab::fit_model(
         magmaan_spec_h1,
-        magmaan::df_to_data(
+        magmaanlab::df_to_data(
           data, magmaan_spec_h1, scaling = "n-1"
         ),
         estimator = estimator
       )
-      magmaan_h0 <- magmaan::magmaan(
+      magmaan_h0 <- magmaanlab::fit_model(
         magmaan_spec_h0,
-        magmaan::df_to_data(
+        magmaanlab::df_to_data(
           data, magmaan_spec_h0, scaling = "n-1"
         ),
         estimator = estimator
       )
-      magmaan_tests <- magmaan::fmg_tests(
+      magmaan_tests <- magmaanlab::fmg_tests(
         magmaan_h1, tests = "SB", gamma = gamma
       )
-      magmaan_nested <- magmaan::fmg_nested(
+      magmaan_nested <- magmaanlab::fmg_nested(
         magmaan_h1, magmaan_h0,
         data = data, tests = "SB",
         A.method = "delta", gamma = gamma
@@ -1352,23 +1352,23 @@ validate_random_x_complete <- function() {
     ordered = ordered_names, estimator = "WLSMV",
     fixed.x = FALSE, conditional.x = FALSE, meanstructure = TRUE
   )
-  magmaan_spec_h1 <- magmaan::model_spec(
+  magmaan_spec_h1 <- magmaanlab::model_spec(
     random_x_h1, ordered = ordered_names,
     fixed_x = FALSE, meanstructure = TRUE
   )
-  magmaan_spec_h0 <- magmaan::model_spec(
+  magmaan_spec_h0 <- magmaanlab::model_spec(
     random_x_h0, ordered = ordered_names,
     fixed_x = FALSE, meanstructure = TRUE
   )
-  magmaan_stats <- magmaan::magmaan_core$data_mixed_ordinal_stats_from_df(
+  magmaan_stats <- magmaanlab::magmaan_core$data_mixed_ordinal_stats_from_df(
     categorical, magmaan_spec_h1,
     ordered = ordered_names, missing = "listwise",
     full_wls_weight = FALSE
   )
-  magmaan_h1 <- magmaan::magmaan(
+  magmaan_h1 <- magmaanlab::fit_model(
     magmaan_spec_h1, magmaan_stats, estimator = "DWLS"
   )
-  magmaan_h0 <- magmaan::magmaan(
+  magmaan_h0 <- magmaanlab::fit_model(
     magmaan_spec_h0, magmaan_stats, estimator = "DWLS"
   )
   check_converged(
@@ -1376,7 +1376,7 @@ validate_random_x_complete <- function() {
   )
 
   df <- as.integer(lavaan::fitmeasures(lavaan_h1, "df"))
-  magmaan_tests <- magmaan::fmg_tests_mixed_ordinal(
+  magmaan_tests <- magmaanlab::fmg_tests_mixed_ordinal(
     magmaan_h1, magmaan_stats,
     tests = "SB", weight = "DWLS"
   )
@@ -1393,7 +1393,7 @@ validate_random_x_complete <- function() {
     lavaan::fitmeasures(lavaan_h0, "df") -
       lavaan::fitmeasures(lavaan_h1, "df")
   )
-  magmaan_nested <- magmaan::fmg_nested_mixed_ordinal(
+  magmaan_nested <- magmaanlab::fmg_nested_mixed_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
     tests = "SB", weight = "DWLS", A.method = "delta"
   )
@@ -1424,8 +1424,8 @@ package_fingerprint <- function(package) {
 
 semtests_version <- as.character(utils::packageVersion("semTests"))
 lavaan_version <- as.character(utils::packageVersion("lavaan"))
-magmaan_version <- as.character(utils::packageVersion("magmaan"))
-magmaan_fingerprint <- package_fingerprint("magmaan")
+magmaan_version <- as.character(utils::packageVersion("magmaanlab"))
+magmaan_fingerprint <- package_fingerprint("magmaanlab")
 
 cat(sprintf(
   "semTests %s | lavaan %s | magmaan %s\n",

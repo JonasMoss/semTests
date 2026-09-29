@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Optional planning-stage primitive checks; not a certification of a lavaan adapter.
 # Run from the semTests root. magmaan is deliberately not a package dependency.
-stopifnot(requireNamespace("magmaan", quietly = TRUE),
+stopifnot(requireNamespace("magmaanlab", quietly = TRUE),
           requireNamespace("pkgload", quietly = TRUE))
 pkgload::load_all(".", quiet = TRUE, export_all = FALSE)
 rows <- list()
@@ -23,10 +23,10 @@ for (estimator in c("ML", "FIML")) {
     dat[sample.int(nrow(dat), 60), "x2"] <- NA
     dat[sample.int(nrow(dat), 45), "x5"] <- NA
   }
-  fit <- magmaan::magmaan(model, dat, estimator = estimator)
+  fit <- magmaanlab::fit_model(model, dat, estimator = estimator)
   stopifnot(isTRUE(fit$converged))
   for (sensitivity in c("expected", "observed")) {
-    z <- magmaan::global_score_flip_test(
+    z <- magmaanlab::global_score_flip_test(
       fit, if (estimator == "FIML") NULL else dat,
       n_flips = 19L, seed = 1, sensitivity = sensitivity)
     # Few flips only exercise the wrapper; no multiplier calibration claim.
@@ -49,8 +49,8 @@ for (estimator in c("ML", "FIML")) {
     check(paste(prefix, "SB p"),
           pchisq(z$statistic_effective / mean(lambda), z$df, lower.tail = FALSE),
           z$p_mean_scaled)
-    result <- semTests::score_test_matrices(s, H, J)
-    studentized <- semTests::score_test_matrices(s, score_covariance = J)
+    result <- semTests:::score_test_matrices(s, H, J)
+    studentized <- semTests:::score_test_matrices(s, score_covariance = J)
     check(paste(prefix, "public score"), result$statistic, z$statistic_effective)
     check(paste(prefix, "public spectrum"), sort(result$eigenvalues), sort(z$eigenvalues))
     check(paste(prefix, "public mixture"), as.numeric(semTests::pvalues(result)), z$p_mixture)

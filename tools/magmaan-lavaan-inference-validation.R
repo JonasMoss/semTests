@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Independent fits and independently extracted ML global-score ingredients.
-stopifnot(requireNamespace("magmaan", quietly = TRUE),
+stopifnot(requireNamespace("magmaanlab", quietly = TRUE),
           requireNamespace("pkgload", quietly = TRUE))
 pkgload::load_all(".", quiet = TRUE, export_all = FALSE)
 model <- "visual =~ x1+x2+x3
@@ -30,14 +30,14 @@ check <- function(case, quantity, actual, expected, tolerance) {
 for (case in names(cases)) {
   args <- cases[[case]]
   fit <- do.call(lavaan::cfa, c(args, list(estimator = "MLM", fixed.x = FALSE)))
-  spec <- magmaan::model_spec(args$model, meanstructure = args$meanstructure,
+  spec <- magmaanlab::model_spec(args$model, meanstructure = args$meanstructure,
     fixed_x = FALSE, group = args$group, group_equal = args$group.equal,
     group_labels = if (!is.null(args$group)) unique(as.character(args$data[[args$group]])) else NULL)
-  mag <- magmaan::magmaan(spec, args$data, estimator = "ML")
+  mag <- magmaanlab::fit_model(spec, args$data, estimator = "ML")
   stopifnot(isTRUE(lavaan::lavInspect(fit, "converged")), isTRUE(mag$converged))
-  reference <- magmaan::global_score_flip_test(mag, args$data, n_flips = 1L)
-  score <- semTests::score_test(fit)
-  sandwich <- semTests::score_test(fit, metric = "sandwich")
+  reference <- magmaanlab::global_score_flip_test(mag, args$data, n_flips = 1L)
+  score <- semTests:::score_test(fit)
+  sandwich <- semTests:::score_test(fit, metric = "sandwich")
   # Separate optimizers: tolerances concern endpoint differences, not just
   # floating-point algebra. One flip only enables the deterministic comparators.
   check(case, "df", score$df, reference$df, 0)
@@ -51,7 +51,7 @@ for (case in names(cases)) {
 out <- do.call(rbind, rows)
 dir.create("workspace", showWarnings = FALSE)
 write.csv(out, "workspace/magmaan-lavaan-inference.csv", row.names = FALSE)
-files <- list.files(system.file(package = "magmaan"), pattern = "\\.(rdb|so)$",
+files <- list.files(system.file(package = "magmaanlab"), pattern = "\\.(rdb|so)$",
                     recursive = TRUE, full.names = TRUE)
 capture.output(sessionInfo(), tools::md5sum(files),
                file = "workspace/magmaan-lavaan-inference-session.txt")
