@@ -96,19 +96,24 @@ semtest <- function(object, alternative = NULL,
         "so it must be optimized. An unoptimized template works with ",
         "statistic = \"score\"."), "semTests_error_invalid_inference")
     }
-    return(criterion_test_nested(object, alternative,
+    # The criterion difference weights by curvature by construction.
+    out <- criterion_test_nested(object, alternative,
       curvature = control$curvature, score_covariance = control$score_covariance,
       weight_effect = control$weight_effect,
       derivative_step = control$derivative_step,
-      keep = control$keep, tolerance = control$tolerance))
+      keep = control$keep, tolerance = control$tolerance)
+    out$provenance$weight <- "curvature"
+    return(out)
   }
-  score_test_nested(object, alternative,
+  out <- score_test_nested(object, alternative,
     metric = switch(weight, score_covariance = "sandwich",
                     expected_curvature = "expected", "information"),
     curvature = control$curvature, score_covariance = control$score_covariance,
     weight_effect = control$weight_effect,
     derivative_step = control$derivative_step,
     keep = control$keep, tolerance = control$tolerance)
+  out$provenance$weight <- weight
+  out
 }
 
 # The global adapter spells the weighting choice in terms of its own metric
@@ -119,8 +124,10 @@ semtest_fit <- function(object, weight, control) {
     score_covariance = "sandwich",
     expected_curvature = "information",
     if (control$curvature == "observed") "observed" else "information")
-  score_test(object, metric = metric,
-             score_covariance = control$score_covariance,
-             keep = control$keep, tolerance = control$tolerance,
-             curvature = control$curvature)
+  out <- score_test(object, metric = metric,
+                    score_covariance = control$score_covariance,
+                    keep = control$keep, tolerance = control$tolerance,
+                    curvature = control$curvature)
+  out$provenance$weight <- weight
+  out
 }

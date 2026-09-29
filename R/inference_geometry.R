@@ -276,9 +276,10 @@ parameter_inference_parts <- function(object, curvature="observed",score_covaria
     gradient <- function(x) ls_parameter_gradient(inference_model_at(object,x),basis,first_stage)
   }
   if (score_covariance == "expected") base$score_covariance <- base$expected
-  curvature <- if (curvature == "observed") criterion_hessian(gradient,theta,basis,derivative_step) else
+  # Keep the requested label for provenance; the matrix goes in its own slot.
+  hessian <- if (curvature == "observed") criterion_hessian(gradient,theta,basis,derivative_step) else
     list(matrix=base$expected,asymmetry=0)
-  c(base,list(curvature=curvature$matrix,curvature_asymmetry=curvature$asymmetry,
+  c(base,list(curvature=hessian$matrix,curvature_asymmetry=hessian$asymmetry,
     provenance=list(curvature=curvature,score_covariance=score_covariance,
       weight_effect=if (object@Options$estimator=="ML") "none" else weight_effect,
       derivative_step=derivative_step,first_stage=if (is.null(first_stage)) "Gaussian observed-data likelihood" else first_stage$method)))
