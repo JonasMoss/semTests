@@ -1,5 +1,22 @@
 # semTests (development version)
 
+## Breaking changes
+
+* Nested tests (`pvalues_nested()`) build the restriction matrix `A` with both
+  models' Jacobians at the restricted solution (`A.method = "delta"`, the
+  default, now for every data type). semTests 1.0.0 took the unrestricted
+  Jacobian at the unrestricted estimate and the restricted one at the
+  restricted estimate, as lavaan's default `lavTestLRT(A.method = "delta")`
+  does. Those points are `O(n^-1/2)` apart, so the old reference spectrum
+  carried an `O(n^-1/2)` error, and nested p-values change by up to about
+  0.01 at n = 300. The new construction is exact whenever the restricted model
+  is a parameter map of the unrestricted one (equality constraints, fixed
+  values, dropped paths) and agrees with lavaan's
+  `lavTestLRT(A.method = "exact")`. `A.method = "legacy"` reproduces 1.0.0.
+
+* `A.method` now applies to complete-data fits as well; before, it was
+  silently ignored there and only FIML fits honored `"exact"`.
+
 ## New features
 
 * `semtest()` builds score and criterion tests, for overall fit and for nested

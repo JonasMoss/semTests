@@ -182,7 +182,7 @@ test_that("FIML helper guards explain malformed fit and matrix shapes", {
   malformed <- fit
   malformed@Model@nx.free <- malformed@Model@nx.free + 1L
   expect_error(
-    fiml_parameter_keys(malformed),
+    full_parameter_keys(malformed),
     "Could not identify lavaan's full free-parameter ordering"
   )
 })
@@ -218,7 +218,7 @@ test_that("nested FIML checks restriction and information dimensions", {
   f0 <- lavaan::cfa(hs0, HS, missing = "fiml", estimator = "MLR")
 
   testthat::local_mocked_bindings(
-    fiml_restriction_delta = function(...) matrix(0, 1L, 1L),
+    fiml_restriction = function(...) matrix(0, 1L, 1L),
     .package = "semTests"
   )
   expect_error(

@@ -20,7 +20,7 @@ pvalues_nested(
   m1,
   method = c("2000", "2001"),
   tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-  A.method = c("delta", "exact"),
+  A.method = c("delta", "exact", "legacy"),
   fiml.convention = c("observed", "lavaan")
 )
 
@@ -57,11 +57,19 @@ tests.}
 construction has been withdrawn because it performs poorly, and requesting
 it points you to \code{"2000"}.}
 
-\item{A.method}{For nested FIML or categorical models, choose \code{"exact"} for
-the literal parameter restriction map or \code{"delta"} for the local
-moment-tangent restriction map. \code{"delta"} is the default and applies to a
-wider range of equivalent model parameterizations. Categorical nested
-models support \code{"delta"} only.}
+\item{A.method}{The restriction matrix of the nested test. \code{"delta"} (the
+default) takes the moment-tangent map with both models' Jacobians at the
+restricted solution, which is exact whenever the restricted model is a
+parameter map of the unrestricted one and needs no common parameter set.
+\code{"exact"} aligns the two models' parameter bases and requires the same
+underlying free parameters. \code{"legacy"} takes the unrestricted Jacobian at
+the unrestricted estimate, as semTests 1.0.0 and lavaan's default
+\code{lavTestLRT(A.method = "delta")} do; its reference spectrum carries an
+\code{O(n^-1/2)} error and it is kept only to reproduce earlier results. When
+\code{"delta"} cannot place the restricted solution in the unrestricted
+parameter space it falls back to \code{"legacy"} with a warning of class
+\code{semTests_warning_legacy_restriction}. Categorical nested models support
+\code{"delta"} and \code{"legacy"}.}
 }
 \value{
 A named numeric vector of p-values, of class \code{semTests_pvalues},

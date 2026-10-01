@@ -118,42 +118,6 @@ fiml_check_same_data <- function(m0, m1) {
   invisible(TRUE)
 }
 
-#' Stable identities for lavaan's full free parameters.
-#' @keywords internal
-fiml_parameter_keys <- function(fit) {
-  pt <- lavaan::parTable(fit)
-  pt <- pt[pt$free > 0L, , drop = FALSE]
-  pt <- pt[order(pt$free), , drop = FALSE]
-  if (nrow(pt) != fit@Model@nx.free ||
-    !identical(as.integer(pt$free), seq_len(fit@Model@nx.free))) {
-    stop("Could not identify lavaan's full free-parameter ordering.",
-      call. = FALSE
-    )
-  }
-  fields <- intersect(
-    c("lhs", "op", "rhs", "group", "level", "block"),
-    names(pt)
-  )
-  do.call(paste, c(unname(pt[fields]), sep = "\r"))
-}
-
-#' Align an H0 parameter basis to H1's full-parameter ordering.
-#' @keywords internal
-fiml_align_parameter_basis <- function(m0, m1, basis0) {
-  key0 <- fiml_parameter_keys(m0)
-  key1 <- fiml_parameter_keys(m1)
-  if (length(key0) != length(key1) ||
-    anyDuplicated(key0) || anyDuplicated(key1) ||
-    !setequal(key0, key1)) {
-    stop("FIML nested exact restriction requires the same underlying full ",
-      "free-parameter set in both models. Use `A.method = \"delta\"` for ",
-      "models represented by different parameter sets.",
-      call. = FALSE
-    )
-  }
-  basis0[match(key1, key0), , drop = FALSE]
-}
-
 #' @keywords internal
 fiml_validate_restriction <- function(restriction, df, npar) {
   restriction <- as.matrix(restriction)
@@ -172,27 +136,11 @@ fiml_validate_restriction <- function(restriction, df, npar) {
   restriction
 }
 
+#' FIML restriction matrix for `A.method`; see [get_a_matrix()].
 #' @keywords internal
-fiml_restriction_exact <- function(m0, m1, df) {
-  basis1 <- model_parameter_basis(m1)
-  basis0 <- fiml_align_parameter_basis(
-    m0,
-    m1,
-    model_parameter_basis(m0)
-  )
-  map <- generalized_inverse(basis1) %*% basis0
-  restriction <- t(get_orthogonal_complement(map))
-  fiml_validate_restriction(restriction, df, ncol(basis1))
-}
-
-#' @keywords internal
-fiml_restriction_delta <- function(m0, m1, df) {
-  delta1 <- model_effective_delta(m1)
-  delta0 <- model_effective_delta(m0)
-  map <- generalized_inverse(delta1) %*% delta0
-  restriction <- t(get_orthogonal_complement(map))
+fiml_restriction <- function(m0, m1, df, A.method) {
   fiml_validate_restriction(
-    restriction,
+    get_a_matrix(m1, m0, A.method),
     df,
     ncol(model_parameter_basis(m1))
   )
@@ -321,7 +269,7 @@ fiml_nested_ingredients <- function(m1,
 #' FIML Satorra-2000 nested restriction eigenvalues.
 #' @keywords internal
 fiml_lambdas_nested <- function(m0, m1, df,
-                                A.method = c("delta", "exact"),
+                                A.method = c("delta", "exact", "legacy"),
                                 fiml.convention = c("observed", "lavaan")) {
   A.method <- match.arg(A.method)
   fiml.convention <- match.arg(fiml.convention)
@@ -329,10 +277,7 @@ fiml_lambdas_nested <- function(m0, m1, df,
   fiml_check_supported(m1, "Nested FIML FMG")
   fiml_check_same_data(m0, m1)
 
-  A <- switch(A.method,
-    delta = fiml_restriction_delta(m0, m1, df),
-    exact = fiml_restriction_exact(m0, m1, df)
-  )
+  A <- fiml_restriction(m0, m1, df, A.method)
   ingredients <- fiml_nested_ingredients(m1, fiml.convention)
   if (ncol(A) != nrow(ingredients$A1)) {
     stop("FIML restriction matrix and H1 information dimensions do not agree.",

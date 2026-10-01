@@ -30,10 +30,10 @@
 #'
 #' | Estimators              | Data        | Groups          | Missing          | Method      | A.method        | Availability | Stability |
 #' |-------------------------|-------------|-----------------|------------------|-------------|-----------------|--------------|-----------|
-#' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | --              | available | stable |
-#' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | --              | available | stable |
-#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | exact or delta  | available | stable |
-#' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | delta only | available | stable |
+#' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | delta, exact, legacy | available | stable |
+#' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | delta, exact, legacy | available | stable |
+#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | delta, exact, legacy | available | stable |
+#' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | delta or legacy | available | stable |
 #' | any                     | continuous  | --              | mixed / non-FIML | --          | --              | rejected | -- |
 #'
 #' ## Stability
@@ -99,7 +99,7 @@
 #'   information fits compute the spectrum in residual space. Supported
 #'   estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
 #'   ULSMV). Nested comparison is restricted to `method = "2000"` and
-#'   `A.method = "delta"`.
+#'   `A.method = "delta"` or `"legacy"`.
 #' * **Pairwise categorical missingness** means support for lavaan's pairwise
 #'   sample-statistic and `UGamma` calculation. Pairwise deletion has its own
 #'   missingness assumptions and does not provide FIML or generally MAR-valid

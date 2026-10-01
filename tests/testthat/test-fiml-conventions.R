@@ -99,17 +99,19 @@ test_that("lavaan FIML single-model convention is its inspected UGamma spectrum"
 test_that("lavaan nested convention reproduces public Satorra-2000 tests", {
   skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   fits <- fiml_pair
-  for (A.method in c("delta", "exact")) {
+  # semTests' restriction matrix -> the lavaan A.method that equals it.
+  restrictions <- c(delta = "exact", exact = "exact", legacy = "delta")
+  for (A.method in names(restrictions)) {
     scaled <- lavaan::lavTestLRT(
       fits$m1, fits$m0,
       method = "satorra.2000",
-      A.method = A.method,
+      A.method = restrictions[[A.method]],
       scaled.shifted = FALSE
     )
     shifted <- lavaan::lavTestLRT(
       fits$m1, fits$m0,
       method = "satorra.2000",
-      A.method = A.method,
+      A.method = restrictions[[A.method]],
       scaled.shifted = TRUE
     )
     expect_warning(
@@ -149,17 +151,19 @@ test_that("multigroup lavaan convention reproduces inspected and public tests", 
   )[seq_len(df)]
   expect_equal(actual, expected, tolerance = 1e-8)
 
-  for (A.method in c("delta", "exact")) {
+  # semTests' restriction matrix -> the lavaan A.method that equals it.
+  restrictions <- c(delta = "exact", exact = "exact", legacy = "delta")
+  for (A.method in names(restrictions)) {
     scaled <- lavaan::lavTestLRT(
       fits$m1, fits$m0,
       method = "satorra.2000",
-      A.method = A.method,
+      A.method = restrictions[[A.method]],
       scaled.shifted = FALSE
     )
     shifted <- lavaan::lavTestLRT(
       fits$m1, fits$m0,
       method = "satorra.2000",
-      A.method = A.method,
+      A.method = restrictions[[A.method]],
       scaled.shifted = TRUE
     )
     expect_warning(
@@ -226,11 +230,18 @@ test_that("observed FIML spectra match pinned magmaan validation goldens", {
     fits$m0, fits$m1, 1L,
     A.method = "exact", fiml.convention = "observed"
   )$ug_biased
+  # magmaan's FIML delta golden is the legacy (mixed-point) restriction; the
+  # same-point delta restriction equals the exact one.
+  legacy <- fiml_lambdas_nested(
+    fits$m0, fits$m1, 1L,
+    A.method = "legacy", fiml.convention = "observed"
+  )$ug_biased
 
   expect_equal(h1, expected_h1, tolerance = 1e-4)
   expect_equal(h0, expected_h0, tolerance = 1e-4)
-  expect_equal(delta, 1.36384308952366, tolerance = 1e-4)
+  expect_equal(legacy, 1.36384308952366, tolerance = 1e-4)
   expect_equal(exact, 1.44378023818416, tolerance = 1e-4)
+  expect_equal(delta, exact, tolerance = 1e-8)
 })
 
 test_that("multigroup observed FIML matches pinned magmaan goldens", {
@@ -255,7 +266,8 @@ test_that("multigroup observed FIML matches pinned magmaan goldens", {
     0.432302072557310, 0.415950165250539, 0.382940197188285,
     0.380028745045868, 0.340733089387116, 0.301773187780947
   )
-  expected_delta <- c(
+  # magmaan's FIML delta golden is the legacy (mixed-point) restriction.
+  expected_legacy <- c(
     1.869804285582957, 1.702368648168416, 1.640880437868678,
     1.207303228193902, 1.010229424023672, 0.887385866841645
   )
@@ -282,10 +294,15 @@ test_that("multigroup observed FIML matches pinned magmaan goldens", {
     fits$m0, fits$m1, nested_df,
     A.method = "exact", fiml.convention = "observed"
   )$ug_biased
+  legacy <- fiml_lambdas_nested(
+    fits$m0, fits$m1, nested_df,
+    A.method = "legacy", fiml.convention = "observed"
+  )$ug_biased
 
   expect_equal(single, expected_single, tolerance = 1e-4)
-  expect_equal(delta, expected_delta, tolerance = 3e-4)
+  expect_equal(legacy, expected_legacy, tolerance = 3e-4)
   expect_equal(exact, expected_exact, tolerance = 3e-4)
+  expect_equal(delta, exact, tolerance = 1e-8)
   expect_true(all(is.finite(pvalues(fits$m1, c("SB", "SS", "PEBA4")))))
   expect_true(all(is.finite(pvalues_nested(
     fits$m0, fits$m1,
@@ -300,7 +317,8 @@ test_that("random-x FIML matches pinned magmaan goldens", {
   expected_single <- c(
     1.143360126227509, 1.015000221043247
   )
-  expected_delta <- 0.906390628017868
+  # magmaan's FIML delta golden is the legacy (mixed-point) restriction.
+  expected_legacy <- 0.906390628017868
   expected_exact <- 1.060479849465168
 
   fits <- fiml_random_x_pair
@@ -321,27 +339,34 @@ test_that("random-x FIML matches pinned magmaan goldens", {
     fits$m0, fits$m1, nested_df,
     A.method = "exact", fiml.convention = "observed"
   )$ug_biased
+  legacy <- fiml_lambdas_nested(
+    fits$m0, fits$m1, nested_df,
+    A.method = "legacy", fiml.convention = "observed"
+  )$ug_biased
 
   expect_equal(single, expected_single, tolerance = 1e-5)
-  expect_equal(delta, expected_delta, tolerance = 1e-5)
+  expect_equal(legacy, expected_legacy, tolerance = 1e-5)
   expect_equal(exact, expected_exact, tolerance = 1e-5)
+  expect_equal(delta, exact, tolerance = 1e-8)
   expect_true(all(is.finite(pvalues(fits$m1, c("SB", "SS", "PEBA2")))))
 })
 
 test_that("random-x FIML lavaan convention reproduces public nested tests", {
   skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   fits <- fiml_random_x_pair
-  for (A.method in c("delta", "exact")) {
+  # semTests' restriction matrix -> the lavaan A.method that equals it.
+  restrictions <- c(delta = "exact", exact = "exact", legacy = "delta")
+  for (A.method in names(restrictions)) {
     scaled <- lavaan::lavTestLRT(
       fits$m1, fits$m0,
       method = "satorra.2000",
-      A.method = A.method,
+      A.method = restrictions[[A.method]],
       scaled.shifted = FALSE
     )
     shifted <- lavaan::lavTestLRT(
       fits$m1, fits$m0,
       method = "satorra.2000",
-      A.method = A.method,
+      A.method = restrictions[[A.method]],
       scaled.shifted = TRUE
     )
     expect_warning(
@@ -450,7 +475,7 @@ test_that("nested FIML restrictions are invariant to parameter-table ordering", 
   m1 <- lavaan::cfa(h1, data, missing = "fiml", estimator = "MLR")
   m0a <- lavaan::cfa(h0_aligned, data, missing = "fiml", estimator = "MLR")
   m0b <- lavaan::cfa(h0_reordered, data, missing = "fiml", estimator = "MLR")
-  expect_false(identical(fiml_parameter_keys(m0a), fiml_parameter_keys(m0b)))
+  expect_false(identical(full_parameter_keys(m0a), full_parameter_keys(m0b)))
   for (A.method in c("delta", "exact")) {
     a <- fiml_lambdas_nested(m0a, m1, 1L, A.method, "observed")$ug_biased
     b <- fiml_lambdas_nested(m0b, m1, 1L, A.method, "observed")$ug_biased

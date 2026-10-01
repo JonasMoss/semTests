@@ -4,7 +4,7 @@
 \alias{nested_factor_2000}
 \title{Gamma-free factors of the reduced nested spectrum (Satorra 2000).}
 \usage{
-nested_factor_2000(m0, m1, a = NULL)
+nested_factor_2000(m0, m1, a = NULL, A.method = "delta")
 }
 \description{
 Returns the restriction-space factor \code{D} and companion \code{C} such that the \code{m}

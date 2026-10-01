@@ -260,8 +260,9 @@ check_categorical_nested_pair <- function(m0, m1) {
 #'
 #' @param m0,m1 Two nested `lavaan` objects (canonical order: `m0` constrained).
 #' @param method The nested reduction method, `"2000"` or `"2001"`.
-#' @param A.method The FIML restriction map, `"exact"` or `"delta"`. It is
-#'   validated upstream and accepted here for signature completeness.
+#' @param A.method The restriction matrix, `"delta"`, `"exact"`, or
+#'   `"legacy"` (see [get_a_matrix()]). Categorical pairs support `"delta"` and
+#'   `"legacy"`.
 #' @return `TRUE`, invisibly.
 #' @keywords internal
 check_supported_nested <- function(m0, m1, method, A.method = "delta") {
@@ -282,8 +283,9 @@ check_supported_nested <- function(m0, m1, method, A.method = "delta") {
         call. = FALSE
       )
     }
-    if (A.method != "delta") {
-      stop("Nested categorical tests support A.method = \"delta\" only. ",
+    if (A.method == "exact") {
+      stop("Nested categorical tests support A.method = \"delta\" or ",
+        "\"legacy\". ",
         "See `?semTests-support`.",
         call. = FALSE
       )
@@ -292,7 +294,7 @@ check_supported_nested <- function(m0, m1, method, A.method = "delta") {
     df <- as.integer(
       lavaan::fitmeasures(m0, "df") - lavaan::fitmeasures(m1, "df")
     )
-    A <- get_a_matrix(m1, m0)
+    A <- get_a_matrix(m1, m0, A.method)
     if (nrow(A) != df) {
       stop("Nested categorical restriction rank (", nrow(A),
         ") does not match the df difference (", df, ").",

@@ -183,32 +183,36 @@ test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
     pairwise = categorical_pairs$pairwise,
     mixed = categorical_pairs$mixed
   )
+  # semTests' restriction matrix -> the lavaan A.method that equals it.
+  restrictions <- c(delta = "exact", legacy = "delta")
   for (case in names(cases)) {
     fits <- cases[[case]]
-    scaled <- lavaan::lavTestLRT(
-      fits$m1, fits$m0,
-      method = "satorra.2000", A.method = "delta",
-      scaled.shifted = FALSE
-    )
-    shifted <- lavaan::lavTestLRT(
-      fits$m1, fits$m0,
-      method = "satorra.2000", A.method = "delta",
-      scaled.shifted = TRUE
-    )
-    actual <- pvalues_nested(
-      fits$m0, fits$m1,
-      tests = c("SB", "SS")
-    )
-    expect_equal(
-      unname(actual[c("sb_ml", "ss_ml")]),
-      c(
-        unname(scaled[2L, "Pr(>Chisq)"]),
-        unname(shifted[2L, "Pr(>Chisq)"])
-      ),
-      tolerance = 1e-8,
-      info = case
-    )
-    expect_equal(attr(actual, "semtests")$A.method, "delta")
+    for (A.method in names(restrictions)) {
+      scaled <- lavaan::lavTestLRT(
+        fits$m1, fits$m0,
+        method = "satorra.2000", A.method = restrictions[[A.method]],
+        scaled.shifted = FALSE
+      )
+      shifted <- lavaan::lavTestLRT(
+        fits$m1, fits$m0,
+        method = "satorra.2000", A.method = restrictions[[A.method]],
+        scaled.shifted = TRUE
+      )
+      actual <- pvalues_nested(
+        fits$m0, fits$m1,
+        tests = c("SB", "SS"), A.method = A.method
+      )
+      expect_equal(
+        unname(actual[c("sb_ml", "ss_ml")]),
+        c(
+          unname(scaled[2L, "Pr(>Chisq)"]),
+          unname(shifted[2L, "Pr(>Chisq)"])
+        ),
+        tolerance = 1e-8,
+        info = paste(case, A.method)
+      )
+      expect_equal(attr(actual, "semtests")$A.method, A.method)
+    }
   }
 })
 
@@ -224,7 +228,8 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
     h0, categorical_fixture$data,
     ordered = categorical_fixture$ordered, group = "school"
   )
-  actual <- pvalues_nested(m0, m1, tests = c("SB", "SS"))
+  # The legacy restriction is lavaan's default delta method.
+  actual <- pvalues_nested(m0, m1, tests = c("SB", "SS"), A.method = "legacy")
   shifted <- lavaan::lavTestLRT(
     m1, m0,
     method = "satorra.2000",
@@ -247,7 +252,7 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
     method = "satorra.2000",
     A.method = "delta", scaled.shifted = FALSE
   )
-  actual_sb <- pvalues_nested(m0_sb, m1_sb, tests = "SB")
+  actual_sb <- pvalues_nested(m0_sb, m1_sb, tests = "SB", A.method = "legacy")
   expect_equal(as.numeric(actual_sb),
     unname(scaled[2L, "Pr(>Chisq)"]),
     tolerance = 1e-8

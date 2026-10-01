@@ -11,8 +11,9 @@ check_supported_nested(m0, m1, method, A.method = "delta")
 
 \item{method}{The nested reduction method, \code{"2000"} or \code{"2001"}.}
 
-\item{A.method}{The FIML restriction map, \code{"exact"} or \code{"delta"}. It is
-validated upstream and accepted here for signature completeness.}
+\item{A.method}{The restriction matrix, \code{"delta"}, \code{"exact"}, or
+\code{"legacy"} (see \code{\link[=get_a_matrix]{get_a_matrix()}}). Categorical pairs support \code{"delta"} and
+\code{"legacy"}.}
 }
 \value{
 \code{TRUE}, invisibly.

@@ -116,11 +116,19 @@
 #'   (the paper-recommended default) is available. The Satorra--Bentler `"2001"`
 #'   construction has been withdrawn because it performs poorly, and requesting
 #'   it points you to `"2000"`.
-#' @param A.method For nested FIML or categorical models, choose `"exact"` for
-#'   the literal parameter restriction map or `"delta"` for the local
-#'   moment-tangent restriction map. `"delta"` is the default and applies to a
-#'   wider range of equivalent model parameterizations. Categorical nested
-#'   models support `"delta"` only.
+#' @param A.method The restriction matrix of the nested test. `"delta"` (the
+#'   default) takes the moment-tangent map with both models' Jacobians at the
+#'   restricted solution, which is exact whenever the restricted model is a
+#'   parameter map of the unrestricted one and needs no common parameter set.
+#'   `"exact"` aligns the two models' parameter bases and requires the same
+#'   underlying free parameters. `"legacy"` takes the unrestricted Jacobian at
+#'   the unrestricted estimate, as semTests 1.0.0 and lavaan's default
+#'   `lavTestLRT(A.method = "delta")` do; its reference spectrum carries an
+#'   `O(n^-1/2)` error and it is kept only to reproduce earlier results. When
+#'   `"delta"` cannot place the restricted solution in the unrestricted
+#'   parameter space it falls back to `"legacy"` with a warning of class
+#'   `semTests_warning_legacy_restriction`. Categorical nested models support
+#'   `"delta"` and `"legacy"`.
 #' @param fiml.convention Deprecated, and will be removed in a future release.
 #'   For FIML fits, use the fully observed-information convention
 #'   (`"observed"`, the default) or reproduce lavaan 0.7-2's inspected
@@ -287,7 +295,7 @@ pvalues.default <- function(object, tests,
 #' @export
 pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
                            tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-                           A.method = c("delta", "exact"),
+                           A.method = c("delta", "exact", "legacy"),
                            fiml.convention = c("observed", "lavaan")) {
   supplied <- !missing(fiml.convention)
   method <- match.arg(method)
@@ -339,13 +347,6 @@ pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
       )
     )
   }))
-  provenance_A_method <- if (is_fiml(m0) || is_fiml(m1) ||
-    isTRUE(m0@Model@categorical) ||
-    isTRUE(m1@Model@categorical)) {
-    A.method
-  } else {
-    NA
-  }
   provenance_fiml <- if (is_fiml(m0) || is_fiml(m1)) fiml.convention else NA
   as_semtests(
     result,
@@ -353,7 +354,7 @@ pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
       m0,
       nested = TRUE,
       method = method,
-      A.method = provenance_A_method,
+      A.method = A.method,
       fiml.convention = provenance_fiml,
       df = df,
       tests = tests,
@@ -561,7 +562,7 @@ compute_spectra <- function(m0, m1, unbiased, df, A.method, fiml.convention) {
         fiml.convention = fiml.convention
       )
     } else {
-      lambdas_list <- lambdas_nested(m0, m1, unbiased, df)
+      lambdas_list <- lambdas_nested(m0, m1, unbiased, df, A.method)
     }
 
     if (min(unlist(lambdas_list)) < 0) {
