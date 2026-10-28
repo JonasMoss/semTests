@@ -1,8 +1,8 @@
 ---
-title: "Robust test statistics with semTests"
+title: "Getting started with semTests"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Robust test statistics with semTests}
+  %\VignetteIndexEntry{Getting started with semTests}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,194 +16,173 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Introduction
+## What semTests does
 
-`semTests` computes robust *p*-values for structural equation models fit with
-[`lavaan`](https://lavaan.ugent.be/). The standard chi-square test of model fit
-can reject too often when the data are non-normal. Familiar corrections such as
-Satorra--Bentler help. The methods in this package keep more information about
-the shape of the reference distribution by using its estimated eigenvalues.
+`semTests` computes *p*-values for the chi-square tests of structural equation
+models fitted with [lavaan](https://lavaan.ugent.be/). When the data are not
+normal, the chi-square statistic $T$ does not have a chi-square distribution,
+not even in large samples. Its limit is a weighted sum of independent
+$\chi^2_1$ variables,
 
-For the mathematically curious, the reference distribution is a weighted sum
-\(\sum_j \lambda_j \chi^2_1\). You do not need to calculate any eigenvalues by
-hand. Fit the model in lavaan, then let `pvalues()` do that part. The same basic
-idea covers maximum likelihood, least squares, categorical models, and FIML.
+$$
+T \xrightarrow{d} \sum_{j=1}^{d} \lambda_j Z_j^2,
+\qquad Z_1, \ldots, Z_d \sim N(0, 1),
+$$
 
-The penalized eigenvalue block-averaging (`pEBA`) and penalized regression
-(`pOLS`) methods were introduced by Foldnes, Moss, and Grønneberg (2025).
-Foldnes, Grønneberg, and Moss (2026) extended them to nested model comparison.
+where $d$ is the degrees of freedom and $\lambda_1, \ldots, \lambda_d$ are the
+nonzero eigenvalues of $U\Gamma$. Here $\Gamma$ is the asymptotic covariance
+matrix of the sample moments and $U$ depends on the model and the estimator.
+Under normality every $\lambda_j$ equals 1 and the chi-square reference is
+correct.
 
-```{r setup}
+The Satorra–Bentler correction matches the mean of this distribution, and the
+scaled-and-shifted correction matches its mean and variance. `semTests`
+estimates the eigenvalues and uses all of them. Single eigenvalue estimates
+are noisy, so the recommended methods shrink them toward their common mean:
+penalized eigenvalue block averaging (pEBA) for overall fit (Foldnes, Moss,
+and Grønneberg, 2025), and penalized use of all eigenvalues (`PALL`) for
+nested comparisons (Foldnes, Grønneberg, and Moss, 2026).
+
+The package has three entry points:
+
+* `pvalues()` tests the overall fit of one model.
+* `pvalues_nested()` compares two nested models.
+* `semtest()` computes score and criterion-difference tests of restrictions,
+  including tests that remain valid when the larger model is misspecified.
+
+This vignette covers the first two for complete continuous data.
+
+## Overall fit
+
+```{r fit}
 library("semTests")
 library("lavaan")
-```
 
-## Choose a focused guide
-
-This vignette is a quick tour. Pick the focused guide that matches your
-data when you want more depth:
-
-* `vignette("continuous-data", package = "semTests")` covers complete
-  continuous data, the classical ML workflow, GLS/ULS, and nested tests.
-* `vignette("categorical-data", package = "semTests")` covers ordered and mixed
-  indicators, pairwise missingness, and categorical nested comparison.
-* `vignette("fiml-missing-data", package = "semTests")` covers continuous FIML,
-  the finite-sample evidence for observed information, how it relates to
-  lavaan's information options, and nested restriction maps.
-* `vignette("latent-growth", package = "semTests")` gives FIML a more applied
-  outing in a latent growth model.
-* `vignette("measurement-invariance", package = "semTests")` walks through
-  threshold and loading invariance with ordinal indicators.
-
-## Basic usage: goodness of fit
-
-Fit a model with `lavaan`, then call `pvalues()`. For ML models, request a
-robust lavaan test such as `estimator = "MLM"` or `"MLR"`. This makes lavaan
-store the extra sample information that `semTests` needs.
-
-```{r basic}
-model <- "visual  =~ x1 + x2 + x3
-          textual =~ x4 + x5 + x6
-          speed   =~ x7 + x8 + x9"
-fit <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+model <- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+fit <- cfa(model, HolzingerSwineford1939)
 pvalues(fit)
 ```
 
-The result is a named vector with a short footer showing the estimator, data
-type, information choice, and degrees of freedom actually used. The complete
-record is available with `attr(x, "semtests")`.
+The fit needs no robust lavaan test. When lavaan has not stored an estimate of
+$\Gamma$, `semTests` computes one from the raw data. The line below the
+*p*-values records the estimator, the data type, the fit's information option,
+and the degrees of freedom. `attr(result, "semtests")` holds the full record.
 
-### The test-name grammar
+## Choosing a test
 
-Each requested test uses one of `TEST`, `TEST_UG`, `TEST_ML`, `TEST_RLS`,
-`TEST_UG_ML`, or `TEST_UG_RLS`:
+A test name has up to three parts, as in `PEBA4_UG_ML`: the method, an
+optional `UG`, and an optional statistic. The methods are
 
-* **TEST** gives the family. Choose `pEBA<j>` for penalized block averaging,
-  where `j` is usually between 2 and 6. Other choices include
-  `pOLS<gamma>`, `pall`, `all`, `eba<j>`, `std`, `sb`, `ss`, and `sf`.
-* **UG** asks for the unbiased Du--Bentler (2022) gamma. Without `UG`, the
-  standard biased gamma is used.
-* **ML / RLS** chooses the base chi-square. `ML` uses the normal-theory
-  discrepancy and `RLS` uses Browne's reweighted least squares statistic.
-  Leave the suffix out to use the default for the fitted model.
+| Name | Method |
+|:--|:--|
+| `PEBA<j>` | Penalized eigenvalue block averaging with `j` blocks. Values from 2 to 6 usually work well; `j` cannot exceed the degrees of freedom. |
+| `POLS<g>` | Penalized regression with penalty `g`. Foldnes, Moss, and Grønneberg (2025) studied `POLS2`. |
+| `PALL` | All eigenvalues, penalized. |
+| `ALL` | All eigenvalues, unpenalized. |
+| `EBA<j>` | Eigenvalue block averaging without penalization (Foldnes and Grønneberg, 2018). |
+| `STD` | The ordinary chi-square reference. |
+| `SB` | The Satorra–Bentler scaled test (Satorra and Bentler, 1994). |
+| `SS` | The scaled-and-shifted test (Asparouhov and Muthén, 2010). |
+| `SF` | The scaled *F* test (Wu and Lin, 2016). |
 
-Several tests can be requested at once:
+`UG` replaces the usual estimate of $\Gamma$ with the unbiased estimate of Du
+and Bentler (2022). The statistic is `ML`, the normal-theory likelihood-ratio
+statistic, or `RLS`, Browne's (1974) reweighted least-squares statistic. Both
+`UG` and `RLS` are defined only for complete continuous data fitted by maximum
+likelihood, which includes `MLM` and `MLR` fits. Names are case-insensitive.
 
-```{r grammar}
-pvalues(fit, c("SB_ML", "pEBA4_ML", "pOLS2_ML"))
+For maximum likelihood fits, `pvalues()` defaults to `PEBA4_RLS` and
+`pvalues_nested()` to `PALL_UG_ML`, the combinations recommended in the two
+papers. Other fits use `PEBA4` and `PALL` with their standard statistic.
+
+A name without a statistic uses `RLS` on maximum likelihood fits. So `SB`
+here is the Satorra–Bentler correction applied to the RLS statistic, and
+lavaan's Satorra–Bentler *p*-value is `SB_ML`:
+
+```{r battery}
+pvalues(fit, c("STD_ML", "SB_ML", "SS_ML", "PEBA4_ML", "SB", "PEBA4_UG_RLS"))
+fit_mlm <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+as.numeric(fitMeasures(fit_mlm, "pvalue.scaled"))
 ```
 
-The `UG` gamma and the `RLS` statistic belong to continuous, complete-data fits
-from lavaan's ML family. That includes fits requested as `MLM` or `MLR`. Other
-model families return an error if either option is requested.
+## Nested models
 
-## Nested model comparison
-
-To compare two nested models, fit both and pass them to `pvalues_nested()` with
-the **constrained** model first. Here we ask whether the textual loadings can be
-held equal:
+To test whether the two `visual` loadings that are not fixed for scaling are
+equal, fit the restricted model and pass it to `pvalues_nested()` together
+with the original fit. The restricted model goes first:
 
 ```{r nested}
-constrained <- "visual  =~ x1 + x2 + x3
-                textual =~ a*x4 + a*x5 + a*x6
-                speed   =~ x7 + x8 + x9"
-m1 <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
-m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
-pvalues_nested(m0, m1)
+restricted <- "
+  visual  =~ x1 + a*x2 + a*x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+fit0 <- cfa(restricted, HolzingerSwineford1939)
+pvalues_nested(fit0, fit, tests = c("SB_ML", "PALL_UG_ML"))
 ```
 
-`PALL` is the recommended default for nested comparison (Foldnes, Grønneberg,
-and Moss, 2026). `semTests` uses Satorra's 2000 construction. The 2001 method has been
-withdrawn because it performs poorly. Both fits must use the same estimator, options,
-variables, groups, and observations. If the inputs arrive in reverse order,
-`semTests` warns and swaps them.
+The test is Satorra's (2000) difference test. For `MLM` fits, `SB_ML` equals
+lavaan's `lavTestLRT(fit, fit0, method = "satorra.2000")`. The restriction
+matrix defaults to lavaan's `A.method = "delta"`, which works for any nesting,
+including models that fix or drop parameters, and does not depend on how the
+factors are identified. `A.method = "exact"` is lavaan's alternative; see
+`?pvalues`.
 
-## More data families
+Both fits must use the same data, estimator, and fitting options. `semTests`
+checks this, and if the models arrive in the wrong order it warns and swaps
+them. It does not check that one model is a special case of the other.
 
-The package also covers several non-ML estimators. These paths have been checked
-against a separate implementation. `?semTests-support` gives the exact list of
-supported combinations.
+## Other estimators
 
-GLS and ULS work directly. ULS needs a robust lavaan test so the fit contains
-the required sample information:
+GLS and ULS fits work the same way:
 
 ```{r estimators}
-gls <- cfa(model, HolzingerSwineford1939, estimator = "GLS")
-pvalues(gls, "pEBA4")
-
-uls <- cfa(model, HolzingerSwineford1939,
-  estimator = "ULS",
-  test = "satorra.bentler"
-)
-pvalues(uls, "pEBA4")
+pvalues(cfa(model, HolzingerSwineford1939, estimator = "GLS"))
+pvalues(cfa(model, HolzingerSwineford1939, estimator = "ULS"))
 ```
 
-Missing data is handled through full-information maximum likelihood. Fit with
-`missing = "fiml"` and pass the fit to `pvalues()` as usual. FIML uses the
-usual biased gamma and the standard statistic, so suffix-free test names are
-the right choice.
+The other vignettes cover the remaining settings:
 
-```{r fiml}
-HS <- HolzingerSwineford1939
-set.seed(1)
-HS$x1[sample(nrow(HS), 60)] <- NA
-fit_fiml <- cfa(model, HS, missing = "fiml", estimator = "MLR")
-pvalues(fit_fiml)
-```
+* `vignette("categorical-data", package = "semTests")`: ordinal and mixed
+  indicators, pairwise missingness, and measurement invariance.
+* `vignette("fiml-missing-data", package = "semTests")`: missing data under
+  full-information maximum likelihood, including a latent growth comparison.
+* `vignette("score-criterion", package = "semTests")`: score and
+  criterion-difference tests with `semtest()`.
 
-FIML uses observed information, following Savalei (2010). The choice is
-explained in `vignette("fiml-missing-data", package = "semTests")`, along with
-nested FIML examples.
-
-### Ordered and mixed indicators
-
-Categorical models use lavaan's inspected `UGamma` and unscaled statistic.
-DWLS, including WLSMV/WLSM/WLSMVS, and ULS, including ULSMV, are supported for
-single-group and multigroup ordered or mixed-indicator models. Full WLS/ADF is
-refused because its correction reduces to the ordinary chi-square.
-
-```{r categorical}
-HSord <- HolzingerSwineford1939
-ordered_names <- paste0("x", 1:9)
-HSord[ordered_names] <- lapply(
-  HSord[ordered_names],
-  function(x) ordered(cut(x, 3))
-)
-fit_ordinal <- cfa(model, HSord, ordered = ordered_names)
-pvalues(fit_ordinal, c("SB", "SS", "pEBA4"))
-```
-
-The artificial cut only keeps this tour reproducible. In a real analysis, the
-decision to treat an indicator as ordered should come from how it was measured.
-
-Categorical fits may use listwise or pairwise missingness. Pairwise support
-uses lavaan's pairwise sample statistics and `UGamma`. Pairwise deletion has
-its own missingness assumptions and does not provide FIML inference. Nested
-categorical comparison uses `method = "2000"` with `A.method = "delta"`.
+`?semTests-support` lists every supported combination of estimator, data type,
+and test.
 
 ## References
+
+Asparouhov, T., & Muthén, B. O. (2010). *Simple second order chi-square
+correction*. Mplus Technical Appendix.
+<https://www.statmodel.com/download/WLSMV_new_chi21.pdf>
 
 Browne, M. W. (1974). Generalized least squares estimators in the analysis of
 covariance structures. *South African Statistical Journal*, 8, 1–24.
 
-Du, H., & Bentler, P. M. (2022). 40-Year Old Unbiased Distribution Free
-Estimator Reliably Improves SEM Statistics for Nonnormal Data. *Structural
+Du, H., & Bentler, P. M. (2022). 40-year old unbiased distribution free
+estimator reliably improves SEM statistics for nonnormal data. *Structural
 Equation Modeling*, 29(6), 872–887.
 <https://doi.org/10.1080/10705511.2022.2063870>
 
-Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
-procedures for structural equation models. *Structural Equation Modeling: A
-Multidisciplinary Journal*, 32(1), 1–13.
-<https://doi.org/10.1080/10705511.2024.2372028>
+Foldnes, N., & Grønneberg, S. (2018). Approximating test statistics using
+eigenvalue block averaging. *Structural Equation Modeling*, 25(1), 101–114.
+<https://doi.org/10.1080/10705511.2017.1373021>
 
 Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
 averaging: Extension to nested model comparison and Monte Carlo evaluations.
 *Behavior Research Methods*, 58, article 107.
 <https://doi.org/10.3758/s13428-026-02968-4>
 
-Savalei, V. (2010). Expected versus observed information in SEM with incomplete
-normal and nonnormal data. *Psychological Methods*, 15(4), 352–367.
-<https://doi.org/10.1037/a0020143>
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
+procedures for structural equation models. *Structural Equation Modeling*,
+32(1), 1–13. <https://doi.org/10.1080/10705511.2024.2372028>
 
 Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
 analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
@@ -215,3 +194,8 @@ Satorra, A., & Bentler, P. M. (1994). Corrections to test statistics and
 standard errors in covariance structure analysis. In A. von Eye & C. C. Clogg
 (Eds.), *Latent Variables Analysis: Applications for Developmental Research*
 (pp. 399–419). Sage.
+
+Wu, H., & Lin, J. (2016). A scaled F distribution as an approximation to the
+distribution of test statistics in covariance structure analysis.
+*Structural Equation Modeling*.
+<https://doi.org/10.1080/10705511.2015.1057733>
