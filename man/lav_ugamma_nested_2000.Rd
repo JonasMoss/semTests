@@ -14,7 +14,7 @@ lav_ugamma_nested_2000(m0, m1, gamma_matrix, a = NULL, A.method = "delta")
 \item{a}{The \code{A} restriction matrix. If \code{NULL}, it is built by
 \code{\link[=get_a_matrix]{get_a_matrix()}} with \code{A.method}.}
 
-\item{A.method}{\code{"delta"}, \code{"exact"}, or \code{"legacy"}; see \code{\link[=get_a_matrix]{get_a_matrix()}}.}
+\item{A.method}{\code{"delta"} or \code{"exact"}; see \code{\link[=get_a_matrix]{get_a_matrix()}}.}
 }
 \value{
 Ugamma for nested object.

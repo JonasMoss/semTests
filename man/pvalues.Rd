@@ -20,7 +20,7 @@ pvalues_nested(
   m1,
   method = c("2000", "2001"),
   tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-  A.method = c("delta", "exact", "legacy"),
+  A.method = c("delta", "exact"),
   fiml.convention = c("observed", "lavaan")
 )
 
@@ -57,19 +57,16 @@ tests.}
 construction has been withdrawn because it performs poorly, and requesting
 it points you to \code{"2000"}.}
 
-\item{A.method}{The restriction matrix of the nested test. \code{"delta"} (the
-default) takes the moment-tangent map with both models' Jacobians at the
-restricted solution, which is exact whenever the restricted model is a
-parameter map of the unrestricted one and needs no common parameter set.
-\code{"exact"} aligns the two models' parameter bases and requires the same
-underlying free parameters. \code{"legacy"} takes the unrestricted Jacobian at
-the unrestricted estimate, as semTests 1.0.0 and lavaan's default
-\code{lavTestLRT(A.method = "delta")} do; its reference spectrum carries an
-\code{O(n^-1/2)} error and it is kept only to reproduce earlier results. When
-\code{"delta"} cannot place the restricted solution in the unrestricted
-parameter space it falls back to \code{"legacy"} with a warning of class
-\code{semTests_warning_legacy_restriction}. Categorical nested models support
-\code{"delta"} and \code{"legacy"}.}
+\item{A.method}{The restriction matrix of the nested test, named as in
+lavaan's \code{lavTestLRT()}. \code{"delta"} (the default) is lavaan's default: the
+moment-tangent map with each model's Jacobian at its own estimate. It
+applies to any nesting, including restricted models that drop or fix
+paths, and does not depend on how the factors are identified. \code{"exact"}
+is lavaan's literal parameter restriction map. It requires the same
+underlying free parameters in both models, as with equality constraints,
+and its p-values shift slightly with the identification (for example
+\code{std.lv = TRUE} versus marker loadings). Categorical nested models support
+\code{"delta"} only.}
 }
 \value{
 A named numeric vector of p-values, of class \code{semTests_pvalues},

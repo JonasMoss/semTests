@@ -8,37 +8,36 @@ FIML path; see the result under B4 below. The public `weight` argument of
 (observed weight with expected-curvature profiling; different score
 covariances in the statistic and the reference) stay out.
 
-The magmaan runners were rerun against magmaan 0.2.2 (main c0dc6e29). Since
-the same-point nested restriction became semTests' default, the gate and the
-parity simulation pair semTests `"delta"` with magmaan `"exact"`, and semTests
-`"legacy"` with magmaan `"delta"`.
+**Nested restriction, decided: lavaan's `"delta"` stays the default.** The
+same-point construction made the default on 2026-10-01 (e07170e) turned out
+not to be invariant to identification: on the same data, `std.lv = TRUE` and
+marker loadings gave nested p-values about 2e-3 apart at n = 300 (ML, MLR
+with means, DWLS and FIML alike), while lavaan's mixed-point `"delta"` agreed
+to 1e-6. The same-point map is exact only in one parameterization while the
+information and score covariance sit at the H1 estimate, so it trades one
+mixed point for another at the same `O(n^-1/2)` order. It was removed, with the
+`"legacy"` name. `A.method` again takes lavaan's names: `"delta"` (default,
+as in 1.0.0) and `"exact"` (key-aligned parameter bases, which shares the
+identification dependence). The one kept fix from e07170e: `A.method` now
+applies to complete-data fits, so `"exact"` works there too. magmaan's own
+default `"exact"` has the same dependence.
 
-Rerun against magmaan main b644dc56 (its pairwise `pd_gamma` fix), every
-runner passes: the gate's 97 checks (824 values) under both pairings, the
-score, lavaan-adapter and FIML-score runners, and all 20 criterion checks.
-The pairwise ordinal parity cell (200 draws) sits at the usual 1.57e-3
-endpoint floor. Two runner changes were needed. The criterion runner's
-continuous WLS case lets magmaan build its own ADF weight, since magmaan
-refuses a caller-supplied `W` for estimated-weight inference (agreement
-1.3e-7). And its ordinal nested score checks now compare each curvature with
-its counterpart: magmaan's ordinal LS score tests default to observed
-sensitivity (`bread = "observed"`, magmaan 189fa24a), and magmaan's `mi` and
-scaling factor weight by expected information whatever the bread, which in
-semTests is `metric = "expected"`. Matching settings agree to about 1e-8.
-
-Full parity simulation (200 draws per cell, N = 500, 8 cells, simbox): the
-legacy pairing reproduces the 1.0.0 baseline exactly, 100% within tolerance,
-at the known optimizer-endpoint floor (1.56e-3 single, 7.4e-4 nested;
-multigroup ordinal 4.48e-3 and 2.17e-3). The same-point pairing gives the same
-numbers in every cell but FIML, where lavaan is fitted with `std.lv = TRUE`
-and magmaan with marker identification: worst 8.9e-3, 66.5% of draws within
-2e-3. With marker identification on both sides that gap falls to about 1e-6
-(5 draws checked).
-
-Open: the same-point restriction is not invariant to identification. On the
-same data, `std.lv = TRUE` and marker identification give nested p-values
-about 2e-3 apart at n = 300 under `A.method = "delta"` or `"exact"` (ML,
-MLR with means, DWLS and FIML alike), while `"legacy"` agrees to 1e-6.
+The magmaan runners pair the constructions by name again (semTests `"delta"`
+with magmaan `"delta"`, `"exact"` with `"exact"`). Against magmaan main
+b644dc56 (its pairwise `pd_gamma` fix), every runner passed before the
+revert: the gate's 97 checks (824 values), the score, lavaan-adapter and
+FIML-score runners, and all 20 criterion checks; the 200-draw parity
+simulation sat at the 1.0.0 optimizer-endpoint floor (1.56e-3 single, 7.4e-4
+nested; multigroup ordinal 4.48e-3 and 2.17e-3) for the mixed-point pairing,
+including the pairwise ordinal cell. Two runner changes were needed. The
+criterion runner's continuous WLS case lets magmaan build its own ADF weight,
+since magmaan refuses a caller-supplied `W` for estimated-weight inference
+(agreement 1.3e-7). And its ordinal nested score checks compare each
+curvature with its counterpart: magmaan's ordinal LS score tests default to
+observed sensitivity (`bread = "observed"`, magmaan 189fa24a), and magmaan's
+`mi` and scaling factor weight by expected information whatever the bread,
+which in semTests is `metric = "expected"`. Matching settings agree to about
+1e-8.
 
 ## Status update, 2026-09-29
 

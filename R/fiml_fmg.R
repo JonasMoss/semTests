@@ -269,7 +269,7 @@ fiml_nested_ingredients <- function(m1,
 #' FIML Satorra-2000 nested restriction eigenvalues.
 #' @keywords internal
 fiml_lambdas_nested <- function(m0, m1, df,
-                                A.method = c("delta", "exact", "legacy"),
+                                A.method = c("delta", "exact"),
                                 fiml.convention = c("observed", "lavaan")) {
   A.method <- match.arg(A.method)
   fiml.convention <- match.arg(fiml.convention)

@@ -116,19 +116,16 @@
 #'   (the paper-recommended default) is available. The Satorra--Bentler `"2001"`
 #'   construction has been withdrawn because it performs poorly, and requesting
 #'   it points you to `"2000"`.
-#' @param A.method The restriction matrix of the nested test. `"delta"` (the
-#'   default) takes the moment-tangent map with both models' Jacobians at the
-#'   restricted solution, which is exact whenever the restricted model is a
-#'   parameter map of the unrestricted one and needs no common parameter set.
-#'   `"exact"` aligns the two models' parameter bases and requires the same
-#'   underlying free parameters. `"legacy"` takes the unrestricted Jacobian at
-#'   the unrestricted estimate, as semTests 1.0.0 and lavaan's default
-#'   `lavTestLRT(A.method = "delta")` do; its reference spectrum carries an
-#'   `O(n^-1/2)` error and it is kept only to reproduce earlier results. When
-#'   `"delta"` cannot place the restricted solution in the unrestricted
-#'   parameter space it falls back to `"legacy"` with a warning of class
-#'   `semTests_warning_legacy_restriction`. Categorical nested models support
-#'   `"delta"` and `"legacy"`.
+#' @param A.method The restriction matrix of the nested test, named as in
+#'   lavaan's `lavTestLRT()`. `"delta"` (the default) is lavaan's default: the
+#'   moment-tangent map with each model's Jacobian at its own estimate. It
+#'   applies to any nesting, including restricted models that drop or fix
+#'   paths, and does not depend on how the factors are identified. `"exact"`
+#'   is lavaan's literal parameter restriction map. It requires the same
+#'   underlying free parameters in both models, as with equality constraints,
+#'   and its p-values shift slightly with the identification (for example
+#'   `std.lv = TRUE` versus marker loadings). Categorical nested models support
+#'   `"delta"` only.
 #' @param fiml.convention Deprecated, and will be removed in a future release.
 #'   For FIML fits, use the fully observed-information convention
 #'   (`"observed"`, the default) or reproduce lavaan 0.7-2's inspected
@@ -295,7 +292,7 @@ pvalues.default <- function(object, tests,
 #' @export
 pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
                            tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-                           A.method = c("delta", "exact", "legacy"),
+                           A.method = c("delta", "exact"),
                            fiml.convention = c("observed", "lavaan")) {
   supplied <- !missing(fiml.convention)
   method <- match.arg(method)

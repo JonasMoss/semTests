@@ -14,8 +14,8 @@
 #     Rscript tools/magmaan-parity-simulation.R
 #
 # CELLS is a comma-separated filter of cell names (default "all").
-# Nested tests are compared under two pairings of restriction constructions;
-# see nested_both().
+# Nested tests are compared under both restriction constructions; see
+# nested_both().
 
 if (!requireNamespace("magmaanlab", quietly = TRUE)) {
   stop("Install magmaanlab (magmaan's r-package/) before running this optional check.",
@@ -120,24 +120,22 @@ p_diff <- function(semtests, magmaan) {
   max(abs(semtests - magmaan))
 }
 
-# The two libraries name the nested restriction constructions differently.
-# semTests "delta" (its default) takes both Jacobians at the H0 solution, the
-# exact parameter-nesting restriction that magmaan calls "exact"; semTests
-# "legacy" is the mixed-point lavaan delta method that magmaan calls "delta".
-# Compare both pairings; each is NA when either side errors.
+# Both libraries use lavaan's names for the nested restriction: "delta" is the
+# moment-tangent map with each model's Jacobian at its own estimate (semTests'
+# default; magmaan must ask for it), "exact" the literal parameter restriction.
+# Compare both; each is NA when either side errors, as semTests' "exact" does
+# for categorical pairs.
 nested_both <- function(semtests_at, magmaan_at) {
-  pairing <- function(semtests_method, magmaan_method) {
+  pairing <- function(method) {
     tryCatch(
-      p_diff(semtests_at(semtests_method),
-             magmaan_at(magmaan_method)$p_value),
+      p_diff(semtests_at(method), magmaan_at(method)$p_value),
       error = function(e) NA_real_
     )
   }
-  c(nested = pairing("delta", "exact"),
-    nested_legacy = pairing("legacy", "delta"))
+  c(nested = pairing("delta"), nested_exact = pairing("exact"))
 }
 
-na_pair <- c(single = NA_real_, nested = NA_real_, nested_legacy = NA_real_)
+na_pair <- c(single = NA_real_, nested = NA_real_, nested_exact = NA_real_)
 
 # ---- cell runners: each returns the max p-value difference for the single-
 # model tests and for the two nested pairings (see nested_both()) -----------
@@ -184,7 +182,7 @@ run_continuous_ls <- function(seed, estimator, gamma) {
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    out[c("nested", "nested_legacy")] <- nested_both(
+    out[c("nested", "nested_exact")] <- nested_both(
       function(a) semTests::pvalues_nested(
         lav_h0, lav_h1, method = "2000", tests = nested_tests, A.method = a
       ),
@@ -228,7 +226,7 @@ run_fiml <- function(seed) {
       semTests::pvalues(lav_h1, single_tests),
       mag_single$p_value
     )
-    out[c("nested", "nested_legacy")] <- nested_both(
+    out[c("nested", "nested_exact")] <- nested_both(
       function(a) semTests::pvalues_nested(
         lav_h0, lav_h1, tests = nested_tests, A.method = a
       ),
@@ -284,7 +282,7 @@ run_categorical <- function(seed, pairwise,
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    out[c("nested", "nested_legacy")] <- nested_both(
+    out[c("nested", "nested_exact")] <- nested_both(
       function(a) semTests::pvalues_nested(
         lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
@@ -339,7 +337,7 @@ run_multigroup_categorical <- function(seed) {
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    out[c("nested", "nested_legacy")] <- nested_both(
+    out[c("nested", "nested_exact")] <- nested_both(
       function(a) semTests::pvalues_nested(
         lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
@@ -391,7 +389,7 @@ run_mixed_categorical <- function(seed) {
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    out[c("nested", "nested_legacy")] <- nested_both(
+    out[c("nested", "nested_exact")] <- nested_both(
       function(a) semTests::pvalues_nested(
         lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
@@ -463,19 +461,19 @@ summary_rows <- lapply(cells, function(cell) {
     tolerance = cell$tol,
     valid_single = valid[["single"]],
     valid_nested = valid[["nested"]],
-    valid_nested_legacy = valid[["nested_legacy"]],
+    valid_nested_exact = valid[["nested_exact"]],
     worst_single = worst[["single"]],
     worst_nested = worst[["nested"]],
-    worst_nested_legacy = worst[["nested_legacy"]],
+    worst_nested_exact = worst[["nested_exact"]],
     pass_rate_single = pass[["single"]],
     pass_rate_nested = pass[["nested"]],
-    pass_rate_nested_legacy = pass[["nested_legacy"]],
+    pass_rate_nested_exact = pass[["nested_exact"]],
     stringsAsFactors = FALSE
   )
   cat(sprintf(
-    "%-28s worst single=%.2e nested=%.2e legacy=%.2e | valid %d/%d/%d of %d\n",
-    cell$name, row$worst_single, row$worst_nested, row$worst_nested_legacy,
-    row$valid_single, row$valid_nested, row$valid_nested_legacy, reps
+    "%-28s worst single=%.2e delta=%.2e exact=%.2e | valid %d/%d/%d of %d\n",
+    cell$name, row$worst_single, row$worst_nested, row$worst_nested_exact,
+    row$valid_single, row$valid_nested, row$valid_nested_exact, reps
   ))
   row
 })
@@ -494,7 +492,7 @@ if (nzchar(sim_output)) {
 
 worst_overall <- max(
   c(summary_table$worst_single, summary_table$worst_nested,
-    summary_table$worst_nested_legacy), na.rm = TRUE
+    summary_table$worst_nested_exact), na.rm = TRUE
 )
 cat(sprintf(
   "\nWorst parity difference across all cells: %.2e\n", worst_overall

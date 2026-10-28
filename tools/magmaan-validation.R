@@ -4,11 +4,6 @@
 # implementation. Run from the semTests package root:
 #
 #   Rscript tools/magmaan-validation.R
-#   NESTED_PAIRING=legacy Rscript tools/magmaan-validation.R
-#
-# The first run compares the same-point nested restriction (semTests "delta",
-# magmaan "exact"); the second the mixed-point one (semTests "legacy",
-# magmaan "delta").
 #
 # This deliberately lives under tools/ instead of tests/testthat/: magmaan is
 # not a CRAN package and should not become a package check dependency. pkgload
@@ -78,21 +73,6 @@ transform_tolerance <- as.numeric(Sys.getenv(
 statistic_tolerance <- as.numeric(Sys.getenv(
   "STATISTIC_TOLERANCE", "1e-4"
 ))
-
-# Nested restriction pairing. The libraries name the constructions
-# differently: semTests "delta" (its default) takes both Jacobians at the H0
-# solution, the exact parameter-nesting restriction magmaan calls "exact";
-# semTests "legacy" is the mixed-point lavaan delta method magmaan calls
-# "delta". Every nested check below uses the pair NESTED_PAIRING selects
-# ("same-point", the default, or "legacy"); run the gate once per pairing.
-nested_pairing <- match.arg(
-  Sys.getenv("NESTED_PAIRING", "same-point"), c("same-point", "legacy")
-)
-semtests_a <- if (nested_pairing == "same-point") "delta" else "legacy"
-magmaan_a <- if (nested_pairing == "same-point") "exact" else "delta"
-magmaan_a_for <- function(semtests_method) {
-  if (identical(semtests_method, "exact")) "exact" else magmaan_a
-}
 endpoint_statistic_tolerance <- as.numeric(Sys.getenv(
   "ENDPOINT_STATISTIC_TOLERANCE", "0.5"
 ))
@@ -389,13 +369,14 @@ validate_classical_ml <- function() {
   ))
   semtests_nested <- semTests::pvalues_nested(
     lavaan_h0, lavaan_h1,
-    method = "2000", tests = nested_tests,
-    A.method = semtests_a
+    method = "2000", tests = nested_tests
   )
-  # The restriction construction follows NESTED_PAIRING (see the top).
+  # semTests' complete-data method-2000 construction is the local
+  # moment-tangent map. magmaan must use `delta` explicitly; its `exact`
+  # default is a different restriction construction.
   magmaan_nested <- magmaanlab::fmg_nested(
     magmaan_h1, magmaan_h0, data = data,
-    tests = nested_tests, A.method = magmaan_a
+    tests = nested_tests, A.method = "delta"
   )
   check_names(
     "Classical nested labels",
@@ -403,7 +384,7 @@ validate_classical_ml <- function() {
   )
   semtests_nested_spectra <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    unbiased = 3L, df = nested_df, A.method = semtests_a
+    unbiased = 3L, df = nested_df
   )
   biased_row <- which(!magmaan_nested$ug)[1L]
   unbiased_row <- which(magmaan_nested$ug)[1L]
@@ -469,16 +450,15 @@ validate_classical_nested_multigroup <- function() {
   )
   tests <- c("SB_ML", "SB_UG_ML", "PEBA4_ML", "PEBA4_UG_ML")
   semtests <- semTests::pvalues_nested(
-    lavaan_h0, lavaan_h1, method = "2000", tests = tests,
-    A.method = semtests_a
+    lavaan_h0, lavaan_h1, method = "2000", tests = tests
   )
   magmaan <- magmaanlab::fmg_nested(
     magmaan_h1, magmaan_h0, data = magmaan_h1$raw_data$X,
-    tests = tests, A.method = magmaan_a
+    tests = tests, A.method = "delta"
   )
   spectra <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    unbiased = 3L, df = nested_df, A.method = semtests_a
+    unbiased = 3L, df = nested_df
   )
   check_close(
     "Classical multigroup nested spectrum, biased",
@@ -577,12 +557,11 @@ validate_continuous_ls <- function(estimator) {
   )
   nested_tests <- tests_for_df(nested_df)
   semtests_nested <- semTests::pvalues_nested(
-    lavaan_h0, lavaan_fit, method = "2000", tests = nested_tests,
-    A.method = semtests_a
+    lavaan_h0, lavaan_fit, method = "2000", tests = nested_tests
   )
   magmaan_nested <- magmaanlab::fmg_nested(
     magmaan_fit, magmaan_h0, data = data, tests = nested_tests,
-    A.method = magmaan_a, gamma = gamma, weight = weight
+    A.method = "delta", gamma = gamma, weight = weight
   )
   check_names(
     paste("Continuous nested labels,", estimator),
@@ -591,7 +570,7 @@ validate_continuous_ls <- function(estimator) {
   )
   semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_fit,
-    unbiased = 1L, df = nested_df, A.method = semtests_a
+    unbiased = 1L, df = nested_df
   )$ug_biased
   check_close(
     paste("Continuous nested spectrum,", estimator),
@@ -661,7 +640,7 @@ validate_fiml <- function() {
       lavaan::fitmeasures(lavaan_h1, "df")
   )
   nested_tests <- tests_for_df(nested_df)
-  for (A.method in c(semtests_a, "exact")) {
+  for (A.method in c("delta", "exact")) {
     semtests_nested <- semtests_internal("fiml_lambdas_nested")(
       lavaan_h0, lavaan_h1, nested_df,
       A.method = A.method,
@@ -669,7 +648,7 @@ validate_fiml <- function() {
     )$ug_biased
     magmaan_nested <- magmaanlab::fmg_nested(
       magmaan_h1, magmaan_h0,
-      tests = nested_tests, A.method = magmaan_a_for(A.method)
+      tests = nested_tests, A.method = A.method
     )
     check_close(
       paste("FIML nested spectrum,", A.method),
@@ -757,7 +736,7 @@ validate_multigroup_fiml <- function() {
       lavaan::fitmeasures(lavaan_h1, "df")
   )
   nested_tests <- tests_for_df(nested_df)
-  for (A.method in c(semtests_a, "exact")) {
+  for (A.method in c("delta", "exact")) {
     semtests_spectrum <- semtests_internal("fiml_lambdas_nested")(
       lavaan_h0, lavaan_h1, nested_df,
       A.method = A.method,
@@ -765,7 +744,7 @@ validate_multigroup_fiml <- function() {
     )$ug_biased
     magmaan_nested <- magmaanlab::fmg_nested(
       magmaan_h1, magmaan_h0,
-      tests = nested_tests, A.method = magmaan_a_for(A.method)
+      tests = nested_tests, A.method = A.method
     )
     check_close(
       paste("Multigroup FIML nested spectrum,", A.method),
@@ -860,7 +839,7 @@ validate_random_x_fiml <- function() {
       lavaan::fitmeasures(lavaan_h1, "df")
   )
   nested_tests <- tests_for_df(nested_df)
-  for (A.method in c(semtests_a, "exact")) {
+  for (A.method in c("delta", "exact")) {
     semtests_spectrum <- semtests_internal("fiml_lambdas_nested")(
       lavaan_h0, lavaan_h1, nested_df,
       A.method = A.method,
@@ -868,7 +847,7 @@ validate_random_x_fiml <- function() {
     )$ug_biased
     magmaan_nested <- magmaanlab::fmg_nested(
       magmaan_h1, magmaan_h0,
-      tests = nested_tests, A.method = magmaan_a_for(A.method)
+      tests = nested_tests, A.method = A.method
     )
     check_close(
       paste("Random-x FIML nested spectrum,", A.method),
@@ -1014,11 +993,11 @@ validate_categorical <- function(pairwise,
   nested_tests <- tests_for_df(nested_df)
   semtests_nested <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    unbiased = 1L, df = nested_df, A.method = semtests_a
+    unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaanlab::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
-    tests = nested_tests, weight = magmaan_estimator, A.method = magmaan_a
+    tests = nested_tests, weight = magmaan_estimator, A.method = "delta"
   )
   check_close(
     paste("Categorical nested spectrum,", label),
@@ -1030,7 +1009,7 @@ validate_categorical <- function(pairwise,
     paste("Categorical nested p-values,", label),
     semTests::pvalues_nested(
       lavaan_h0, lavaan_h1,
-      tests = nested_tests, method = "2000", A.method = semtests_a
+      tests = nested_tests, method = "2000", A.method = "delta"
     ),
     magmaan_nested$p_value,
     endpoint_pvalue_tolerance, layer = "optimizer endpoint"
@@ -1125,11 +1104,11 @@ validate_mixed_categorical <- function() {
   nested_tests <- tests_for_df(nested_df)
   semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    unbiased = 1L, df = nested_df, A.method = semtests_a
+    unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaanlab::fmg_nested_mixed_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
-    tests = nested_tests, weight = "DWLS", A.method = magmaan_a
+    tests = nested_tests, weight = "DWLS", A.method = "delta"
   )
   check_close(
     "Mixed categorical nested spectrum, DWLS",
@@ -1141,7 +1120,7 @@ validate_mixed_categorical <- function() {
     "Mixed categorical nested p-values, DWLS",
     semTests::pvalues_nested(
       lavaan_h0, lavaan_h1,
-      tests = nested_tests, method = "2000", A.method = semtests_a
+      tests = nested_tests, method = "2000", A.method = "delta"
     ),
     magmaan_nested$p_value,
     endpoint_pvalue_tolerance, layer = "optimizer endpoint"
@@ -1229,11 +1208,11 @@ validate_multigroup_categorical <- function() {
   nested_tests <- tests_for_df(nested_df)
   semtests_nested_spectrum <- semtests_internal("lambdas_nested")(
     lavaan_h0, lavaan_h1,
-    unbiased = 1L, df = nested_df, A.method = semtests_a
+    unbiased = 1L, df = nested_df
   )$ug_biased
   magmaan_nested <- magmaanlab::fmg_nested_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
-    tests = nested_tests, weight = "DWLS", A.method = magmaan_a
+    tests = nested_tests, weight = "DWLS", A.method = "delta"
   )
   check_close(
     "Multigroup categorical nested spectrum, DWLS",
@@ -1245,7 +1224,7 @@ validate_multigroup_categorical <- function() {
     "Multigroup categorical nested p-values, DWLS",
     semTests::pvalues_nested(
       lavaan_h0, lavaan_h1,
-      tests = nested_tests, method = "2000", A.method = semtests_a
+      tests = nested_tests, method = "2000", A.method = "delta"
     ),
     magmaan_nested$p_value,
     multigroup_pvalue_tolerance, layer = "optimizer endpoint"
@@ -1298,7 +1277,7 @@ validate_random_x_complete <- function() {
       )
       magmaan_nested <- magmaanlab::fmg_nested(
         magmaan_h1, magmaan_h0,
-        data = data, tests = "SB_ML", A.method = magmaan_a
+        data = data, tests = "SB_ML", A.method = "delta"
       )
     } else {
       gamma <- if (estimator == "ULS") "normal" else "empirical"
@@ -1322,7 +1301,7 @@ validate_random_x_complete <- function() {
       magmaan_nested <- magmaanlab::fmg_nested(
         magmaan_h1, magmaan_h0,
         data = data, tests = "SB",
-        A.method = magmaan_a, gamma = gamma
+        A.method = "delta", gamma = gamma
       )
     }
     check_converged(
@@ -1347,7 +1326,7 @@ validate_random_x_complete <- function() {
     )
     semtests_nested <- semtests_internal("lambdas_nested")(
       lavaan_h0, lavaan_h1,
-      unbiased = 1L, df = nested_df, A.method = semtests_a
+      unbiased = 1L, df = nested_df
     )$ug_biased
     check_close(
       paste("Random-x complete nested spectrum,", estimator),
@@ -1416,13 +1395,13 @@ validate_random_x_complete <- function() {
   )
   magmaan_nested <- magmaanlab::fmg_nested_mixed_ordinal(
     magmaan_h1, magmaan_h0, magmaan_stats,
-    tests = "SB", weight = "DWLS", A.method = magmaan_a
+    tests = "SB", weight = "DWLS", A.method = "delta"
   )
   check_close(
     "Random-x categorical nested spectrum, DWLS",
     sort(semtests_internal("lambdas_nested")(
       lavaan_h0, lavaan_h1,
-      unbiased = 1L, df = nested_df, A.method = semtests_a
+      unbiased = 1L, df = nested_df
     )$ug_biased),
     sort(magmaan_nested$eigenvalues[[1L]]),
     spectrum_tolerance, layer = "spectrum"

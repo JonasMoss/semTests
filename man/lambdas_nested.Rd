@@ -13,7 +13,7 @@ lambdas_nested(m0, m1, unbiased = 1, df, A.method = "delta")
 
 \item{df}{Number of restrictions (degrees-of-freedom difference).}
 
-\item{A.method}{\code{"delta"}, \code{"exact"}, or \code{"legacy"}; see \code{\link[=get_a_matrix]{get_a_matrix()}}.}
+\item{A.method}{\code{"delta"} or \code{"exact"}; see \code{\link[=get_a_matrix]{get_a_matrix()}}.}
 }
 \value{
 A list of eigenvalue vectors, one per gamma estimate.

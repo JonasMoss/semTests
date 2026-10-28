@@ -8,7 +8,7 @@ fiml_lambdas_nested(
   m0,
   m1,
   df,
-  A.method = c("delta", "exact", "legacy"),
+  A.method = c("delta", "exact"),
   fiml.convention = c("observed", "lavaan")
 )
 }

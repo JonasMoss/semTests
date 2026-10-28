@@ -260,9 +260,8 @@ check_categorical_nested_pair <- function(m0, m1) {
 #'
 #' @param m0,m1 Two nested `lavaan` objects (canonical order: `m0` constrained).
 #' @param method The nested reduction method, `"2000"` or `"2001"`.
-#' @param A.method The restriction matrix, `"delta"`, `"exact"`, or
-#'   `"legacy"` (see [get_a_matrix()]). Categorical pairs support `"delta"` and
-#'   `"legacy"`.
+#' @param A.method The restriction matrix, `"delta"` or `"exact"` (see
+#'   [get_a_matrix()]). Categorical pairs support `"delta"` only.
 #' @return `TRUE`, invisibly.
 #' @keywords internal
 check_supported_nested <- function(m0, m1, method, A.method = "delta") {
@@ -284,8 +283,7 @@ check_supported_nested <- function(m0, m1, method, A.method = "delta") {
       )
     }
     if (A.method == "exact") {
-      stop("Nested categorical tests support A.method = \"delta\" or ",
-        "\"legacy\". ",
+      stop("Nested categorical tests support A.method = \"delta\" only. ",
         "See `?semTests-support`.",
         call. = FALSE
       )
