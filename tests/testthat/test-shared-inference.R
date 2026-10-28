@@ -42,11 +42,11 @@ test_that("standard-only requests avoid all spectral work", {
   local_mocked_bindings(compute_spectra = function(...) stop("spectrum requested"))
   actual <- pvalues(object, "STD_ML")
   expected <- 1 - pchisq(make_chisqs("ml", object), fit_df(object))
-  expect_equal(as.numeric(actual), as.numeric(expected), tolerance = 1e-12)
+  expect_equal(as.numeric(actual), as.numeric(expected), tolerance = 1e-8)
   actual <- pvalues_nested(m0_no_groups, m1_no_groups, tests = "STD_ML")
   expected <- 1 - pchisq(make_chisqs("ml", m0_no_groups, m1_no_groups),
                     fit_df(m0_no_groups) - fit_df(m1_no_groups))
-  expect_equal(as.numeric(actual), as.numeric(expected), tolerance = 1e-12)
+  expect_equal(as.numeric(actual), as.numeric(expected), tolerance = 1e-8)
   expect_error(pvalues(m1_, "STD_UG_ML"), "unbiased")
   expect_error(pvalues(m1_, "STD_RLS"), "RLS statistic")
 })

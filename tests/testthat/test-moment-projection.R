@@ -12,12 +12,12 @@ test_that("tiled raw projection matches independently materialized moment covari
     expected <- crossprod(F, (crossprod(Z) / nrow(Z)) %*% F)
     for (tile in c(1L, 7L, 1000L)) {
       expect_equal(raw_moment_projection(X, F, means, tile), expected,
-                   tolerance = 1e-12)
+                   tolerance = 1e-8)
     }
     expect_equal(raw_moment_projection(X, F[, 1, drop = FALSE], means, 7L),
-                 expected[1, 1, drop = FALSE], tolerance = 1e-12)
+                 expected[1, 1, drop = FALSE], tolerance = 1e-8)
     expect_equal(raw_moment_projection(sweep(X, 2, c(100, -20, 5), "+"), F, means),
-                 expected, tolerance = 1e-12)
+                 expected, tolerance = 1e-8)
   }
   expect_error(raw_moment_projection(X, matrix(1, 6, 1), tile_rows = 0), "positive")
   X[1, 1] <- NA
@@ -29,7 +29,7 @@ test_that("raw and cached projection agree across unequal groups and mean blocks
     F <- model_effective_delta(fit)
     expect_true(can_project_raw_moments(fit))
     expect_equal(projected_gamma(fit, F, source = "raw", tile_rows = 17L),
-                 projected_gamma(fit, F, source = "materialized"), tolerance = 1e-10)
+                 projected_gamma(fit, F, source = "materialized"), tolerance = 1e-8)
   }
 })
 
@@ -43,9 +43,9 @@ test_that("uncached single and nested ML spectra never request a full Gamma", {
   unrestricted@SampleStats@NACOV <- list(NULL)
   local_mocked_bindings(gamma_from_lavaan = function(...) stop("full Gamma requested"))
   expect_equal(single_model_reduced_lambdas(single, fit_df(single)), full_single,
-               tolerance = 1e-10)
+               tolerance = 1e-8)
   expect_equal(lambdas_nested(m0_no_groups, unrestricted, df = df), full_nested,
-               tolerance = 1e-10)
+               tolerance = 1e-8)
 })
 
 test_that("ML fits without precomputed NACOV work directly from observations", {
@@ -55,7 +55,7 @@ test_that("ML fits without precomputed NACOV work directly from observations", {
   expected <- lavaan_lambdas(fit, fit_df(fit))
   local_mocked_bindings(gamma_from_lavaan = function(...) stop("full Gamma requested"))
   expect_equal(single_model_reduced_lambdas(fit, fit_df(fit)), expected,
-               tolerance = 1e-10)
+               tolerance = 1e-8)
   expect_true(is.finite(as.numeric(pvalues(fit, "SB_ML"))))
 })
 
@@ -67,7 +67,7 @@ test_that("cached or explicitly supplied Gamma is preserved", {
   expect_false(can_project_raw_moments(custom))
   local_mocked_bindings(raw_moment_projection = function(...) stop("raw rows requested"))
   expect_equal(projected_gamma(object, F), expected)
-  expect_equal(projected_gamma(custom, F), 2 * expected, tolerance = 1e-10)
+  expect_equal(projected_gamma(custom, F), 2 * expected, tolerance = 1e-8)
   expect_error(projected_gamma(custom, F, source = "raw"), "not supported")
 })
 

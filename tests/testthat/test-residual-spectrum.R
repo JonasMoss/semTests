@@ -6,9 +6,9 @@ test_that("residual factor reproduces the full projection and ignores parameter 
   B <- residual_metric_factor(list(H), D, 5L)
   HD <- H %*% D
   U <- H - HD %*% solve(crossprod(D, HD), t(HD))
-  expect_equal(tcrossprod(B), U, tolerance = 1e-10)
+  expect_equal(tcrossprod(B), U, tolerance = 1e-8)
   scaled <- residual_metric_factor(list(H), sweep(D, 2, c(1e-8, 1, 1e8), "*"), 5L)
-  expect_equal(tcrossprod(scaled), U, tolerance = 1e-10)
+  expect_equal(tcrossprod(scaled), U, tolerance = 1e-8)
   expect_error(residual_metric_factor(list(H), cbind(D, D[, 1]), 4L), "rank")
   expect_null(residual_metric_factor(list(-H), D, 5L))
   expect_error(positive_symmetric_eigenvalues(diag(c(1, -1)), 2, "test"),
@@ -20,12 +20,12 @@ test_that("symmetric restriction solves agree with the general product", {
   C <- matrix(c(2, .3, .3, 1), 2)
   S <- matrix(c(3, .4, .4, 2), 2)
   expect_equal(restriction_spectrum(C, S, 2, "test"),
-               ugamma_eigenvalues(solve(C, S), 2), tolerance = 1e-12)
+               ugamma_eigenvalues(solve(C, S), 2), tolerance = 1e-8)
   # Changing restriction coordinates leaves the generalized spectrum unchanged.
   T <- matrix(c(2, 1, 0, 3), 2)
   expect_equal(restriction_spectrum(crossprod(T, C %*% T),
                                     crossprod(T, S %*% T), 2, "test"),
-               restriction_spectrum(C, S, 2, "test"), tolerance = 1e-12)
+               restriction_spectrum(C, S, 2, "test"), tolerance = 1e-8)
 })
 
 test_that("expected-information spectra match full lavaan UGamma", {

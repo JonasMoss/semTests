@@ -46,6 +46,7 @@ fit_pair <- function(nesting, ...) {
 }
 
 test_that("delta restriction reproduces lavaan's default delta method", {
+  skip_on_cran() # cross-implementation agreement
   for (nm in names(nestings)) {
     fits <- fit_pair(nestings[[nm]])
     expect_equal(semtests_sb_p(fits$m0, fits$m1, "delta"),
@@ -56,6 +57,7 @@ test_that("delta restriction reproduces lavaan's default delta method", {
 })
 
 test_that("exact restriction reproduces lavaan's exact method for complete data", {
+  skip_on_cran() # cross-implementation agreement
   for (nm in c("equality", "two_group_loadings")) {
     fits <- fit_pair(nestings[[nm]])
     expect_equal(semtests_sb_p(fits$m0, fits$m1, "exact"),

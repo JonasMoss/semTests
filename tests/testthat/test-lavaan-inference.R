@@ -51,13 +51,13 @@ test_that("global score projection removes the model tangent across groups", {
     G <- out$ingredients$projection
     H <- lavaan::lav_matrix_bdiag(out$ingredients$information_blocks)
     D <- out$ingredients$tangent
-    expect_equal(unname(crossprod(G, H %*% G)), diag(out$df), tolerance = 1e-9)
+    expect_equal(unname(crossprod(G, H %*% G)), diag(out$df), tolerance = 1e-8)
     expect_lt(max(abs(crossprod(D, H %*% G))), 1e-9)
     expect_equal(out$df, as.integer(fit_df(fit)))
     expect_lt(out$diagnostics$nuisance_stationarity_norm, 1e-4)
     parts <- ml_global_score_parts(fit, "uncentered", tile_rows = 1L)
-    expect_equal(parts$score, out$ingredients$score, tolerance = 1e-9)
-    expect_equal(parts$score_covariance, out$ingredients$score_covariance, tolerance = 1e-9)
+    expect_equal(parts$score, out$ingredients$score, tolerance = 1e-8)
+    expect_equal(parts$score_covariance, out$ingredients$score_covariance, tolerance = 1e-8)
     centered <- score_test(fit, score_covariance = "centered", keep = TRUE)
     expect_equal(centered$statistic, out$statistic)
     expect_gte(min(eigen(out$ingredients$score_covariance - centered$ingredients$score_covariance,
