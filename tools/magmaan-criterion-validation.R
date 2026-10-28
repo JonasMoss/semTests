@@ -23,9 +23,10 @@ model<-'f =~ x1+a*x2+b*x3+x4'
 dat<-lavaan::HolzingerSwineford1939[,paste0('x',1:4)]
 for(est in c('GLS','WLS','ULS')) {
   fit<-lavaan::cfa(model,dat,estimator=est)
-  W<-if(est=='WLS') as.matrix(lavaan::lavInspect(fit,'wls.v')) else NULL
-  mag<-magmaanlab::fit_model(magmaanlab::model_spec(model),dat,estimator=est,W=W)
-  ref<-magmaanlab::magmaan_core$infer_casewise_influence_ij_fit(mag,as.matrix(dat),W)
+  # Each library builds its own WLS (ADF) weight; magmaan refuses a supplied
+  # W for estimated-weight inference because it has no influence recipe.
+  mag<-magmaanlab::fit_model(magmaanlab::model_spec(model),dat,estimator=est)
+  ref<-magmaanlab::magmaan_core$infer_casewise_influence_ij_fit(mag,as.matrix(dat),NULL)
   pt<-mag$partable[mag$partable$free>0,];pt<-pt[order(pt$free),]
   scale<-ifelse(pt$op=='~~',nrow(dat)/(nrow(dat)-1),1)
   V<-crossprod(ref$influence)*tcrossprod(scale)
