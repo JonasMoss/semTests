@@ -71,8 +71,36 @@ test_that("the FIML convention is explicit and recorded", {
   )
 
   observed <- pvalues(fiml_expected, "PEBA4")
-  lavaan <- pvalues(fiml_expected, "PEBA4", fiml.convention = "lavaan")
+  expect_warning(
+    lavaan <- pvalues(fiml_expected, "PEBA4", fiml.convention = "lavaan"),
+    class = "semTests_warning_deprecated"
+  )
   expect_equal(attr(observed, "semtests")$fiml.convention, "observed")
   expect_equal(attr(lavaan, "semtests")$fiml.convention, "lavaan")
   expect_null(attr(pvalues(object, "PEBA4_RLS"), "semtests")$fiml.convention)
+})
+
+test_that("fiml.convention is deprecated but keeps working", {
+  HS <- lavaan::HolzingerSwineford1939
+  set.seed(12)
+  HS$x1[sample(nrow(HS), 60)] <- NA
+  fit <- lavaan::cfa(hs, HS, missing = "fiml", estimator = "ML")
+  restricted <- lavaan::cfa(sub("x2 + x3", "a*x2 + a*x3", hs, fixed = TRUE), HS,
+                            missing = "fiml", estimator = "ML")
+  default <- pvalues(fit, "PEBA4")
+  expect_no_warning(pvalues(fit, "PEBA4"))
+  expect_no_warning(pvalues_nested(restricted, fit, tests = "SB"))
+
+  # Supplying either value warns, with the standard deprecation class too.
+  expect_warning(explicit <- pvalues(fit, "PEBA4", fiml.convention = "observed"),
+                 "already the default", class = "semTests_warning_deprecated")
+  expect_equal(explicit, default)
+  expect_warning(pvalues(fit, "PEBA4", fiml.convention = "lavaan"),
+                 "lavTestLRT", class = "deprecatedWarning")
+  expect_warning(pvalues_nested(restricted, fit, tests = "SB",
+                                fiml.convention = "lavaan"),
+                 class = "semTests_warning_deprecated")
+  # Non-FIML fits ignore the setting but still hear about the deprecation.
+  expect_warning(pvalues(object, "PEBA4_RLS", fiml.convention = "observed"),
+                 class = "semTests_warning_deprecated")
 })

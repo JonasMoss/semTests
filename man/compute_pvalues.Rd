@@ -13,8 +13,9 @@ compute_pvalues(
   pols,
   chisq = c("ml", "rls"),
   m1 = NULL,
-  A.method = "delta",
-  fiml.convention = "observed"
+  A.method = "weighted",
+  fiml.convention = "observed",
+  cache = NULL
 )
 }
 \description{

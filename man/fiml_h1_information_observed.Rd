@@ -7,7 +7,7 @@
 fiml_h1_information_observed(fit)
 }
 \description{
-lavaan 0.7-2 exposes the corrected FIML H1 information. Setting
+lavaan exposes the corrected FIML H1 information. Setting
 \code{h1.information} on a local copy requests the unstructured, observed
 saturated information without refitting or changing the fitted parameters.
 }

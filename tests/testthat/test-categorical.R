@@ -81,7 +81,7 @@ categorical_multigroup <- lavaan::cfa(
   ordered = categorical_fixture$ordered, group = "school"
 )
 
-test_that("biased single-model spectra come directly from lavaan UGamma", {
+test_that("biased single-model spectra match lavaan UGamma", {
   skip_on_cran() # numeric agreement with lavaan; not portable across BLAS/LAPACK
   for (estimator in names(categorical_base_fits)) {
     fit <- categorical_base_fits[[estimator]]
@@ -197,7 +197,7 @@ test_that("nested categorical SB and SS reproduce lavaan Satorra-2000", {
     )
     actual <- pvalues_nested(
       fits$m0, fits$m1,
-      tests = c("SB", "SS")
+      tests = c("SB", "SS"), A.method = "delta"
     )
     expect_equal(
       unname(actual[c("sb_ml", "ss_ml")]),
@@ -224,7 +224,7 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
     h0, categorical_fixture$data,
     ordered = categorical_fixture$ordered, group = "school"
   )
-  actual <- pvalues_nested(m0, m1, tests = c("SB", "SS"))
+  actual <- pvalues_nested(m0, m1, tests = c("SB", "SS"), A.method = "delta")
   shifted <- lavaan::lavTestLRT(
     m1, m0,
     method = "satorra.2000",
@@ -247,7 +247,7 @@ test_that("nested multigroup categorical spectra reproduce lavaan traces", {
     method = "satorra.2000",
     A.method = "delta", scaled.shifted = FALSE
   )
-  actual_sb <- pvalues_nested(m0_sb, m1_sb, tests = "SB")
+  actual_sb <- pvalues_nested(m0_sb, m1_sb, tests = "SB", A.method = "delta")
   expect_equal(as.numeric(actual_sb),
     unname(scaled[2L, "Pr(>Chisq)"]),
     tolerance = 1e-8
@@ -266,7 +266,7 @@ test_that("nested categorical compatibility checks fail clearly", {
   )
   expect_error(
     pvalues_nested(fits$m0, fits$m1, A.method = "exact"),
-    "A.method = \"delta\""
+    "A.method = \"exact\""
   )
 
   dwls <- fit_categorical_pair("DWLS")$m1

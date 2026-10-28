@@ -7,6 +7,9 @@
 #' give the supported combinations. Configurations outside them are refused at
 #' the entry point (see [check_supported()]), and the test suite follows the
 #' same boundary.
+#' The score and criterion tests built by [semtest()] have the narrower scope
+#' described separately below; the fit-test tables do not establish their
+#' support.
 #'
 #' @details
 #'
@@ -27,10 +30,10 @@
 #'
 #' | Estimators              | Data        | Groups          | Missing          | Method      | A.method        | Availability | Stability |
 #' |-------------------------|-------------|-----------------|------------------|-------------|-----------------|--------------|-----------|
-#' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | --              | available | stable |
-#' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | --              | available | stable |
-#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | exact or delta  | available | stable |
-#' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | delta only | available | stable |
+#' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | weighted, delta, or exact | available | stable |
+#' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | weighted, delta, or exact | available | stable |
+#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | weighted, delta, or exact | available | stable |
+#' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | weighted or delta | available | stable |
 #' | any                     | continuous  | --              | mixed / non-FIML | --          | --              | rejected | -- |
 #'
 #' ## Stability
@@ -41,8 +44,9 @@
 #' also marked stable: each is validated to numerical tolerance against an
 #' independent implementation (magmaan) across a simulation battery, in addition
 #' to the deterministic implementation tests every available row carries. The
-#' `fiml.convention = "lavaan"` option reproduces lavaan's own spectrum for
-#' compatibility rather than as an independently validated construction.
+#' deprecated `fiml.convention = "lavaan"` option reproduces lavaan's own
+#' spectrum for compatibility rather than as an independently validated
+#' construction.
 #' Configurations outside the tables are refused at the entry point.
 #'
 #' ## Observed exogenous covariates
@@ -85,11 +89,17 @@
 #'   elsewhere, and the Du-Bentler correction has no derivation for the other
 #'   families or a fixed covariate design. `semTests` refuses either request and
 #'   points you to the standard statistic and biased gamma.
-#' * **Categorical and mixed-indicator fits** use lavaan's biased inspected
-#'   `UGamma` spectrum and unscaled estimator statistic directly. Supported
+#' * For **complete-data normal-likelihood ML**, biased spectra can be computed
+#'   from tiled empirical moment influences when Gamma is not cached. The
+#'   calculation includes mean/covariance cross terms and group proportions.
+#'   Cached or supplied NACOV is retained; sampling weights, alternative Gamma
+#'   normalizations, and other first-stage conventions keep their existing paths.
+#' * **Categorical and mixed-indicator fits** use the spectrum equivalent to
+#'   lavaan's biased `UGamma` and its unscaled estimator statistic. Expected-
+#'   information fits compute the spectrum in residual space. Supported
 #'   estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
-#'   ULSMV). Nested comparison is restricted to `method = "2000"` and
-#'   `A.method = "delta"`.
+#'   ULSMV). Nested comparison is restricted to `method = "2000"`, with
+#'   `A.method = "weighted"` or `"delta"`.
 #' * **Pairwise categorical missingness** means support for lavaan's pairwise
 #'   sample-statistic and `UGamma` calculation. Pairwise deletion has its own
 #'   missingness assumptions and does not provide FIML or generally MAR-valid
@@ -98,10 +108,10 @@
 #'   only. `UG` and `RLS` are refused. FIML supports one or several groups with
 #'   continuous data. Observed exogenous predictors are supported under joint
 #'   random-x inference, using `fixed.x = FALSE` and `conditional.x = FALSE`.
-#'   `fiml.convention = "observed"` (the default) uses observed saturated and
-#'   model information, following the recommendation of Kenward and Molenberghs
-#'   (1998), and is independently validated against magmaan. `"lavaan"`
-#'   reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
+#'   semTests uses observed saturated and model information, following the
+#'   recommendation of Kenward and Molenberghs (1998), and is independently
+#'   validated against magmaan. The deprecated `fiml.convention = "lavaan"`
+#'   reproduces lavaan's inspected robust-test spectrum, including its
 #'   expected H1 weight.
 #'
 #' ## Why full WLS/ADF is refused
@@ -113,6 +123,35 @@
 #' therefore equal the ordinary `1 - pchisq(chisq, df)`. Because the correction
 #' adds nothing, full WLS is refused at the entry point. Fit a DWLS/ULS family
 #' for a non-degenerate robust test, or read the standard chi-square directly.
+#'
+#' ## Score and criterion tests (`semtest()`)
+#'
+#' Without an alternative, [semtest()] builds a global exact-fit score test
+#' from Gaussian likelihood scores. It supports ML/MLM/MLR and FIML with
+#' continuous indicators, one or several groups. Least-squares estimators and
+#' categorical data are not supported for overall fit.
+#'
+#' With an alternative, [semtest()] builds nested score and criterion-difference
+#' tests of affine releases at the restricted fit. These support ML/FIML,
+#' continuous GLS/WLS/DWLS/ULS, and complete all-ordered DWLS/WLS/ULS, with one
+#' or several groups. By default they use full observed curvature and the joint
+#' influence of the sample moments and the estimated fitting weights. Expected
+#' curvature and fixed weights, selected through [inference_control()], are
+#' comparators rather than complete corrections under misspecification.
+#'
+#' Both require unweighted single-level raw observations, joint random-x
+#' inference and affine equality constraints. Ordinal inference requires
+#' nonempty pairwise cells. Its first-stage influence and the derivative of the
+#' estimated weight are computed in closed form. Mixed indicators, pairwise
+#' missingness, case
+#' weights, clusters, bounds and nonlinear constraints are excluded. Full WLS
+#' is admitted for nested inference under misspecification; its exact-fit
+#' correction refusal in [pvalues()] is unchanged.
+#'
+#' Every result is an inspectable `semTests_test` usable with [pvalues()].
+#' Fully studentized results accept only their chi-square calibration.
+#' Numerical parity with an independent implementation does not establish the
+#' finite-sample calibration of penalized score procedures.
 #'
 #' @references
 #'

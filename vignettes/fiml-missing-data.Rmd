@@ -1,8 +1,8 @@
 ---
-title: "FIML models and information conventions"
+title: "Missing data with FIML"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{FIML models and information conventions}
+  %\VignetteIndexEntry{Missing data with FIML}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,14 +18,20 @@ knitr::opts_chunk$set(
 
 ## Scope
 
-`semTests` supports continuous FIML models with one or several groups. Observed
-exogenous predictors can be included when they are modeled jointly by setting
-`fixed.x = FALSE` and `conditional.x = FALSE`. Fixed or conditional predictors
-need a different reference distribution and are refused for now. These models
-use the standard likelihood-ratio statistic and the usual biased gamma
-estimate. The complete-data `RLS` and Du--Bentler `UG` choices do not apply.
+`semTests` supports continuous data with missing values fitted by
+full-information maximum likelihood (`missing = "fiml"`), with one or several
+groups. The statistic is the likelihood-ratio statistic and $\Gamma$ is the
+usual biased estimate, so the `UG` and `RLS` options do not apply. Observed
+predictors are supported when they are modeled jointly with the other
+variables (`fixed.x = FALSE` and `conditional.x = FALSE`). Fixed or
+conditional predictors are refused.
 
-```{r setup}
+## A model with missing values
+
+To have data that are missing at random, we delete values of `x1` and `x5`
+with probabilities that depend on the always-observed `x9`:
+
+```{r data}
 library("semTests")
 library("lavaan")
 
@@ -34,282 +40,150 @@ model <- "
   textual =~ x4 + x5 + x6
   speed   =~ x7 + x8 + x9
 "
-```
 
-## A reproducible MAR-like example
-
-To make the information choice visible, we let missingness in `x1` and `x5`
-depend on `x9`, which stays observed. This gives the example a reproducible
-MAR-like mechanism. It says nothing about the missingness process in the
-original data.
-
-```{r missing-data}
 fiml_data <- HolzingerSwineford1939
 set.seed(20260717)
 driver <- as.numeric(scale(fiml_data$x9))
-
-missing_x1 <- runif(nrow(fiml_data)) <
-  plogis(qlogis(.20) + .8 * driver)
-missing_x5 <- runif(nrow(fiml_data)) <
-  plogis(qlogis(.20) - .8 * driver)
-
+missing_x1 <- runif(nrow(fiml_data)) < plogis(qlogis(.20) + .8 * driver)
+missing_x5 <- runif(nrow(fiml_data)) < plogis(qlogis(.20) - .8 * driver)
 fiml_data$x1[missing_x1] <- NA
 fiml_data$x5[missing_x5] <- NA
-colMeans(is.na(fiml_data[paste0("x", 1:9)]))
+colMeans(is.na(fiml_data[c("x1", "x5")]))
 ```
 
-Fit the model using FIML:
+The fit and the call to `pvalues()` look as they do for complete data:
 
-```{r fiml-fit}
-fit_observed <- cfa(
-  model, fiml_data,
-  missing = "fiml",
-  estimator = "MLR"
-)
-
-pvalues(fit_observed, c("SB", "SS", "PEBA4"))
+```{r fit}
+fit <- cfa(model, fiml_data, missing = "fiml")
+pvalues(fit, c("SB", "SS", "PEBA4"))
 ```
 
-An observed predictor works too when its distribution belongs to the joint
-model:
+## Observed information
 
-```{r random-x-fit}
-model_x <- "
-  visual =~ x1 + x2 + x3
-  visual ~ ageyr
-"
+`semTests` uses observed information for both the saturated and the fitted
+model. Expected information, as SEM software computes it, ignores the
+missingness mechanism and is inconsistent when data are missing at random but
+not completely at random (Kenward and Molenberghs, 1998). Savalei (2010) shows
+the consequences for SEM, and Savalei and Rosseel (2022) describe how lavaan's
+options handle the choice. We also compared the conventions by simulation, for
+the interval coverage of a loading and a factor covariance, with normal and
+$t_5$ data, complete, MCAR, and MAR data, and sample sizes from 150 to 1200.
+Observed information with a sandwich covariance came closest to the nominal
+95%, most clearly for heavy-tailed data and misspecified models.
 
-random_x_data <- fiml_data
-random_x_data$ageyr[seq(7, nrow(random_x_data), by = 23)] <- NA
+lavaan's `information` option therefore does not change the `semTests`
+result. It does change lavaan's own robust tests:
 
-fit_random_x <- cfa(
-  model_x, random_x_data,
-  missing = "fiml", estimator = "MLR",
-  fixed.x = FALSE, conditional.x = FALSE
-)
-
-pvalues(fit_random_x, c("SB", "SS", "PEBA2"))
-```
-
-Because `ageyr` belongs to the joint model, its missing values are handled by
-FIML too. Calling a predictor random is still a modeling decision. If `ageyr`
-should instead be treated as a fixed design variable, this example is not a
-substitute for a conditional analysis.
-
-## Keep the two information choices separate
-
-Two similarly named controls do different jobs:
-
-1. lavaan's `information` fit option selects the model information stored and
-   used for lavaan's own inference.
-2. `fiml.convention` selects the information matrices that `semTests` uses for
-   its reference distribution.
-
-The `semTests` default, `"observed"`, uses observed saturated and observed model
-information throughout. `semTests` requests these matrices explicitly. A
-lavaan fit created with expected information therefore keeps the same
-observed-convention result.
-
-Choose `"lavaan"` when the goal is compatibility with lavaan's own robust
-construction. For one model, it reproduces `lavInspect(fit, "UGamma")`. For a
-nested pair, it reproduces lavaan's public Satorra-2000 construction. In that
-compatibility path, `information = "expected"` controls the model-information
-part of the calculation.
-
-## Why observed information is the default
-
-Expected information can be inconsistent under general MAR (Kenward and
-Molenberghs, 1998). Observed information reflects the realized missingness
-patterns and sample curvature. Savalei (2010) and Savalei and Rosseel (2022)
-work through the consequences for SEM. The choice can matter in finite samples,
-so we checked it with a large simulation.
-
-The study crossed:
-
-* multivariate normal and elliptical \(t_5\) data
-* a correct two-factor CFA and a model omitting a 0.25 cross-loading
-* complete data, 30% MCAR, and 30% MAR
-* \(N = 150, 300, 600,\) and \(1200\)
-
-We followed the interval coverage of one free loading and the factor
-covariance. Six standard-error recipes combined three information choices with
-either a model-based covariance or an empirical-score sandwich covariance
-(Yuan & Bentler, 2000).
-
-```{r information-study, echo = FALSE}
-information_coverage <- data.frame(
-  Method = c(
-    "Expected, model-based",
-    "Expected + sandwich",
-    "Observed H1, model-based",
-    "Observed H1 + sandwich",
-    "Full observed Hessian, model-based",
-    "Full observed Hessian + sandwich"
+```{r information}
+fit_expected <- cfa(model, fiml_data, missing = "fiml", information = "expected")
+lavaan_sb <- function(fit) {
+  lavTest(fit, test = "satorra.bentler")$satorra.bentler$pvalue
+}
+rbind(
+  semTests = c(
+    observed = pvalues(fit, "SB")[[1]],
+    expected = pvalues(fit_expected, "SB")[[1]]
   ),
-  `Correct, normal` = c(94.48, 94.13, 94.67, 94.39, 94.73, 94.72),
-  `Correct, t5` = c(79.41, 92.45, 79.98, 92.52, 80.14, 93.64),
-  `Misspecified, normal` = c(92.10, 91.53, 92.72, 92.46, 93.46, 94.53),
-  `Misspecified, t5` = c(75.21, 89.28, 76.38, 89.98, 77.51, 93.00),
-  check.names = FALSE
-)
-knitr::kable(
-  information_coverage,
-  digits = 2,
-  caption = paste(
-    "Mean 95% coverage across sample sizes, missingness mechanisms,",
-    "and focal parameters. Misspecified cells use centered coverage."
-  )
+  lavaan = c(lavaan_sb(fit), lavaan_sb(fit_expected))
 )
 ```
 
-The full observed Hessian with a sandwich covariance came closest to 95%
-overall, with its advantage largest under heavy tails and misspecification, so
-`semTests` uses observed information by default. The study targets parameter
-interval coverage, not the null calibration of the goodness-of-fit p-values
-themselves, which have their own deterministic and seeded checks under
-`tools/`. The `"lavaan"` convention remains available when the goal is to
-reproduce lavaan's spectrum.
+The printed footer reports the fit's `information` option, and
+`FIML convention: observed` reports what `semTests` used.
 
-## Comparing observed and expected model information
+## Observed predictors
 
-Fit the same model again, changing only lavaan's model-information option:
+A predictor whose distribution is part of the model can have missing values
+too. Here `ageyr` predicts the visual factor:
 
-```{r expected-fit}
-fit_expected <- cfa(
-  model, fiml_data,
-  missing = "fiml",
-  estimator = "MLR",
-  information = "expected"
+```{r predictor}
+predictor_data <- fiml_data
+predictor_data$ageyr[seq(7, nrow(predictor_data), by = 23)] <- NA
+fit_predictor <- cfa("visual =~ x1 + x2 + x3
+                      visual ~ ageyr",
+  predictor_data,
+  missing = "fiml", fixed.x = FALSE, conditional.x = FALSE
 )
-
-max(abs(coef(fit_observed) - coef(fit_expected)))
+pvalues(fit_predictor, c("SB", "PALL"))
 ```
 
-The information option leaves the fitted parameters unchanged here. It can
-still change the reference distribution:
+The model has 2 degrees of freedom, so it cannot use the default `PEBA4`.
+Treating `ageyr` as random is a modeling decision. If it is a fixed design
+variable, a conditional analysis is the right one, and `semTests` does not
+support it yet.
 
-```{r convention-table}
-tests <- c("SB", "SS", "PEBA4")
+## Nested models: is growth linear?
 
-comparison <- cbind(
-  observed_fit__observed_convention = as.numeric(
-    pvalues(fit_observed, tests, fiml.convention = "observed")
-  ),
-  observed_fit__lavaan_convention = as.numeric(
-    pvalues(fit_observed, tests, fiml.convention = "lavaan")
-  ),
-  expected_fit__observed_convention = as.numeric(
-    pvalues(fit_expected, tests, fiml.convention = "observed")
-  ),
-  expected_fit__lavaan_convention = as.numeric(
-    pvalues(fit_expected, tests, fiml.convention = "lavaan")
-  )
-)
-rownames(comparison) <- tests
-format(comparison, scientific = TRUE, digits = 4)
+`Demo.growth` has four repeated measurements, `t1` to `t4`. We delete values
+at the last two waves with probabilities that depend on `t1`:
+
+```{r growth-data}
+growth_data <- Demo.growth
+set.seed(20260718)
+driver <- as.numeric(scale(growth_data$t1))
+for (wave in c("t3", "t4")) {
+  dropped <- runif(nrow(growth_data)) < plogis(qlogis(.20) + .8 * driver)
+  growth_data[dropped, wave] <- NA
+}
+colMeans(is.na(growth_data[paste0("t", 1:4)]))
 ```
 
-The two observed-convention columns agree because `semTests` explicitly
-requests observed information. The lavaan-convention columns can differ because
-that path respects the model-information choice stored in the fit.
+The linear model fixes the slope loadings at 0, 1, 2, and 3. The latent-basis
+model frees the last two and lets the data choose the shape of change, so the
+linear model is the special case and goes first:
 
-Observed information reflects the realized missingness patterns and sample
-curvature. Expected information averages curvature under the fitted model.
-They can be close in well-behaved settings. Missingness and non-normality can
-pull them apart. `semTests` keeps the convention visible in both the function call
-and the result footer.
-
-## Nested FIML comparison
-
-For nested models, both fits must use the same raw observations and missingness
-mask:
-
-```{r nested-fits}
-constrained <- "
-  visual  =~ x1 + a*x2 + a*x3
-  textual =~ x4 + b*x5 + b*x6
-  speed   =~ x7 + x8 + x9
-"
-
-m1 <- cfa(
-  model, fiml_data,
-  missing = "fiml", estimator = "MLR"
+```{r growth}
+linear <- growth("i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
+                  s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4",
+  growth_data,
+  missing = "fiml"
 )
-m0 <- cfa(
-  constrained, fiml_data,
-  missing = "fiml", estimator = "MLR"
+basis <- growth("i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
+                 s =~ 0*t1 + 1*t2 + t3 + t4",
+  growth_data,
+  missing = "fiml"
 )
+growth_test <- pvalues_nested(linear, basis, tests = c("SB", "SS", "PALL"))
+growth_test
+coef(basis)[c("s=~t3", "s=~t4")]
 ```
 
-The default delta map works with the local model derivatives and tolerates a
-wider range of equivalent parameterizations. The exact map uses the literal
-parameter restrictions and requires both fits to share the same underlying set
-of free parameters:
+The free loadings are estimated at
+`r paste(round(coef(basis)[c("s=~t3", "s=~t4")], 2), collapse = " and ")`,
+close to 2 and 3, and the test gives *p* =
+`r sprintf("%.3f", growth_test[["pall_ml"]])`. The data give no reason to prefer the
+latent-basis model.
 
-```{r nested-comparison}
-nested_tests <- c("SB", "SS", "PEBA2")
-nested <- cbind(
-  observed_delta = as.numeric(pvalues_nested(
-    m0, m1,
-    tests = nested_tests,
-    A.method = "delta", fiml.convention = "observed"
-  )),
-  observed_exact = as.numeric(pvalues_nested(
-    m0, m1,
-    tests = nested_tests,
-    A.method = "exact", fiml.convention = "observed"
-  )),
-  lavaan_delta = as.numeric(pvalues_nested(
-    m0, m1,
-    tests = nested_tests,
-    A.method = "delta", fiml.convention = "lavaan"
-  ))
-)
-rownames(nested) <- nested_tests
-format(nested, scientific = TRUE, digits = 4)
+The default restriction matrix, `A.method = "weighted"`, handles this pair,
+where the larger model frees parameters that the smaller one fixes.
+`A.method = "exact"` needs the same free parameters in both models, as with
+equality constraints, and refuses it:
+
+```{r exact, error = TRUE}
+pvalues_nested(linear, basis, A.method = "exact")
 ```
 
-The delta default is the more flexible choice when equivalent models have
-different parameter tables. Use exact when the hypothesis is naturally written as a
-literal restriction on one shared set of free parameters.
+When both apply, the `"exact"` *p*-value shifts slightly with the factor
+identification, for example `std.lv = TRUE` against marker loadings, while the
+`"weighted"` *p*-value does not. lavaan's `lavTestLRT(basis, linear, method =
+"satorra.2000")` on `MLR` fits uses `A.method = "delta"` and follows the fits'
+information options, so it need not agree with `semTests`.
 
-## FIML with several groups
+## Several groups
 
-Grouped models use the same interface. Here we compare a configural model with
-one that holds the factor loadings equal across schools:
+Grouped models use the same calls. Here the factor loadings are held equal
+across the two schools:
 
-```{r multigroup-fits}
-mg1 <- cfa(
-  model, fiml_data,
-  group = "school",
-  missing = "fiml", estimator = "MLR"
+```{r groups}
+configural <- cfa(model, fiml_data, group = "school", missing = "fiml")
+equal_loadings <- cfa(model, fiml_data,
+  group = "school", group.equal = "loadings", missing = "fiml"
 )
-mg0 <- cfa(
-  model, fiml_data,
-  group = "school", group.equal = "loadings",
-  missing = "fiml", estimator = "MLR"
-)
-
-pvalues(mg1, c("SB", "SS", "PEBA4"))
-pvalues_nested(mg0, mg1, tests = c("SB", "SS", "PEBA4"))
+pvalues_nested(equal_loadings, configural)
 ```
 
-The groups may have different sample sizes and missingness patterns. The two
-fits in a nested comparison still need the same observations and missingness
-mask within each group.
-
-## What to report
-
-A reproducible FIML analysis should report:
-
-* the missingness pattern and its substantive justification
-* lavaan's estimator and `information` option
-* the `semTests` `fiml.convention`
-* the nested `A.method`, when applicable
-* the requested p-value method and base statistic
-
-The result footer and `attr(result, "semtests")` retain these `semTests` choices
-with the returned p-values.
+The groups may differ in size and missingness pattern, but the two fits must
+use the same observations and missingness pattern within each group.
 
 ## References
 
@@ -317,22 +191,17 @@ Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
 inference when data are missing at random. *Statistical Science*, 13(3),
 236–247. <https://doi.org/10.1214/ss/1028905886>
 
-Savalei, V. (2010). Expected versus observed information in SEM with incomplete
-normal and nonnormal data. *Psychological Methods*, 15(4), 352–367.
-<https://doi.org/10.1037/a0020143>
-
-Savalei, V., & Rosseel, Y. (2022). Computational options for standard errors
-and test statistics with incomplete normal and nonnormal data in SEM.
-*Structural Equation Modeling*, 29(2), 163–181.
-<https://doi.org/10.1080/10705511.2021.1877548>
-
 Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
 analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
 A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
 (pp. 233–247). Kluwer Academic.
 <https://doi.org/10.1007/978-1-4615-4603-0_17>
 
-Yuan, K.-H., & Bentler, P. M. (2000). Three likelihood-based methods for mean
-and covariance structure analysis with nonnormal missing data.
-*Sociological Methodology*, 30, 165–200.
-<https://doi.org/10.1111/0081-1750.00078>
+Savalei, V. (2010). Expected versus observed information in SEM with
+incomplete normal and nonnormal data. *Psychological Methods*, 15(4),
+352–367. <https://doi.org/10.1037/a0020143>
+
+Savalei, V., & Rosseel, Y. (2022). Computational options for standard errors
+and test statistics with incomplete normal and nonnormal data in SEM.
+*Structural Equation Modeling*, 29(2), 163–181.
+<https://doi.org/10.1080/10705511.2021.1877548>

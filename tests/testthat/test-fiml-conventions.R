@@ -112,11 +112,14 @@ test_that("lavaan nested convention reproduces public Satorra-2000 tests", {
       A.method = A.method,
       scaled.shifted = TRUE
     )
-    actual <- pvalues_nested(
-      fits$m0, fits$m1,
-      tests = c("SB", "SS"),
-      A.method = A.method,
-      fiml.convention = "lavaan"
+    expect_warning(
+      actual <- pvalues_nested(
+        fits$m0, fits$m1,
+        tests = c("SB", "SS"),
+        A.method = A.method,
+        fiml.convention = "lavaan"
+      ),
+      class = "semTests_warning_deprecated"
     )
     expect_equal(
       unname(actual[c("sb_ml", "ss_ml")]),
@@ -159,11 +162,14 @@ test_that("multigroup lavaan convention reproduces inspected and public tests", 
       A.method = A.method,
       scaled.shifted = TRUE
     )
-    semtests <- pvalues_nested(
-      fits$m0, fits$m1,
-      tests = c("SB", "SS"),
-      A.method = A.method,
-      fiml.convention = "lavaan"
+    expect_warning(
+      semtests <- pvalues_nested(
+        fits$m0, fits$m1,
+        tests = c("SB", "SS"),
+        A.method = A.method,
+        fiml.convention = "lavaan"
+      ),
+      class = "semTests_warning_deprecated"
     )
     expect_equal(
       unname(semtests[c("sb_ml", "ss_ml")]),
@@ -338,11 +344,14 @@ test_that("random-x FIML lavaan convention reproduces public nested tests", {
       A.method = A.method,
       scaled.shifted = TRUE
     )
-    actual <- pvalues_nested(
-      fits$m0, fits$m1,
-      tests = c("SB", "SS"),
-      A.method = A.method,
-      fiml.convention = "lavaan"
+    expect_warning(
+      actual <- pvalues_nested(
+        fits$m0, fits$m1,
+        tests = c("SB", "SS"),
+        A.method = A.method,
+        fiml.convention = "lavaan"
+      ),
+      class = "semTests_warning_deprecated"
     )
     expect_equal(
       unname(actual[c("sb_ml", "ss_ml")]),
@@ -441,7 +450,7 @@ test_that("nested FIML restrictions are invariant to parameter-table ordering", 
   m1 <- lavaan::cfa(h1, data, missing = "fiml", estimator = "MLR")
   m0a <- lavaan::cfa(h0_aligned, data, missing = "fiml", estimator = "MLR")
   m0b <- lavaan::cfa(h0_reordered, data, missing = "fiml", estimator = "MLR")
-  expect_false(identical(fiml_parameter_keys(m0a), fiml_parameter_keys(m0b)))
+  expect_false(identical(full_parameter_keys(m0a), full_parameter_keys(m0b)))
   for (A.method in c("delta", "exact")) {
     a <- fiml_lambdas_nested(m0a, m1, 1L, A.method, "observed")$ug_biased
     b <- fiml_lambdas_nested(m0b, m1, 1L, A.method, "observed")$ug_biased

@@ -2,10 +2,14 @@
 % Please edit documentation in R/pvalues.R
 \name{pvalues}
 \alias{pvalues}
+\alias{pvalues.lavaan}
 \alias{pvalues_nested}
-\title{Compute robust \emph{p}-values for one or two \code{lavaan} objects}
+\alias{pvalues.semTests_test}
+\title{Compute robust \emph{p}-values for fitted models and test objects}
 \usage{
-pvalues(
+pvalues(object, tests, fiml.convention = c("observed", "lavaan"))
+
+\method{pvalues}{lavaan}(
   object,
   tests = if (is_classic_nt(object)) "pEBA4_RLS" else "pEBA4",
   fiml.convention = c("observed", "lavaan")
@@ -16,12 +20,19 @@ pvalues_nested(
   m1,
   method = c("2000", "2001"),
   tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-  A.method = c("delta", "exact"),
+  A.method = c("weighted", "delta", "exact"),
+  fiml.convention = c("observed", "lavaan")
+)
+
+\method{pvalues}{semTests_test}(
+  object,
+  tests = if (object$reference == "chisq") "STD" else "ALL",
   fiml.convention = c("observed", "lavaan")
 )
 }
 \arguments{
-\item{object, m0, m1}{One or two \code{lavaan} objects. \code{pvalues} does
+\item{object, m0, m1}{One or two \code{lavaan} objects, or a \code{semTests_test} result
+from \code{\link[=semtest]{semtest()}} supplied as \code{object} to \code{pvalues()}. For lavaan fits, \code{pvalues} does
 goodness-of-fit testing on one object, while \code{pvalues_nested} does
 hypothesis testing on two nested models.}
 
@@ -32,20 +43,33 @@ take a positive integer number of blocks (for example, \code{"pEBA4"}), no
 greater than the test df. \code{pOLS} takes a finite positive penalty (for
 example, \code{"pOLS2"}).}
 
-\item{fiml.convention}{For FIML fits, use the fully observed-information
-convention (\code{"observed"}, the default) or reproduce lavaan 0.7-2's
-inspected robust-test spectrum (\code{"lavaan"}).}
+\item{fiml.convention}{Deprecated, and will be removed in a future release.
+For FIML fits, use the fully observed-information convention
+(\code{"observed"}, the default) or reproduce lavaan's inspected
+robust-test spectrum (\code{"lavaan"}). Supplying it, with either value, gives
+a warning of class \code{semTests_warning_deprecated}. The \code{"lavaan"} spectrum
+changes with the fit's \code{information} and \code{h1.information} options; use
+\code{\link[lavaan:lavTest]{lavaan::lavTest()}} or \code{\link[lavaan:lavTestLRT]{lavaan::lavTestLRT()}} to reproduce lavaan's own
+tests.}
 
 \item{method}{Nested reduction method. Only Satorra's \code{"2000"} construction
 (the paper-recommended default) is available. The Satorra--Bentler \code{"2001"}
 construction has been withdrawn because it performs poorly, and requesting
 it points you to \code{"2000"}.}
 
-\item{A.method}{For nested FIML or categorical models, choose \code{"exact"} for
-the literal parameter restriction map or \code{"delta"} for the local
-moment-tangent restriction map. \code{"delta"} is the default and applies to a
-wider range of equivalent model parameterizations. Categorical nested
-models support \code{"delta"} only.}
+\item{A.method}{The restriction matrix of the nested test. \code{"weighted"}
+(the default) is the moment-tangent map, with each model's Jacobian at its
+own estimate, projected in the fit's weight metric. It applies to any
+nesting, including restricted models that drop or fix paths, and does not
+depend on how the factors are identified or on the units of the observed
+variables. \code{"delta"} is the same map projected in the Euclidean metric,
+lavaan's default; use it to reproduce
+\code{lavTestLRT(..., method = "satorra.2000")}. Its p-values change with the
+units of the observed variables. \code{"exact"} is lavaan's literal parameter
+restriction map. It requires the same underlying free parameters in both
+models, as with equality constraints, and its p-values shift slightly with
+the identification (for example \code{std.lv = TRUE} versus marker loadings).
+Categorical nested models do not support \code{"exact"}.}
 }
 \value{
 A named numeric vector of p-values, of class \code{semTests_pvalues},
@@ -53,6 +77,8 @@ carrying an \code{"semtests"} attribute that records the requested tests,
 requested and base estimator, base-statistic and gamma choices,
 information type, data type, parameterization where applicable, nested
 method and restriction map where applicable, and degrees of freedom.
+For matrix results, the attribute instead records test type, reference law,
+hypothesis, normalization, rank/df, sample size when supplied, and provenance.
 }
 \description{
 Compute one or several \emph{p}-values for a fitted \code{lavaan} model. Available
@@ -61,6 +87,13 @@ and familiar robust corrections. The defaults select the recommended method
 for the fitted model.
 }
 \details{
+\code{pvalues()} also accepts the test objects returned by \code{\link[=semtest]{semtest()}}. Tests
+with a weighted chi-square reference use \code{"ALL"} by default; fully
+studentized tests (\code{weight = "score_covariance"}) have a chi-square
+reference and accept only \code{"STD"}. Test objects accept calibration names
+without \code{UG}, \code{ML}, or \code{RLS} suffixes, and do not accept \code{fiml.convention}.
+The lavaan methods retain their existing defaults and output names.
+
 The \code{tests} argument is a character vector. Each element has one of the forms
 \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS}, \code{TEST_UG_ML}, or \code{TEST_UG_RLS}.
 For example, \code{SB_UG_RLS}.
@@ -116,7 +149,7 @@ ML/MLM/MLR, GLS, ULS,
 FIML (missing data), and categorical DWLS/ULS families, with single- and
 multi-group continuous, ordered, and mixed-indicator fits.
 \code{pvalues_nested()} supports continuous estimators and categorical
-Satorra-2000 comparisons with a delta restriction map. The fitted model must
+Satorra-2000 comparisons with a moment-space restriction map. The fitted model must
 expose the asymptotic moment covariance. Robust choices such as
 \code{test = "satorra.bentler"} or \code{estimator = "MLM"}, \code{"MLR"}, or \code{"DWLS"}
 provide it. The RLS statistic (\code{browne.residual.nt.model}) and the unbiased
@@ -138,10 +171,10 @@ estimator, fitting conventions, variables, groups, sample sizes, raw data,
 and missingness mask. \code{semTests} checks comparability. The substantive
 nesting argument remains part of the analysis.
 
-For FIML, \code{fiml.convention = "observed"} (the default) uses observed
-saturated and model information throughout. An independent implementation
-validates this construction. The \code{"lavaan"} option reproduces lavaan
-0.7-2's robust-test construction. For a single model it uses lavaan's
+For FIML, semTests uses observed saturated and model information
+throughout. An independent implementation validates this construction.
+The deprecated \code{fiml.convention} argument can instead select \code{"lavaan"},
+which reproduces lavaan's robust-test construction. For a single model it uses lavaan's
 inspected \code{UGamma}. For nested models it uses lavaan's H1 weight convention
 and selected model information. The returned object records the convention,
 which keeps this inferential choice visible in saved results.
@@ -149,7 +182,7 @@ which keeps this inferential choice visible in saved results.
 For a single FIML model, \code{"lavaan"} means the eigenvalue spectrum returned by
 \code{lavInspect(fit, "UGamma")}. The scalar Yuan--Bentler--Mplus test stored by a
 default MLR fit is a different correction and may give a different result.
-For nested FIML models, \code{"lavaan"} reproduces
+For nested FIML models, \code{"lavaan"} with \code{A.method = "delta"} reproduces
 \code{lavTestLRT(..., method = "satorra.2000")}.
 }
 }

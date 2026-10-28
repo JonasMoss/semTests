@@ -24,11 +24,6 @@ fiml_check_supported <- function(fit, context = "FIML FMG") {
   invisible(TRUE)
 }
 
-#' @keywords internal
-fiml_sym <- function(x) {
-  (x + t(x)) / 2
-}
-
 # Convert a lavaan inspection to one matrix per group.
 fiml_group_matrices <- function(x, fit, what) {
   blocks <- if (is.list(x)) x else list(x)
@@ -123,42 +118,6 @@ fiml_check_same_data <- function(m0, m1) {
   invisible(TRUE)
 }
 
-#' Stable identities for lavaan's full free parameters.
-#' @keywords internal
-fiml_parameter_keys <- function(fit) {
-  pt <- lavaan::parTable(fit)
-  pt <- pt[pt$free > 0L, , drop = FALSE]
-  pt <- pt[order(pt$free), , drop = FALSE]
-  if (nrow(pt) != fit@Model@nx.free ||
-    !identical(as.integer(pt$free), seq_len(fit@Model@nx.free))) {
-    stop("Could not identify lavaan's full free-parameter ordering.",
-      call. = FALSE
-    )
-  }
-  fields <- intersect(
-    c("lhs", "op", "rhs", "group", "level", "block"),
-    names(pt)
-  )
-  do.call(paste, c(unname(pt[fields]), sep = "\r"))
-}
-
-#' Align an H0 parameter basis to H1's full-parameter ordering.
-#' @keywords internal
-fiml_align_parameter_basis <- function(m0, m1, basis0) {
-  key0 <- fiml_parameter_keys(m0)
-  key1 <- fiml_parameter_keys(m1)
-  if (length(key0) != length(key1) ||
-    anyDuplicated(key0) || anyDuplicated(key1) ||
-    !setequal(key0, key1)) {
-    stop("FIML nested exact restriction requires the same underlying full ",
-      "free-parameter set in both models. Use `A.method = \"delta\"` for ",
-      "models represented by different parameter sets.",
-      call. = FALSE
-    )
-  }
-  basis0[match(key1, key0), , drop = FALSE]
-}
-
 #' @keywords internal
 fiml_validate_restriction <- function(restriction, df, npar) {
   restriction <- as.matrix(restriction)
@@ -177,27 +136,11 @@ fiml_validate_restriction <- function(restriction, df, npar) {
   restriction
 }
 
+#' FIML restriction matrix for `A.method`; see [get_a_matrix()].
 #' @keywords internal
-fiml_restriction_exact <- function(m0, m1, df) {
-  basis1 <- model_parameter_basis(m1)
-  basis0 <- fiml_align_parameter_basis(
-    m0,
-    m1,
-    model_parameter_basis(m0)
-  )
-  map <- generalized_inverse(basis1) %*% basis0
-  restriction <- t(get_orthogonal_complement(map))
-  fiml_validate_restriction(restriction, df, ncol(basis1))
-}
-
-#' @keywords internal
-fiml_restriction_delta <- function(m0, m1, df) {
-  delta1 <- model_effective_delta(m1)
-  delta0 <- model_effective_delta(m0)
-  map <- generalized_inverse(delta1) %*% delta0
-  restriction <- t(get_orthogonal_complement(map))
+fiml_restriction <- function(m0, m1, df, A.method) {
   fiml_validate_restriction(
-    restriction,
+    get_a_matrix(m1, m0, A.method),
     df,
     ncol(model_parameter_basis(m1))
   )
@@ -205,7 +148,7 @@ fiml_restriction_delta <- function(m0, m1, df) {
 
 #' Saturated observed-data FIML information in moment space.
 #'
-#' lavaan 0.7-2 exposes the corrected FIML H1 information. Setting
+#' lavaan exposes the corrected FIML H1 information. Setting
 #' `h1.information` on a local copy requests the unstructured, observed
 #' saturated information without refitting or changing the fitted parameters.
 #' @keywords internal
@@ -245,12 +188,12 @@ fiml_h1_information_lavaan <- function(fit) {
 #' Return the leading symmetric-product eigenvalues without forming AB.
 #' @keywords internal
 fiml_sandwich_eigenvalues <- function(U, Gamma, df) {
-  Gamma <- fiml_sym(Gamma)
+  Gamma <- symmetrize(Gamma)
   eg <- eigen(Gamma, symmetric = TRUE)
   root <- eg$vectors %*%
     diag(sqrt(pmax(eg$values, 0)), nrow(Gamma)) %*%
     t(eg$vectors)
-  reduced <- fiml_sym(root %*% fiml_sym(U) %*% root)
+  reduced <- symmetrize(root %*% symmetrize(U) %*% root)
   ev <- eigen(reduced, symmetric = TRUE, only.values = TRUE)$values
   sort(Re(ev), decreasing = TRUE)[seq_len(df)]
 }
@@ -283,10 +226,16 @@ fiml_lambdas <- function(fit, df,
         call. = FALSE
       )
     }
-    HD <- H %*% Delta
-    P <- fiml_sym(crossprod(Delta, HD))
-    U <- H - HD %*% generalized_inverse(P) %*% t(HD)
-    fiml_sandwich_eigenvalues(U, Gamma, df)
+    B <- residual_metric_factor(list(H), Delta, df)
+    if (!is.null(B)) {
+      positive_symmetric_eigenvalues(crossprod(B, Gamma %*% B), df,
+                                     "FIML residual spectrum")
+    } else {
+      HD <- H %*% Delta
+      P <- symmetrize(crossprod(Delta, HD))
+      U <- H - HD %*% equilibrated_inverse(P) %*% t(HD)
+      fiml_sandwich_eigenvalues(U, Gamma, df)
+    }
   }
 
   list(ug_biased = lambdas)
@@ -309,8 +258,8 @@ fiml_nested_ingredients <- function(m1,
   }
 
   list(
-    A1 = fiml_sym(crossprod(basis1, information %*% basis1)),
-    B1 = fiml_sym(crossprod(
+    A1 = symmetrize(crossprod(basis1, information %*% basis1)),
+    B1 = symmetrize(crossprod(
       V %*% delta,
       fiml_gamma_matrix(m1) %*% (V %*% delta)
     ))
@@ -320,7 +269,7 @@ fiml_nested_ingredients <- function(m1,
 #' FIML Satorra-2000 nested restriction eigenvalues.
 #' @keywords internal
 fiml_lambdas_nested <- function(m0, m1, df,
-                                A.method = c("delta", "exact"),
+                                A.method = c("weighted", "delta", "exact"),
                                 fiml.convention = c("observed", "lavaan")) {
   A.method <- match.arg(A.method)
   fiml.convention <- match.arg(fiml.convention)
@@ -328,10 +277,7 @@ fiml_lambdas_nested <- function(m0, m1, df,
   fiml_check_supported(m1, "Nested FIML FMG")
   fiml_check_same_data(m0, m1)
 
-  A <- switch(A.method,
-    delta = fiml_restriction_delta(m0, m1, df),
-    exact = fiml_restriction_exact(m0, m1, df)
-  )
+  A <- fiml_restriction(m0, m1, df, A.method)
   ingredients <- fiml_nested_ingredients(m1, fiml.convention)
   if (ncol(A) != nrow(ingredients$A1)) {
     stop("FIML restriction matrix and H1 information dimensions do not agree.",
@@ -339,11 +285,8 @@ fiml_lambdas_nested <- function(m0, m1, df,
     )
   }
 
-  Y <- generalized_inverse(ingredients$A1) %*% t(A)
-  C <- fiml_sym(A %*% Y)
-  S <- fiml_sym(t(Y) %*% ingredients$B1 %*% Y)
-  ev <- Re(eigen(generalized_inverse(C) %*% S,
-    only.values = TRUE
-  )$values)
-  list(ug_biased = sort(ev, decreasing = TRUE))
+  Y <- equilibrated_inverse(ingredients$A1) %*% t(A)
+  C <- symmetrize(A %*% Y)
+  S <- symmetrize(t(Y) %*% ingredients$B1 %*% Y)
+  list(ug_biased = restriction_spectrum(C, S, df, "nested FIML spectrum"))
 }

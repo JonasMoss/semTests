@@ -14,9 +14,11 @@
 #     Rscript tools/magmaan-parity-simulation.R
 #
 # CELLS is a comma-separated filter of cell names (default "all").
+# Nested tests are compared under both restriction constructions; see
+# nested_both().
 
-if (!requireNamespace("magmaan", quietly = TRUE)) {
-  stop("Install magmaan's r-package/ before running this optional check.",
+if (!requireNamespace("magmaanlab", quietly = TRUE)) {
+  stop("Install magmaanlab (magmaan's r-package/) before running this optional check.",
        call. = FALSE)
 }
 if (!requireNamespace("pkgload", quietly = TRUE)) {
@@ -118,9 +120,25 @@ p_diff <- function(semtests, magmaan) {
   max(abs(semtests - magmaan))
 }
 
-na_pair <- c(single = NA_real_, nested = NA_real_)
+# Both libraries use lavaan's names for the nested restriction: "delta" is the
+# moment-tangent map with each model's Jacobian at its own estimate (semTests'
+# default; magmaan must ask for it), "exact" the literal parameter restriction.
+# Compare both; each is NA when either side errors, as semTests' "exact" does
+# for categorical pairs.
+nested_both <- function(semtests_at, magmaan_at) {
+  pairing <- function(method) {
+    tryCatch(
+      p_diff(semtests_at(method), magmaan_at(method)$p_value),
+      error = function(e) NA_real_
+    )
+  }
+  c(nested = pairing("delta"), nested_exact = pairing("exact"))
+}
 
-# ---- cell runners: each returns c(single = <max diff>, nested = <max diff>) ---
+na_pair <- c(single = NA_real_, nested = NA_real_, nested_exact = NA_real_)
+
+# ---- cell runners: each returns the max p-value difference for the single-
+# model tests and for the two nested pairings (see nested_both()) -----------
 
 run_continuous_ls <- function(seed, estimator, gamma) {
   out <- na_pair
@@ -146,33 +164,32 @@ run_continuous_ls <- function(seed, estimator, gamma) {
       if (is.list(value)) value <- value[[1L]]
       weight <- as.matrix(value)
     }
-    spec_h1 <- magmaan::model_spec(h1_model)
-    spec_h0 <- magmaan::model_spec(h0_model)
-    mag_h1 <- magmaan::magmaan(
-      spec_h1, magmaan::df_to_data(data, spec_h1, scaling = "n-1"),
+    spec_h1 <- magmaanlab::model_spec(h1_model)
+    spec_h0 <- magmaanlab::model_spec(h0_model)
+    mag_h1 <- magmaanlab::fit_model(
+      spec_h1, magmaanlab::df_to_data(data, spec_h1, scaling = "n-1"),
       estimator = estimator, W = weight
     )
-    mag_h0 <- magmaan::magmaan(
-      spec_h0, magmaan::df_to_data(data, spec_h0, scaling = "n-1"),
+    mag_h0 <- magmaanlab::fit_model(
+      spec_h0, magmaanlab::df_to_data(data, spec_h0, scaling = "n-1"),
       estimator = estimator, W = weight
     )
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests(
+    mag_single <- magmaanlab::fmg_tests(
       mag_h1, tests = single_tests, gamma = gamma, weight = weight
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested(
-      mag_h1, mag_h0, data = data, tests = nested_tests,
-      A.method = "delta", gamma = gamma, weight = weight
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, method = "2000", tests = nested_tests
+    out[c("nested", "nested_exact")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, method = "2000", tests = nested_tests, A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested(
+        mag_h1, mag_h0, data = data, tests = nested_tests,
+        A.method = a, gamma = gamma, weight = weight
+      )
     )
   }, silent = TRUE)
   out
@@ -200,24 +217,26 @@ run_fiml <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    mag_h1 <- magmaan::magmaan(h1_model, data, estimator = "FIML")
-    mag_h0 <- magmaan::magmaan(h0_model, data, estimator = "FIML")
+    # Identify the factors as lavaan does here (std.lv = TRUE): the "exact"
+    # restriction depends on the identification, "delta" does not.
+    spec_h1 <- magmaanlab::model_spec(h1_model, std_lv = TRUE, meanstructure = TRUE)
+    spec_h0 <- magmaanlab::model_spec(h0_model, std_lv = TRUE, meanstructure = TRUE)
+    mag_h1 <- magmaanlab::fit_model(spec_h1, data, estimator = "FIML")
+    mag_h0 <- magmaanlab::fit_model(spec_h0, data, estimator = "FIML")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests(mag_h1, tests = single_tests)
+    mag_single <- magmaanlab::fmg_tests(mag_h1, tests = single_tests)
     out["single"] <- p_diff(
-      semTests::pvalues(lav_h1, single_tests, fiml.convention = "observed"),
+      semTests::pvalues(lav_h1, single_tests),
       mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested(
-      mag_h1, mag_h0, tests = nested_tests, A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests,
-        A.method = "delta", fiml.convention = "observed"
+    out[c("nested", "nested_exact")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested(
+        mag_h1, mag_h0, tests = nested_tests, A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -250,33 +269,31 @@ run_categorical <- function(seed, pairwise,
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    spec_h1 <- magmaan::model_spec(h1_model, ordered = ordered_names)
-    spec_h0 <- magmaan::model_spec(h0_model, ordered = ordered_names)
-    stats <- magmaan::magmaan_core$data_ordinal_stats_from_df(
+    spec_h1 <- magmaanlab::model_spec(h1_model, ordered = ordered_names)
+    spec_h0 <- magmaanlab::model_spec(h0_model, ordered = ordered_names)
+    stats <- magmaanlab::magmaan_core$data_ordinal_stats_from_df(
       data, spec_h1, ordered = ordered_names, missing = missing,
       pd_gamma = "overlap",
       full_wls_weight = identical(magmaan_estimator, "WLS")
     )
-    mag_h1 <- magmaan::magmaan(spec_h1, stats, estimator = magmaan_estimator)
-    mag_h0 <- magmaan::magmaan(spec_h0, stats, estimator = magmaan_estimator)
+    mag_h1 <- magmaanlab::fit_model(spec_h1, stats, estimator = magmaan_estimator)
+    mag_h0 <- magmaanlab::fit_model(spec_h0, stats, estimator = magmaan_estimator)
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests_ordinal(
+    mag_single <- magmaanlab::fmg_tests_ordinal(
       mag_h1, stats, tests = single_tests, weight = magmaan_estimator
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested_ordinal(
-      mag_h1, mag_h0, stats, tests = nested_tests, weight = magmaan_estimator,
-      A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests, method = "2000",
-        A.method = "delta"
+    out[c("nested", "nested_exact")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested_ordinal(
+        mag_h1, mag_h0, stats, tests = nested_tests,
+        weight = magmaan_estimator, A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -302,38 +319,36 @@ run_multigroup_categorical <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    spec_h1 <- magmaan::model_spec(
+    spec_h1 <- magmaanlab::model_spec(
       h1_model, ordered = ordered_names, group = "group",
       group_labels = labels
     )
-    spec_h0 <- magmaan::model_spec(
+    spec_h0 <- magmaanlab::model_spec(
       h1_model, ordered = ordered_names, group = "group",
       group_labels = labels, group_equal = "loadings"
     )
-    stats <- magmaan::magmaan_core$data_ordinal_stats_from_df(
+    stats <- magmaanlab::magmaan_core$data_ordinal_stats_from_df(
       data, spec_h1, ordered = ordered_names, group = "group",
       missing = "listwise", pd_gamma = "overlap", full_wls_weight = FALSE
     )
-    mag_h1 <- magmaan::magmaan(spec_h1, stats, estimator = "DWLS")
-    mag_h0 <- magmaan::magmaan(spec_h0, stats, estimator = "DWLS")
+    mag_h1 <- magmaanlab::fit_model(spec_h1, stats, estimator = "DWLS")
+    mag_h0 <- magmaanlab::fit_model(spec_h0, stats, estimator = "DWLS")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests_ordinal(
+    mag_single <- magmaanlab::fmg_tests_ordinal(
       mag_h1, stats, tests = single_tests, weight = "DWLS"
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested_ordinal(
-      mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
-      A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests, method = "2000",
-        A.method = "delta"
+    out[c("nested", "nested_exact")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested_ordinal(
+        mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
+        A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -358,36 +373,34 @@ run_mixed_categorical <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    spec_h1 <- magmaan::model_spec(
+    spec_h1 <- magmaanlab::model_spec(
       h1_model, ordered = ord3, meanstructure = TRUE
     )
-    spec_h0 <- magmaan::model_spec(
+    spec_h0 <- magmaanlab::model_spec(
       h0_model, ordered = ord3, meanstructure = TRUE
     )
-    stats <- magmaan::magmaan_core$data_mixed_ordinal_stats_from_df(
+    stats <- magmaanlab::magmaan_core$data_mixed_ordinal_stats_from_df(
       data, spec_h1, ordered = ord3, missing = "listwise",
       full_wls_weight = FALSE
     )
-    mag_h1 <- magmaan::magmaan(spec_h1, stats, estimator = "DWLS")
-    mag_h0 <- magmaan::magmaan(spec_h0, stats, estimator = "DWLS")
+    mag_h1 <- magmaanlab::fit_model(spec_h1, stats, estimator = "DWLS")
+    mag_h0 <- magmaanlab::fit_model(spec_h0, stats, estimator = "DWLS")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
-    mag_single <- magmaan::fmg_tests_mixed_ordinal(
+    mag_single <- magmaanlab::fmg_tests_mixed_ordinal(
       mag_h1, stats, tests = single_tests, weight = "DWLS"
     )
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaan::fmg_nested_mixed_ordinal(
-      mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
-      A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests, method = "2000",
-        A.method = "delta"
+    out[c("nested", "nested_exact")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested_mixed_ordinal(
+        mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
+        A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -423,7 +436,7 @@ cat(sprintf(
   "semTests %s | lavaan %s | magmaan %s\n",
   as.character(utils::packageVersion("semTests")),
   as.character(utils::packageVersion("lavaan")),
-  as.character(utils::packageVersion("magmaan"))
+  as.character(utils::packageVersion("magmaanlab"))
 ))
 cat(sprintf(
   "reps = %d | N = %d | cores = %d | tests = SB, SS, ALL, PEBA(min(4,df))\n\n",
@@ -439,27 +452,32 @@ summary_rows <- lapply(cells, function(cell) {
     mc.cores = ncores, mc.preschedule = TRUE
   )
   mat <- do.call(rbind, draws)
-  worst <- apply(mat, 2L, max, na.rm = TRUE)
-  worst[!is.finite(worst)] <- NA_real_
-  pass <- vapply(c("single", "nested"), function(kind) {
+  kinds <- colnames(mat)
+  worst <- apply(mat, 2L, function(x) {
+    if (any(is.finite(x))) max(x, na.rm = TRUE) else NA_real_
+  })
+  pass <- vapply(kinds, function(kind) {
     mean(mat[, kind] < cell$tol, na.rm = TRUE)
   }, numeric(1))
+  valid <- colSums(is.finite(mat))
   row <- data.frame(
     cell = cell$name,
     tolerance = cell$tol,
-    valid_single = sum(is.finite(mat[, "single"])),
-    valid_nested = sum(is.finite(mat[, "nested"])),
+    valid_single = valid[["single"]],
+    valid_nested = valid[["nested"]],
+    valid_nested_exact = valid[["nested_exact"]],
     worst_single = worst[["single"]],
     worst_nested = worst[["nested"]],
+    worst_nested_exact = worst[["nested_exact"]],
     pass_rate_single = pass[["single"]],
     pass_rate_nested = pass[["nested"]],
+    pass_rate_nested_exact = pass[["nested_exact"]],
     stringsAsFactors = FALSE
   )
   cat(sprintf(
-    "%-30s worst single=%.2e nested=%.2e | pass s=%.0f%% n=%.0f%% | valid %d/%d\n",
-    cell$name, row$worst_single, row$worst_nested,
-    100 * row$pass_rate_single, 100 * row$pass_rate_nested,
-    row$valid_single, reps
+    "%-28s worst single=%.2e delta=%.2e exact=%.2e | valid %d/%d/%d of %d\n",
+    cell$name, row$worst_single, row$worst_nested, row$worst_nested_exact,
+    row$valid_single, row$valid_nested, row$valid_nested_exact, reps
   ))
   row
 })
@@ -468,7 +486,7 @@ summary_table <- do.call(rbind, summary_rows)
 summary_table$reps <- reps
 summary_table$sample_n <- n
 summary_table$lavaan_version <- as.character(utils::packageVersion("lavaan"))
-summary_table$magmaan_version <- as.character(utils::packageVersion("magmaan"))
+summary_table$magmaan_version <- as.character(utils::packageVersion("magmaanlab"))
 
 if (nzchar(sim_output)) {
   dir.create(dirname(sim_output), recursive = TRUE, showWarnings = FALSE)
@@ -477,7 +495,8 @@ if (nzchar(sim_output)) {
 }
 
 worst_overall <- max(
-  c(summary_table$worst_single, summary_table$worst_nested), na.rm = TRUE
+  c(summary_table$worst_single, summary_table$worst_nested,
+    summary_table$worst_nested_exact), na.rm = TRUE
 )
 cat(sprintf(
   "\nWorst parity difference across all cells: %.2e\n", worst_overall

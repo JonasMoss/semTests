@@ -10,7 +10,10 @@ Rscript tools/magmaan-validation.R
 ```
 
 This opt-in check loads the current semTests source tree and compares it with
-magmaan's independent C++23 implementation. It covers:
+magmaan's independent C++23 implementation. All `magmaan-*.R` runners call the
+compiled methods package `magmaanlab`, built from the magmaan repository's
+`r-package/` directory (`just r-install` there). The pure-R `magmaan` package
+in that repository is a user-facing layer and is not used here. It covers:
 
 - every shared p-value transform (`STD`, `SB`, `SS`, `SF`, `ALL`, `PALL`,
   `EBA`, `pEBA`, and several `pOLS` penalties) on identical fixed spectra;
@@ -54,8 +57,14 @@ PARITY_OUTPUT=workspace/magmaan-parity.csv \
 Passing the script certifies only the combinations above. In particular:
 
 - complete-data nested parity requires `method = "2000"` and magmaan
-  `A.method = "delta"`; magmaan's `"exact"` default is a different restriction
-  construction;
+  `A.method = "delta"`, semTests' default; magmaan's own default is `"exact"`.
+  Both libraries use lavaan's names, and the parity simulation compares both
+  constructions;
+- the `"exact"` construction depends on how the factors are identified
+  (`std.lv = TRUE` versus marker loadings give p-values about 2e-3 apart at
+  n = 300 on the same data) in both libraries, while `"delta"` does not.
+  `"exact"` parity therefore also requires both libraries to use the same
+  identification;
 - magmaan does not yet expose the complete-data method-2001 difference
   spectrum;
 - semTests' FIML parity target is `fiml.convention = "observed"`, not its
@@ -89,7 +98,15 @@ CORE_REPS=500 STRESS_REPS=300 N=500 NCORES=8 \
 
 NREP=500 N=400 NCORES=8 \
   Rscript tools/fiml-validation-simulation.R
+
+REPS=2000 CHUNK=250 NCORES=4 OUT_DIR=workspace/fiml-h1-information \
+  Rscript tools/fiml-h1-information-simulation.R
 ```
+
+The last one settles plan item B4: it computes the released FIML
+goodness-of-fit tests with structured and with unstructured saturated
+information on the same draws, and writes one file per finished chunk so an
+interrupted run resumes.
 
 These scripts estimate rejection rates at 1%, 5%, and 10% under seeded null
 scenarios. They write CSV results under `workspace/` and report the number of
@@ -97,3 +114,76 @@ finite replications for every method. Use them to catch gross calibration
 errors that deterministic equality tests cannot reveal. Small smoke runs check
 execution only; hundreds of replications are needed before interpreting the
 rejection rates.
+
+## Inference implementation and timing
+
+The phased [inference plan](score-wald-plan.md) covers computation reuse,
+reduced matrix algorithms, and the score and criterion extensions. Its Wald
+test was later removed from the package; the plan keeps the history.
+
+Run `Rscript tools/inference-timing.R` to compare call-local sharing with the
+pre-sharing Git revision; `REPS` controls repetitions. It checks numerical and
+metadata agreement before timing and writes results under `workspace/`.
+Run `Rscript tools/magmaan-score-validation.R` for optional score primitive
+checks. These check formulas using magmaan ingredients, not yet an independent
+lavaan adapter or simulation calibration. The script also checks the internal
+`score_test_matrices()` kernel and its `pvalues()` method against magmaan.
+
+Run `OPENBLAS_NUM_THREADS=1 Rscript tools/residual-spectrum-timing.R` to compare
+full and reduced single-model spectra on identical fitted models. `P` sets
+comma-separated indicator counts divisible by three; `REPS` sets repetitions.
+This excludes fitting time and saves numerical differences, timings and session
+information under `workspace/`. Small models may be slower on the reduced path.
+
+Run `OPENBLAS_NUM_THREADS=1 Rscript tools/projected-gamma-timing.R` to compare
+tiled raw moment projection with uncached Gamma construction and cached Gamma
+reuse, for three-dimensional and full residual-space projections. Fitting and
+eigendecomposition are excluded. `P` and `REPS` work as above; results and session
+information are saved under `workspace/`.
+
+`Rscript tools/magmaan-lavaan-inference-validation.R` compares the complete-data
+ML `score_test()` adapter against independent magmaan fits in five configurations.
+Results and installed-code fingerprints are saved under
+`workspace/`; this is a numerical parity check, not a calibration simulation.
+
+## Complete criterion inference
+
+```sh
+Rscript tools/magmaan-fiml-score-validation.R
+Rscript tools/magmaan-criterion-validation.R
+INFERENCE_REPS=200 Rscript tools/inference-calibration.R
+```
+
+The FIML runner checks independently extracted global scores for expected and
+observed saturated projection, single and unequal groups. The criterion runner
+checks continuous GLS/WLS/ULS complete and fixed-weight parameter covariances,
+the binary DWLS complete covariance and restriction-release score tests, and a
+three-category case. The ordinal score tests are compared under expected and
+under observed curvature (magmaan's `bread`, observed by default); magmaan
+weights its quadratic by expected information under either, which is
+semTests' `metric = "expected"`. For continuous WLS each library builds its
+own ADF weight.
+Continuous covariance parameters are explicitly converted between magmaan's N
+and lavaan's N-1 sample-covariance conventions. The LS quadratic uses lavaan's
+N-1 criterion scale; full studentization cancels that scalar in one group.
+
+**First-stage convention:** both libraries use the outer-product first-stage
+bread for the ordinal moment influence, which is lavaan's categorical Gamma
+convention. Binary and three-category fixtures are therefore compared without
+substituting either side's influence. Before semTests computed this influence
+in closed form it differentiated the two-step estimator instead, and the
+three-category fixture needed an aligned-input comparison. No magmaan source or
+installed code is modified. The session file fingerprints the installed binary.
+
+The calibration runner uses an analytic misspecified-mean ML pseudo-slope of
+0.4, and two independent identical ordinal populations with a misspecified
+one-factor DWLS model. Equality of the pseudo-loadings follows from identical
+populations and the shared criterion. It records every attempt and failure,
+reports Monte Carlo standard errors, and compares the fully studentized score,
+curvature-weighted score and criterion difference. This small preflight does
+not certify a paper's design, pEBA calibration, or performance across settings.
+
+`OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 Rscript tools/criterion-inference-timing.R`
+compares casewise recomputation with cached pattern-sufficient-statistic gradients
+for the observed ML/FIML Hessian on identical fits. It validates the Hessian
+before timing and excludes data preparation, fitting and tail evaluation.
