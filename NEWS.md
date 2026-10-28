@@ -75,6 +75,14 @@
   refusing nonlinear equality constraints upstream; categorical nested tests
   were affected.
 
+## Documentation
+
+* The vignettes are reorganized into four: an introduction, ordinal
+  indicators, missing data, and score and criterion tests. The
+  continuous-data guide is merged into the introduction, the
+  measurement-invariance example into the ordinal vignette, and the latent
+  growth example into the missing-data vignette.
+
 # semTests 1.0.0
 
 Earlier versions marked several estimators as experimental. This release
