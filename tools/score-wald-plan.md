@@ -23,13 +23,17 @@ applies to complete-data fits, so `"exact"` works there too. magmaan's own
 default `"exact"` has the same dependence.
 
 The magmaan runners pair the constructions by name again (semTests `"delta"`
-with magmaan `"delta"`, `"exact"` with `"exact"`). Against magmaan main
-b644dc56 (its pairwise `pd_gamma` fix), every runner passed before the
-revert: the gate's 97 checks (824 values), the score, lavaan-adapter and
-FIML-score runners, and all 20 criterion checks; the 200-draw parity
-simulation sat at the 1.0.0 optimizer-endpoint floor (1.56e-3 single, 7.4e-4
-nested; multigroup ordinal 4.48e-3 and 2.17e-3) for the mixed-point pairing,
-including the pairwise ordinal cell. Two runner changes were needed. The
+with magmaan `"delta"`, `"exact"` with `"exact"`). After the change (1f0fc0b),
+against magmaan main b644dc56 (its pairwise `pd_gamma` fix), every runner
+passes: the gate's 97 checks (824 values), the score, lavaan-adapter and
+FIML-score runners, and all 20 criterion checks. The 200-draw parity
+simulation (N = 500) passes every draw of all 8 cells for `"delta"`, at the
+1.0.0 optimizer-endpoint floor (1.56e-3 single, 7.4e-4 nested; multigroup
+ordinal 4.48e-3 and 2.17e-3), including the pairwise ordinal cell. For
+`"exact"`, complete-data GLS and ULS match at the same floor; FIML differs by
+up to 8.9e-3 (66.5% of draws within 2e-3) because lavaan is fitted with
+`std.lv = TRUE` and magmaan with marker loadings, and `"exact"` depends on
+that; categorical pairs do not offer `"exact"`. Two runner changes were needed. The
 criterion runner's continuous WLS case lets magmaan build its own ADF weight,
 since magmaan refuses a caller-supplied `W` for estimated-weight inference
 (agreement 1.3e-7). And its ordinal nested score checks compare each
