@@ -8,7 +8,7 @@ criterion_test_nested(
   object,
   alternative,
   curvature = c("observed", "expected"),
-  score_covariance = c("centered", "uncentered", "expected"),
+  score_covariance = c("centered", "uncentered"),
   weight_effect = c("estimated", "fixed"),
   derivative_step = 1e-04,
   hypothesis = "Equal population minimum under the shared criterion",

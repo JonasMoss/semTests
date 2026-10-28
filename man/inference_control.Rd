@@ -18,11 +18,11 @@ inference_control(
 the test. Expected and observed agree in probability when the model is
 correctly specified, and differ otherwise.}
 
-\item{score_covariance}{\code{"centered"}, \code{"uncentered"} or \code{"expected"} score
+\item{score_covariance}{\code{"centered"} or \code{"uncentered"} empirical score
 covariance. \code{NULL} defers to the test. Centered subtracts group score
 means and stays valid when the score has nonzero mean; uncentered is
-consistent only at exact fit. \code{"expected"} uses model-based information in
-the covariance slot; see Details.}
+consistent only at exact fit. The non-robust reference, which assumes the
+information equality, is \code{pvalues(x, "STD")}.}
 
 \item{weight_effect}{\code{"estimated"} propagates first-stage weight estimation
 into the covariance; \code{"fixed"} treats the weights as known. Ignored for ML.}
@@ -53,18 +53,8 @@ Supplying a value overrides the choice everywhere it applies.
 
 The resolved settings are recorded in the returned test's provenance, so a
 result always reports the conventions that produced it.
-
-\code{score_covariance = "expected"} places model-based information in the
-covariance slot rather than an empirical score product. Under complete data
-the information equality makes this the same matrix as the expected
-curvature, so the weighted spectrum is flat and the test reduces to the
-uncorrected chi-square already available as \code{tests = "STD"}. It is a
-genuinely distinct test only where the information equality fails, which is
-the case under missing data, where the expectation runs over the missingness
-patterns as well. That is why it is worth requesting for FIML and not
-otherwise.
 }
 \examples{
 inference_control(curvature = "observed")
-inference_control(score_covariance = "expected", keep = TRUE)
+inference_control(score_covariance = "centered", keep = TRUE)
 }

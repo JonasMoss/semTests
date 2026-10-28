@@ -167,11 +167,6 @@ gaussian_global_score_parts <- function(object, score_covariance, curvature, obs
   G <- D - K %*% inference_solve(crossprod(K,H%*%K),crossprod(K,H%*%D))
   M <- if (observed_weight) lavaan::lav_matrix_bdiag(parts$observed) else E
   products <- pattern_score_products(parts,G,score_covariance)
-  # Model-based information in the covariance slot. Distinct from the empirical
-  # products only where the information equality fails, i.e. under missing data.
-  if (score_covariance == "expected") {
-    products$score_covariance <- symmetrize(crossprod(G,E%*%G))
-  }
   nuisance <- pattern_score_products(parts,K,"uncentered")$score
   c(products,list(metric=crossprod(G,M%*%G),nobs=parts$nobs,projection=G,
     tangent=K,information=parts$expected,nuisance_gradient=nuisance/parts$nobs,
@@ -275,7 +270,6 @@ parameter_inference_parts <- function(object, curvature="observed",score_covaria
     base <- evaluate(theta)
     gradient <- function(x) ls_parameter_gradient(inference_model_at(object,x),basis,first_stage)
   }
-  if (score_covariance == "expected") base$score_covariance <- base$expected
   # Keep the requested label for provenance; the matrix goes in its own slot.
   hessian <- if (curvature == "observed") criterion_hessian(gradient,theta,basis,derivative_step) else
     list(matrix=base$expected,asymmetry=0)

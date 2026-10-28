@@ -159,7 +159,7 @@ ml_global_score_parts <- function(object, score_covariance, tile_rows = 256L) {
 #' pvalues(s, c("SB", "ALL", "PEBA2"))
 score_test <- function(object,
                         weight = c("curvature", "expected_curvature", "score_covariance"),
-                        score_covariance = c("uncentered", "centered", "expected"), keep = FALSE,
+                        score_covariance = c("uncentered", "centered"), keep = FALSE,
                         tolerance = 1e-10, curvature = c("expected", "observed")) {
   check_ml_inference_adapter(object, "score_test()", allow_fiml = TRUE)
   curvature <- match.arg(curvature)
@@ -169,10 +169,7 @@ score_test <- function(object,
   # Only weight = "curvature" with observed curvature weights by the observed
   # matrix; every other choice weights by expected curvature or studentizes.
   observed_weight <- weight == "curvature" && curvature == "observed"
-  # The reduced complete-data route has no expected-covariance slot; the pattern
-  # route carries the per-pattern expected information needed for it.
-  parts <- if (!is_fiml(object) && curvature == "expected" &&
-               score_covariance != "expected") {
+  parts <- if (!is_fiml(object) && curvature == "expected") {
     ml_global_score_parts(object, score_covariance)
   } else {
     gaussian_global_score_parts(object, score_covariance, curvature, observed_weight)

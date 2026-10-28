@@ -32,12 +32,6 @@
   weights as known. Ordinal inference requires complete data and nonempty
   pairwise cells.
 
-* `score_covariance = "expected"` puts model-based information in the covariance
-  slot. Under complete data the information equality makes this the expected
-  curvature, so the test reduces to `tests = "STD"`; it is a distinct test only
-  under missing data, where the expectation also runs over the missingness
-  patterns.
-
 * A new vignette, `vignette("score-criterion", package = "semTests")`, explains
   the score and criterion tests, their hypotheses, and their settings.
 

@@ -9,7 +9,7 @@ score_test_nested(
   alternative,
   weight = c("curvature", "expected_curvature", "score_covariance"),
   curvature = c("observed", "expected"),
-  score_covariance = c("centered", "uncentered", "expected"),
+  score_covariance = c("centered", "uncentered"),
   weight_effect = c("estimated", "fixed"),
   derivative_step = 1e-04,
   hypothesis = "Common criterion pseudo-target satisfies the restricted model",

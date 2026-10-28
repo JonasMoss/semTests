@@ -7,7 +7,7 @@
 score_test(
   object,
   weight = c("curvature", "expected_curvature", "score_covariance"),
-  score_covariance = c("uncentered", "centered", "expected"),
+  score_covariance = c("uncentered", "centered"),
   keep = FALSE,
   tolerance = 1e-10,
   curvature = c("expected", "observed")

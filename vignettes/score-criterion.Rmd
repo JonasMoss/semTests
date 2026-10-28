@@ -285,12 +285,10 @@ The classical discrepancy statistic for the same question is what
 `?semTests-support`.
 
 For FIML, likelihood scores are observed-data scores for each missingness
-pattern. See `vignette("fiml-missing-data", package = "semTests")` for the
-missing-data workflow. Under complete data the information equality makes
-`score_covariance = "expected"` the same matrix as the expected curvature, so
-the test reduces to the uncorrected chi-square, `tests = "STD"`. Under missing
-data the equality can fail, because the expectation also runs over the
-missingness patterns, and the setting gives a distinct test:
+pattern, and the score covariance is their empirical covariance, as for
+complete data. See `vignette("fiml-missing-data", package = "semTests")` for
+the missing-data workflow. `"STD"` gives the non-robust reference, which
+assumes the information equality:
 
 ```{r fiml}
 d_missing <- d
@@ -298,8 +296,7 @@ set.seed(1)
 d_missing$x2[sample(nrow(d), 60)] <- NA
 fit_fiml <- lavaan::cfa(model, d_missing, meanstructure = TRUE,
                         missing = "fiml")
-pvalues(semtest(fit_fiml), c("SB", "ALL"))
-pvalues(semtest(fit_fiml, score_covariance = "expected"), c("SB", "ALL"))
+pvalues(semtest(fit_fiml), c("STD", "SB", "ALL"))
 ```
 
 For least squares, **fitting weights** are the matrix weighting discrepancies

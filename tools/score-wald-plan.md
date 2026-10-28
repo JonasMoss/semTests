@@ -3,7 +3,8 @@
 ## Status update, 2026-10-28
 
 B4 is settled: keep the unstructured saturated information in the released
-FIML path; see the result under B4 below. The public `weight` argument of
+FIML path; see the result under B4 below. B1 is done and B5 closed by
+removing `score_covariance = "expected"`; see both below. The public `weight` argument of
 `semtest()` keeps its name, and the two unsupported metric combinations
 (observed weight with expected-curvature profiling; different score
 covariances in the statistic and the reference) stay out.
@@ -652,3 +653,17 @@ expected curvature, and its goodness-of-fit consequence is already exposed as
 `tests = "std"`. Under missing data the equality need not hold, so a distinct
 `score_covariance = "expected"` level may be warranted. Specify which matrix is
 intended before adding the level.
+
+**Closed 2026-10-28: removed.** A `score_covariance = "expected"` level had
+been added with `semtest()` without settling this. It put the pattern-wise
+expected information, the same matrix as the expected curvature, in the
+covariance slot. That is the non-robust test: it assumes the information
+equality the empirical score covariance exists to avoid, and with
+expected-curvature weighting its spectrum is exactly flat for complete data
+and FIML alike, so its p-value equals `pvalues(x, "STD")`. Its one non-flat
+case, observed-curvature weighting, measured observed against expected
+curvature, not non-normality. The documentation's claim that it was a
+distinct test under missing data did not hold. The score covariance is now
+always empirical (`"centered"` or `"uncentered"`); `"STD"` remains the
+non-robust reference. An expectation over the missingness mechanism, which
+the FIML literature may mean, was never implemented.

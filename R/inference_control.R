@@ -21,11 +21,11 @@
 #' @param curvature `"observed"` or `"expected"` sensitivity. `NULL` defers to
 #'   the test. Expected and observed agree in probability when the model is
 #'   correctly specified, and differ otherwise.
-#' @param score_covariance `"centered"`, `"uncentered"` or `"expected"` score
+#' @param score_covariance `"centered"` or `"uncentered"` empirical score
 #'   covariance. `NULL` defers to the test. Centered subtracts group score
 #'   means and stays valid when the score has nonzero mean; uncentered is
-#'   consistent only at exact fit. `"expected"` uses model-based information in
-#'   the covariance slot; see Details.
+#'   consistent only at exact fit. The non-robust reference, which assumes the
+#'   information equality, is `pvalues(x, "STD")`.
 #' @param weight_effect `"estimated"` propagates first-stage weight estimation
 #'   into the covariance; `"fixed"` treats the weights as known. Ignored for ML.
 #' @param derivative_step Relative central-difference step for numerical
@@ -34,22 +34,11 @@
 #'   validation. Must lie in (0, 1).
 #' @param keep Retain the input matrices and projections in the result.
 #'
-#' @details
-#' `score_covariance = "expected"` places model-based information in the
-#' covariance slot rather than an empirical score product. Under complete data
-#' the information equality makes this the same matrix as the expected
-#' curvature, so the weighted spectrum is flat and the test reduces to the
-#' uncorrected chi-square already available as `tests = "STD"`. It is a
-#' genuinely distinct test only where the information equality fails, which is
-#' the case under missing data, where the expectation runs over the missingness
-#' patterns as well. That is why it is worth requesting for FIML and not
-#' otherwise.
-#'
 #' @return An object of class `semTests_control`.
 #' @export
 #' @examples
 #' inference_control(curvature = "observed")
-#' inference_control(score_covariance = "expected", keep = TRUE)
+#' inference_control(score_covariance = "centered", keep = TRUE)
 inference_control <- function(curvature = NULL,
                               score_covariance = NULL,
                               weight_effect = c("estimated", "fixed"),
@@ -58,7 +47,7 @@ inference_control <- function(curvature = NULL,
                               keep = FALSE) {
   curvature <- control_level(curvature, c("observed", "expected"), "curvature")
   score_covariance <- control_level(score_covariance,
-    c("centered", "uncentered", "expected"), "score_covariance")
+    c("centered", "uncentered"), "score_covariance")
   weight_effect <- match.arg(weight_effect)
   if (length(derivative_step) != 1L || !is.numeric(derivative_step) ||
       !is.finite(derivative_step) || derivative_step <= 0 || derivative_step > .01) {
