@@ -9,8 +9,10 @@ Description: Computes robust p-values for overall fit and nested comparisons of
     <doi:10.3758/s13428-026-02968-4>, alongside familiar corrections such as
     Satorra-Bentler. Supported settings include complete-data ML, GLS, and ULS,
     categorical DWLS and ULS, and full-information maximum likelihood with one
-    or several groups.
-Version: 1.0.0.9000
+    or several groups. Score and criterion-difference tests of parameter
+    restrictions are also available, including restrictions in misspecified
+    models.
+Version: 2.0.0
 Authors@R: c(
     person(given="Jonas", 
            family="Moss",
