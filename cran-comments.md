@@ -1,8 +1,9 @@
 ## Submission
 
-semTests 2.0.0 adds score and criterion-difference tests (`semtest()`),
-deprecates the `fiml.convention` argument, and fixes two bugs in nested
-comparisons.
+semTests 2.0.0 adds score and criterion-difference tests (`semtest()`) and
+gives nested tests a default restriction matrix that does not depend on the
+units of the variables. It requires lavaan (>= 0.7-3), deprecates the
+`fiml.convention` argument, and fixes three bugs in nested comparisons.
 
 ## Test environments
 
