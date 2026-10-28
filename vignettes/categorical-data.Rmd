@@ -1,8 +1,8 @@
 ---
-title: "Categorical and mixed-indicator models"
+title: "Ordinal indicators and measurement invariance"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Categorical and mixed-indicator models}
+  %\VignetteIndexEntry{Ordinal indicators and measurement invariance}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,15 +18,21 @@ knitr::opts_chunk$set(
 
 ## Scope
 
-This guide covers ordered and mixed indicators. The implementation covers
-lavaan's DWLS and ULS families, one or several groups, and listwise or pairwise
-missingness. The supported paths have also been checked against a separate
-implementation.
+`semTests` supports ordered and mixed indicators fitted with lavaan's DWLS
+family (`DWLS`, `WLSM`, `WLSMV`, `WLSMVS`) and ULS family (`ULS`, `ULSM`,
+`ULSMV`), with one or several groups and listwise or pairwise deletion. The
+eigenvalues come from `lavInspect(fit, "UGamma")` and the statistic is
+lavaan's unscaled one. The `UG` and `RLS` options apply to continuous data
+only.
 
-For these models, `semTests` uses lavaan's unscaled statistic and the
-eigenvalues stored in `lavInspect(fit, "UGamma")`. The Du--Bentler `UG` option
-and the continuous-data `RLS` statistic belong to a different setting, so test
-names here do not use either suffix.
+Full WLS is refused. Its weight matrix is the inverse of $\Gamma$, so every
+eigenvalue equals 1 and every correction would return the ordinary chi-square
+*p*-value.
+
+## Data
+
+The examples cut the nine ability scores of `HolzingerSwineford1939` at their
+quartiles, giving four ordered categories per indicator.
 
 ```{r setup}
 library("semTests")
@@ -37,158 +43,119 @@ model <- "
   textual =~ x4 + x5 + x6
   speed   =~ x7 + x8 + x9
 "
+quartiles <- function(x) {
+  ordered(cut(x, c(-Inf, quantile(x, c(.25, .50, .75)), Inf)))
+}
 
-ordered_names <- paste0("x", 1:9)
+items <- paste0("x", 1:9)
 ordinal_data <- HolzingerSwineford1939
-ordinal_data[ordered_names] <- lapply(
-  ordinal_data[ordered_names],
-  function(x) {
-    ordered(cut(
-      x,
-      breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
-      include.lowest = TRUE
-    ))
-  }
-)
+ordinal_data[items] <- lapply(ordinal_data[items], quartiles)
 ```
 
-The cuts give a reproducible teaching example. They are not a recommendation to
-turn continuous measurements into categories.
+## Overall fit
 
-## Overall goodness of fit
-
-lavaan's `WLSMV` shortcut fits the DWLS family and requests a
-mean-and-variance-adjusted test. From there, `pvalues()` works as usual:
-
-```{r ordinal-fit}
-fit_ordinal <- cfa(
-  model, ordinal_data,
-  ordered = ordered_names,
-  estimator = "WLSMV"
-)
-
-pvalues(fit_ordinal, c("STD", "SB", "SS", "ALL", "PEBA4"))
+```{r fit}
+fit <- cfa(model, ordinal_data, ordered = items, estimator = "WLSMV")
+pvalues(fit, c("STD", "SB", "SS", "ALL", "PEBA4"))
 ```
 
-The footer records both the base estimator (`DWLS`) and the estimator requested
-from lavaan (`WLSMV`). It also records the categorical parameterization.
+`SS` is the mean-and-variance adjusted test that `WLSMV` reports, and `SB` is
+the mean-adjusted test that `WLSM` reports:
 
-```{r ordinal-provenance}
-attr(pvalues(fit_ordinal, "PEBA4"), "semtests")
+```{r lavaan}
+as.numeric(fitMeasures(fit, "pvalue.scaled"))
 ```
-
-The `SB` and `SS` results are a quick check against lavaan's public
-robust corrections. The eigenvalue methods use more of the reference
-distribution, so they need not give the same p-value.
-
-## Estimator families
-
-The accepted shortcuts include:
-
-* DWLS, WLSM, WLSMV, and WLSMVS
-* ULS, ULSM, and ULSMV
-
-Full WLS/ADF is refused. Its weight already produces an identity spectrum, so
-every correction reduces to the ordinary chi-square. There is no extra
-correction for `semTests` to make.
 
 ## Mixed indicators
 
-Only variables named in `ordered` are treated as categorical. The remaining
-indicators stay continuous:
+Only the variables named in `ordered` are treated as ordinal. Here the
+`speed` indicators stay continuous:
 
-```{r mixed-fit}
-mixed_names <- paste0("x", 1:6)
+```{r mixed}
 mixed_data <- HolzingerSwineford1939
-mixed_data[mixed_names] <- lapply(
-  mixed_data[mixed_names],
-  function(x) {
-    ordered(cut(
-      x,
-      breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
-      include.lowest = TRUE
-    ))
-  }
-)
-
-fit_mixed <- cfa(
-  model, mixed_data,
-  ordered = mixed_names,
-  estimator = "WLSMV"
-)
-pvalues(fit_mixed, "PEBA4")
+mixed_data[items[1:6]] <- lapply(mixed_data[items[1:6]], quartiles)
+fit_mixed <- cfa(model, mixed_data, ordered = items[1:6], estimator = "WLSMV")
+pvalues(fit_mixed)
 ```
 
-Mixed models combine thresholds with the usual covariance and mean information.
-Lavaan has already done that bookkeeping, and `semTests` reads the resulting
-spectrum directly.
+## Pairwise deletion
 
-## Pairwise missingness
+With `missing = "pairwise"`, lavaan estimates each threshold and polychoric
+correlation from the cases observed on the variables involved, and `semTests`
+uses the resulting sample statistics and `UGamma`. Pairwise deletion is
+consistent when the data are missing completely at random.
 
-With pairwise estimation, lavaan uses the observations available for each
-statistic:
-
-```{r pairwise-fit}
+```{r pairwise}
 pairwise_data <- ordinal_data
 set.seed(314)
-for (variable in ordered_names) {
-  pairwise_data[sample(nrow(pairwise_data), 35), variable] <- NA
+for (item in items) {
+  pairwise_data[sample(nrow(pairwise_data), 35), item] <- NA
 }
-
-fit_pairwise <- cfa(
-  model, pairwise_data,
-  ordered = ordered_names,
-  estimator = "WLSMV",
-  missing = "pairwise"
+fit_pairwise <- cfa(model, pairwise_data,
+  ordered = items, estimator = "WLSMV", missing = "pairwise"
 )
 pvalues(fit_pairwise, c("SB", "SS", "PEBA4"))
 ```
 
-`semTests` follows lavaan's pairwise sample-statistic and `UGamma`
-calculation. Pairwise deletion brings its own assumptions about missingness, so
-report and defend that choice separately. It is not FIML.
+## Measurement invariance
 
-## Nested categorical models
+Measurement invariance asks whether the indicators measure the factors the
+same way in each group. The usual approach fits a sequence of increasingly
+restricted models and compares each with the previous one. For ordinal
+indicators, Wu and Estabrook (2016) recommend restricting the thresholds
+before the loadings. We compare the two schools in the data:
 
-For categorical models, nested comparison uses Satorra's 2000 construction and
-the delta restriction map:
-
-```{r categorical-nested}
-constrained <- "
-  visual  =~ x1 + a*x2 + a*x3
-  textual =~ x4 + b*x5 + b*x6
-  speed   =~ x7 + x8 + x9
-"
-
-m1 <- cfa(
-  model, ordinal_data,
-  ordered = ordered_names, estimator = "WLSMV"
+```{r invariance-fits}
+configural <- cfa(model, ordinal_data,
+  ordered = items, group = "school", estimator = "WLSMV"
 )
-m0 <- cfa(
-  constrained, ordinal_data,
-  ordered = ordered_names, estimator = "WLSMV"
+equal_thresholds <- cfa(model, ordinal_data,
+  ordered = items, group = "school", estimator = "WLSMV",
+  group.equal = "thresholds"
 )
-
-pvalues_nested(
-  m0, m1,
-  method = "2000", A.method = "delta",
-  tests = c("SB", "SS", "PALL")
+equal_loadings <- cfa(model, ordinal_data,
+  ordered = items, group = "school", estimator = "WLSMV",
+  group.equal = c("thresholds", "loadings")
 )
 ```
 
-Both fits must use the same requested estimator, parameterization, variables,
-groups, raw data, and missingness mask. Method 2001 and the exact restriction
-map are unavailable for this family.
+When the thresholds are held equal, lavaan frees the intercepts and scale
+factors of the latent responses in the second school, which is the
+identification of Wu and Estabrook. The 27 threshold equalities therefore
+remove 9 degrees of freedom. With three categories there would be 18
+equalities and 18 freed parameters, and the threshold model would be
+equivalent to the configural model.
 
-## Practical checks
+Each nested comparison takes the more restricted model first:
 
-Before reading too much into a p-value, check the basics:
+```{r invariance-tests}
+thresholds_test <- pvalues_nested(equal_thresholds, configural,
+  tests = c("SB", "SS", "PALL")
+)
+loadings_test <- pvalues_nested(equal_loadings, equal_thresholds,
+  tests = c("SB", "SS", "PALL")
+)
+thresholds_test
+loadings_test
+```
 
-1. Verify convergence and adequate category counts.
-2. Look for sparse categories and, when relevant, small pairwise counts.
-3. Confirm that the two nested fits use identical data and options.
-4. Compare `SB` and `SS` with lavaan as a quick numerical check.
-5. Report the estimator and any use of pairwise missingness.
+With `PALL`, equal thresholds give *p* =
+`r sprintf("%.3f", thresholds_test[["pall_ml"]])` and adding equal loadings gives
+*p* = `r sprintf("%.3f", loadings_test[["pall_ml"]])`, so neither restriction is
+rejected. The configural model itself does not fit exactly:
+
+```{r configural}
+pvalues(configural)
+```
+
+The nested tests assume that the larger model is correct.
+`vignette("score-criterion", package = "semTests")` describes restriction
+tests that allow it to be misspecified.
+
+Nested tests for ordinal data use Satorra's (2000) construction with
+`A.method = "delta"`. The `"exact"` restriction matrix is not available here.
+Both fits must use the same estimator, parameterization, variables, groups,
+data, and missingness pattern.
 
 ## References
 
@@ -197,3 +164,8 @@ analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
 A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
 (pp. 233–247). Kluwer Academic.
 <https://doi.org/10.1007/978-1-4615-4603-0_17>
+
+Wu, H., & Estabrook, R. (2016). Identification of confirmatory factor analysis
+models of different levels of invariance for ordered categorical outcomes.
+*Psychometrika*, 81(4), 1014–1045.
+<https://doi.org/10.1007/s11336-016-9506-0>
