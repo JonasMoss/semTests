@@ -160,7 +160,11 @@ The FIML runner checks independently extracted global scores for expected and
 observed saturated projection, single and unequal groups. The criterion runner
 checks continuous GLS/WLS/ULS complete and fixed-weight parameter covariances,
 the binary DWLS complete covariance and restriction-release score tests, and a
-three-category case.
+three-category case. The ordinal score tests are compared under expected and
+under observed curvature (magmaan's `bread`, observed by default); magmaan
+weights its quadratic by expected information under either, which is
+semTests' `metric = "expected"`. For continuous WLS each library builds its
+own ADF weight.
 Continuous covariance parameters are explicitly converted between magmaan's N
 and lavaan's N-1 sample-covariance conventions. The LS quadratic uses lavaan's
 N-1 criterion scale; full studentization cancels that scalar in one group.

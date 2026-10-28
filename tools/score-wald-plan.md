@@ -11,17 +11,20 @@ covariances in the statistic and the reference) stay out.
 The magmaan runners were rerun against magmaan 0.2.2 (main c0dc6e29). Since
 the same-point nested restriction became semTests' default, the gate and the
 parity simulation pair semTests `"delta"` with magmaan `"exact"`, and semTests
-`"legacy"` with magmaan `"delta"`. The criterion runner's continuous WLS case
-now lets magmaan build its own ADF weight, because magmaan refuses a
-caller-supplied `W` for estimated-weight inference; it agrees to 1.3e-7. Two
-magmaan-side changes still break runners: pairwise-missing ordinal inference
-fails because the R glue does not carry `pd_gamma = "overlap"` back into the
-C++ statistics (`robust_ordinal_ij` then rejects missing cells; a magmaan fix
-is under way), and magmaan's ordinal `score_tests_robust()` no longer matches
-the nested ordinal score checks. The complete ordinal covariances still agree
-to 3e-8, and semTests' statistic is unchanged since 2026-09-29, but the
-studentized score, quadratic and spectrum gaps are 1.6e-3, 4.9e-4 and 1.4e-2
-for two categories and 0.20, 0.13 and 0.043 for three (tolerance 2e-4).
+`"legacy"` with magmaan `"delta"`.
+
+Rerun against magmaan main b644dc56 (its pairwise `pd_gamma` fix), every
+runner passes: the gate's 97 checks (824 values) under both pairings, the
+score, lavaan-adapter and FIML-score runners, and all 20 criterion checks.
+The pairwise ordinal parity cell (200 draws) sits at the usual 1.57e-3
+endpoint floor. Two runner changes were needed. The criterion runner's
+continuous WLS case lets magmaan build its own ADF weight, since magmaan
+refuses a caller-supplied `W` for estimated-weight inference (agreement
+1.3e-7). And its ordinal nested score checks now compare each curvature with
+its counterpart: magmaan's ordinal LS score tests default to observed
+sensitivity (`bread = "observed"`, magmaan 189fa24a), and magmaan's `mi` and
+scaling factor weight by expected information whatever the bread, which in
+semTests is `metric = "expected"`. Matching settings agree to about 1e-8.
 
 Full parity simulation (200 draws per cell, N = 500, 8 cells, simbox): the
 legacy pairing reproduces the 1.0.0 baseline exactly, 100% within tolerance,
@@ -30,8 +33,7 @@ multigroup ordinal 4.48e-3 and 2.17e-3). The same-point pairing gives the same
 numbers in every cell but FIML, where lavaan is fitted with `std.lv = TRUE`
 and magmaan with marker identification: worst 8.9e-3, 66.5% of draws within
 2e-3. With marker identification on both sides that gap falls to about 1e-6
-(5 draws checked). The pairwise ordinal cell has no valid draws because of
-the magmaan glue issue above.
+(5 draws checked).
 
 Open: the same-point restriction is not invariant to identification. On the
 same data, `std.lv = TRUE` and marker identification give nested p-values

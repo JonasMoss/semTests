@@ -47,13 +47,22 @@ for(categories in c(2L,3L)) {
   null<-paste(model,'a==b',sep='\n')
   fit0<-lavaan::cfa(null,d,ordered=names(d))
   mag0<-magmaanlab::fit_model(magmaanlab::model_spec(null),d,estimator='DWLS',ordered=names(d))
-  ref0<-magmaanlab::score_tests_robust(mag0,estimated_weight=TRUE)
-  out<-score_test_nested(fit0,fit,curvature ='expected',metric='sandwich')
-  check(paste0('ordinal-',categories),'nested complete studentized score',out$statistic,ref0$mi.scaled,2e-4)
-  weighted<-score_test_nested(fit0,fit,curvature ='expected')
-  # The magmaan score uses N; lavaan's LS criterion uses N-1.
-  check(paste0('ordinal-',categories),'nested quadratic',weighted$statistic,ref0$mi*(nrow(d)-1)/nrow(d),2e-4)
-  check(paste0('ordinal-',categories),'nested spectrum',weighted$eigenvalues,ref0$scaling.factor*(nrow(d)-1)/nrow(d),2e-4)
+  # magmaan's ordinal LS score tests default to observed sensitivity
+  # (bread = "observed", magmaan 189fa24a); semTests calls it curvature.
+  # Compare each setting with its counterpart, covering magmaan's default and
+  # the expected-curvature form.
+  for(curvature in c('expected','observed')) {
+    case<-paste0('ordinal-',categories,' ',curvature)
+    ref0<-magmaanlab::score_tests_robust(mag0,estimated_weight=TRUE,bread=curvature)
+    out<-score_test_nested(fit0,fit,curvature=curvature,metric='sandwich')
+    check(case,'nested complete studentized score',out$statistic,ref0$mi.scaled,2e-4)
+    # magmaan's mi and scaling factor weight the score by expected information
+    # whatever the bread; semTests' default weight follows the curvature.
+    weighted<-score_test_nested(fit0,fit,curvature=curvature,metric='expected')
+    # The magmaan score uses N; lavaan's LS criterion uses N-1.
+    check(case,'nested quadratic',weighted$statistic,ref0$mi*(nrow(d)-1)/nrow(d),2e-4)
+    check(case,'nested spectrum',weighted$eigenvalues,ref0$scaling.factor*(nrow(d)-1)/nrow(d),2e-4)
+  }
 }
 out<-do.call(rbind,rows)
 dir.create('workspace',showWarnings=FALSE)
