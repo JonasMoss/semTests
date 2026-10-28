@@ -148,7 +148,7 @@ fiml_restriction <- function(m0, m1, df, A.method) {
 
 #' Saturated observed-data FIML information in moment space.
 #'
-#' lavaan 0.7-2 exposes the corrected FIML H1 information. Setting
+#' lavaan exposes the corrected FIML H1 information. Setting
 #' `h1.information` on a local copy requests the unstructured, observed
 #' saturated information without refitting or changing the fitted parameters.
 #' @keywords internal
@@ -233,7 +233,7 @@ fiml_lambdas <- function(fit, df,
     } else {
       HD <- H %*% Delta
       P <- symmetrize(crossprod(Delta, HD))
-      U <- H - HD %*% generalized_inverse(P) %*% t(HD)
+      U <- H - HD %*% equilibrated_inverse(P) %*% t(HD)
       fiml_sandwich_eigenvalues(U, Gamma, df)
     }
   }
@@ -269,7 +269,7 @@ fiml_nested_ingredients <- function(m1,
 #' FIML Satorra-2000 nested restriction eigenvalues.
 #' @keywords internal
 fiml_lambdas_nested <- function(m0, m1, df,
-                                A.method = c("delta", "exact"),
+                                A.method = c("weighted", "delta", "exact"),
                                 fiml.convention = c("observed", "lavaan")) {
   A.method <- match.arg(A.method)
   fiml.convention <- match.arg(fiml.convention)
@@ -285,7 +285,7 @@ fiml_lambdas_nested <- function(m0, m1, df,
     )
   }
 
-  Y <- generalized_inverse(ingredients$A1) %*% t(A)
+  Y <- equilibrated_inverse(ingredients$A1) %*% t(A)
   C <- symmetrize(A %*% Y)
   S <- symmetrize(t(Y) %*% ingredients$B1 %*% Y)
   list(ug_biased = restriction_spectrum(C, S, df, "nested FIML spectrum"))

@@ -154,8 +154,8 @@ close to 2 and 3, and the test gives *p* =
 `r sprintf("%.3f", growth_test[["pall_ml"]])`. The data give no reason to prefer the
 latent-basis model.
 
-The default restriction matrix, `A.method = "delta"`, handles this pair, where
-the larger model frees parameters that the smaller one fixes.
+The default restriction matrix, `A.method = "weighted"`, handles this pair,
+where the larger model frees parameters that the smaller one fixes.
 `A.method = "exact"` needs the same free parameters in both models, as with
 equality constraints, and refuses it:
 
@@ -165,9 +165,9 @@ pvalues_nested(linear, basis, A.method = "exact")
 
 When both apply, the `"exact"` *p*-value shifts slightly with the factor
 identification, for example `std.lv = TRUE` against marker loadings, while the
-`"delta"` *p*-value does not. lavaan's `lavTestLRT(basis, linear, method =
-"satorra.2000")` on `MLR` fits follows the fits' information options, so it
-need not agree with `semTests`.
+`"weighted"` *p*-value does not. lavaan's `lavTestLRT(basis, linear, method =
+"satorra.2000")` on `MLR` fits uses `A.method = "delta"` and follows the fits'
+information options, so it need not agree with `semTests`.
 
 ## Several groups
 

@@ -152,8 +152,9 @@ The nested tests assume that the larger model is correct.
 `vignette("score-criterion", package = "semTests")` describes restriction
 tests that allow it to be misspecified.
 
-Nested tests for ordinal data use Satorra's (2000) construction with
-`A.method = "delta"`. The `"exact"` restriction matrix is not available here.
+Nested tests for ordinal data use Satorra's (2000) construction with the
+default `A.method = "weighted"`, or lavaan's `"delta"`. The `"exact"`
+restriction matrix is not available here.
 Both fits must use the same estimator, parameterization, variables, groups,
 data, and missingness pattern.
 

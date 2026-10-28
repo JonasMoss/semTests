@@ -166,10 +166,10 @@ gamma_to_gamma_unbiased <- function(gammas, object) {
 #' @param gamma_matrix Gamma weighted by groups.
 #' @param a The `A` restriction matrix. If `NULL`, it is built by
 #'   [get_a_matrix()] with `A.method`.
-#' @param A.method `"delta"` or `"exact"`; see [get_a_matrix()].
+#' @param A.method `"weighted"`, `"delta"`, or `"exact"`; see [get_a_matrix()].
 #' @keywords internal
 #' @return Ugamma for nested object.
-lav_ugamma_nested_2000 <- function(m0, m1, gamma_matrix, a = NULL, A.method = "delta") {
+lav_ugamma_nested_2000 <- function(m0, m1, gamma_matrix, a = NULL, A.method = "weighted") {
   factors <- nested_factor_2000(m0, m1, a, A.method)
   factors$D %*%
     generalized_inverse(factors$C) %*%
@@ -297,7 +297,7 @@ single_model_reduced_lambdas <- function(fit, df, unbiased = 1) {
 
 #' Full nested UGamma reference used to validate the reduced implementation.
 #' @keywords internal
-ugamma_nested_reference <- function(m0, m1, unbiased = 1, A.method = "delta") {
+ugamma_nested_reference <- function(m0, m1, unbiased = 1, A.method = "weighted") {
   gamma_list <- gamma_matrices(m1, unbiased, m0)
   lapply(
     gamma_list,
@@ -318,7 +318,7 @@ ugamma_nested_reference <- function(m0, m1, unbiased = 1, A.method = "delta") {
 #' weight, `Delta` the Jacobian, `P^+` the inverted information, and `A` the
 #' restriction matrix.
 #' @keywords internal
-nested_factor_2000 <- function(m0, m1, a = NULL, A.method = "delta") {
+nested_factor_2000 <- function(m0, m1, a = NULL, A.method = "weighted") {
   wls_v <- lavaan::lavTech(m1, "WLS.V")
   pi <- lavaan::lavInspect(m1, "delta")
   p_inv <- lavaan::lavInspect(m1, what = "inverted.information")
@@ -349,10 +349,10 @@ nested_factor_2000 <- function(m0, m1, a = NULL, A.method = "delta") {
 #' @param m0,m1 Two nested `lavaan` objects.
 #' @param unbiased Biased (1), unbiased (2), or both (3) gamma.
 #' @param df Number of restrictions (degrees-of-freedom difference).
-#' @param A.method `"delta"` or `"exact"`; see [get_a_matrix()].
+#' @param A.method `"weighted"`, `"delta"`, or `"exact"`; see [get_a_matrix()].
 #' @return A list of eigenvalue vectors, one per gamma estimate.
 #' @keywords internal
-lambdas_nested <- function(m0, m1, unbiased = 1, df, A.method = "delta") {
+lambdas_nested <- function(m0, m1, unbiased = 1, df, A.method = "weighted") {
   factors <- nested_factor_2000(m0, m1, A.method = A.method)
   if (unbiased == 1) {
     return(list(ug_biased = restriction_spectrum(

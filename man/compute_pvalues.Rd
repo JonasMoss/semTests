@@ -13,7 +13,7 @@ compute_pvalues(
   pols,
   chisq = c("ml", "rls"),
   m1 = NULL,
-  A.method = "delta",
+  A.method = "weighted",
   fiml.convention = "observed",
   cache = NULL
 )

@@ -4,7 +4,7 @@
 \alias{lambdas_nested}
 \title{Reference spectrum of the nested test, without forming the full UGamma.}
 \usage{
-lambdas_nested(m0, m1, unbiased = 1, df, A.method = "delta")
+lambdas_nested(m0, m1, unbiased = 1, df, A.method = "weighted")
 }
 \arguments{
 \item{m0, m1}{Two nested \code{lavaan} objects.}
@@ -13,7 +13,7 @@ lambdas_nested(m0, m1, unbiased = 1, df, A.method = "delta")
 
 \item{df}{Number of restrictions (degrees-of-freedom difference).}
 
-\item{A.method}{\code{"delta"} or \code{"exact"}; see \code{\link[=get_a_matrix]{get_a_matrix()}}.}
+\item{A.method}{\code{"weighted"}, \code{"delta"}, or \code{"exact"}; see \code{\link[=get_a_matrix]{get_a_matrix()}}.}
 }
 \value{
 A list of eigenvalue vectors, one per gamma estimate.

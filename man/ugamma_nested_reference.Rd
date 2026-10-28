@@ -4,7 +4,7 @@
 \alias{ugamma_nested_reference}
 \title{Full nested UGamma reference used to validate the reduced implementation.}
 \usage{
-ugamma_nested_reference(m0, m1, unbiased = 1, A.method = "delta")
+ugamma_nested_reference(m0, m1, unbiased = 1, A.method = "weighted")
 }
 \description{
 Full nested UGamma reference used to validate the reduced implementation.

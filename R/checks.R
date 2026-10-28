@@ -252,7 +252,7 @@ check_categorical_nested_pair <- function(m0, m1) {
 #' Reject a nested pair whose configuration is outside the supported surface.
 #'
 #' The single entry-level gate for [pvalues_nested()]: categorical nesting uses
-#' Satorra 2000 with a delta restriction map, missing-data nesting otherwise
+#' Satorra 2000 with a moment-space restriction map, missing-data nesting otherwise
 #' requires both fits to be FIML, and FIML nesting supports `method = "2000"`
 #' only. Each fit is also run through
 #' [check_supported()]. The `UG`-gamma rejection for FIML stays in the p-value
@@ -260,11 +260,12 @@ check_categorical_nested_pair <- function(m0, m1) {
 #'
 #' @param m0,m1 Two nested `lavaan` objects (canonical order: `m0` constrained).
 #' @param method The nested reduction method, `"2000"` or `"2001"`.
-#' @param A.method The restriction matrix, `"delta"` or `"exact"` (see
-#'   [get_a_matrix()]). Categorical pairs support `"delta"` only.
+#' @param A.method The restriction matrix, `"weighted"`, `"delta"`, or
+#'   `"exact"` (see [get_a_matrix()]). Categorical pairs do not support
+#'   `"exact"`.
 #' @return `TRUE`, invisibly.
 #' @keywords internal
-check_supported_nested <- function(m0, m1, method, A.method = "delta") {
+check_supported_nested <- function(m0, m1, method, A.method = "weighted") {
   categorical0 <- isTRUE(m0@Model@categorical)
   categorical1 <- isTRUE(m1@Model@categorical)
   if (xor(categorical0, categorical1)) {
@@ -283,7 +284,8 @@ check_supported_nested <- function(m0, m1, method, A.method = "delta") {
       )
     }
     if (A.method == "exact") {
-      stop("Nested categorical tests support A.method = \"delta\" only. ",
+      stop("Nested categorical tests do not support A.method = \"exact\"; ",
+        "use \"weighted\" or \"delta\". ",
         "See `?semTests-support`.",
         call. = FALSE
       )

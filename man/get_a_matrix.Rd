@@ -4,12 +4,12 @@
 \alias{get_a_matrix}
 \title{Nested restriction matrix in H1's effective parameter space.}
 \usage{
-get_a_matrix(m1, m0, method = c("delta", "exact"))
+get_a_matrix(m1, m0, method = c("weighted", "delta", "exact"))
 }
 \arguments{
 \item{m1, m0}{The unrestricted and restricted \code{lavaan} fits.}
 
-\item{method}{\code{"delta"} or \code{"exact"}; see above.}
+\item{method}{\code{"weighted"}, \code{"delta"}, or \code{"exact"}; see above.}
 }
 \description{
 Nested restriction matrix in H1's effective parameter space.

@@ -30,10 +30,10 @@
 #'
 #' | Estimators              | Data        | Groups          | Missing          | Method      | A.method        | Availability | Stability |
 #' |-------------------------|-------------|-----------------|------------------|-------------|-----------------|--------------|-----------|
-#' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | delta or exact | available | stable |
-#' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | delta or exact | available | stable |
-#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | delta or exact | available | stable |
-#' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | delta only | available | stable |
+#' | ML/MLM/MLR              | continuous  | single or multi | complete         | 2000        | weighted, delta, or exact | available | stable |
+#' | GLS, ULS                | continuous  | single or multi | complete         | 2000        | weighted, delta, or exact | available | stable |
+#' | ML / MLR (FIML)         | continuous  | single or multi | FIML (both fits) | 2000 only   | weighted, delta, or exact | available | stable |
+#' | DWLS/ULS families       | ordered/mixed | single or multi | listwise/pairwise | 2000 only | weighted or delta | available | stable |
 #' | any                     | continuous  | --              | mixed / non-FIML | --          | --              | rejected | -- |
 #'
 #' ## Stability
@@ -98,8 +98,8 @@
 #'   lavaan's biased `UGamma` and its unscaled estimator statistic. Expected-
 #'   information fits compute the spectrum in residual space. Supported
 #'   estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
-#'   ULSMV). Nested comparison is restricted to `method = "2000"` and
-#'   `A.method = "delta"`.
+#'   ULSMV). Nested comparison is restricted to `method = "2000"`, with
+#'   `A.method = "weighted"` or `"delta"`.
 #' * **Pairwise categorical missingness** means support for lavaan's pairwise
 #'   sample-statistic and `UGamma` calculation. Pairwise deletion has its own
 #'   missingness assumptions and does not provide FIML or generally MAR-valid
@@ -111,7 +111,7 @@
 #'   semTests uses observed saturated and model information, following the
 #'   recommendation of Kenward and Molenberghs (1998), and is independently
 #'   validated against magmaan. The deprecated `fiml.convention = "lavaan"`
-#'   reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
+#'   reproduces lavaan's inspected robust-test spectrum, including its
 #'   expected H1 weight.
 #'
 #' ## Why full WLS/ADF is refused

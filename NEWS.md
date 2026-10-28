@@ -1,5 +1,15 @@
 # semTests 2.0.0
 
+## Breaking changes
+
+* `pvalues_nested()` has a new default restriction matrix,
+  `A.method = "weighted"`, which does not depend on the units of the observed
+  variables or on the factor identification. lavaan's construction remains
+  available as `A.method = "delta"`, which reproduces
+  `lavTestLRT(method = "satorra.2000")` but changes with the units.
+* semTests requires `lavaan (>= 0.7-3)`. Its asymptotic covariance for mixed
+  continuous and ordinal data is now robust for the continuous variables.
+
 ## New features
 
 * `semtest()` computes score and criterion-difference tests of overall fit and
@@ -25,6 +35,8 @@
 * Nested comparisons with nonlinear equality constraints evaluated the
   constraint Jacobian at the starting values instead of the estimates. This
   affected categorical data.
+* Nested FIML tests lost accuracy when the variables had very different
+  scales.
 
 ## Other changes
 

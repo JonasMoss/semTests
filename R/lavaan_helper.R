@@ -26,6 +26,23 @@ generalized_inverse <- function(x, tol = sqrt(.Machine$double.eps)) {
   }
 }
 
+#' Positive scale factors: square roots, with zero or non-finite ones set to 1.
+#' @keywords internal
+positive_scale <- function(x) {
+  scale <- sqrt(pmax(x, 0))
+  scale[!is.finite(scale) | scale == 0] <- 1
+  scale
+}
+
+#' Generalized inverse of a symmetric information-type matrix after
+#' equilibrating its diagonal, so that the rank decision does not depend on the
+#' units of the parameters.
+#' @keywords internal
+equilibrated_inverse <- function(x) {
+  scale <- outer(positive_scale(diag(x)), positive_scale(diag(x)))
+  generalized_inverse(x / scale) / scale
+}
+
 get_orthogonal_complement <- function(mat) {
   qr_decomp <- qr(mat)
   q_mat <- qr.Q(qr_decomp, complete = TRUE)

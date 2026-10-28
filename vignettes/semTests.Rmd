@@ -125,12 +125,32 @@ fit0 <- cfa(restricted, HolzingerSwineford1939)
 pvalues_nested(fit0, fit, tests = c("SB_ML", "PALL_UG_ML"))
 ```
 
-The test is Satorra's (2000) difference test. For `MLM` fits, `SB_ML` equals
-lavaan's `lavTestLRT(fit, fit0, method = "satorra.2000")`. The restriction
-matrix defaults to lavaan's `A.method = "delta"`, which works for any nesting,
-including models that fix or drop parameters, and does not depend on how the
-factors are identified. `A.method = "exact"` is lavaan's alternative; see
-`?pvalues`.
+The test is Satorra's (2000) difference test. Its restriction matrix
+defaults to `A.method = "weighted"`, which works for any nesting, including
+models that fix or drop parameters. It depends neither on how the factors are
+identified nor on the units of the observed variables. lavaan's own
+construction, `A.method = "delta"`, differs only in using an unweighted
+projection, so its *p*-values change when a variable is rescaled. Use it to
+reproduce lavaan: for `MLM` fits, `SB_ML` with `A.method = "delta"` equals
+`lavTestLRT(fit, fit0, method = "satorra.2000")`. Here `x1` is measured in
+tenths instead:
+
+```{r units}
+rescaled <- HolzingerSwineford1939
+rescaled$x1 <- 10 * rescaled$x1
+fit_rescaled <- cfa(model, rescaled)
+fit0_rescaled <- cfa(restricted, rescaled)
+sapply(c(weighted = "weighted", delta = "delta"), function(A) {
+  c(
+    original = pvalues_nested(fit0, fit, tests = "SB_ML", A.method = A)[[1]],
+    rescaled = pvalues_nested(fit0_rescaled, fit_rescaled,
+      tests = "SB_ML", A.method = A
+    )[[1]]
+  )
+})
+```
+
+`A.method = "exact"` is lavaan's other alternative; see `?pvalues`.
 
 Both fits must use the same data, estimator, and fitting options. `semTests`
 checks this, and if the models arrive in the wrong order it warns and swaps

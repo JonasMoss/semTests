@@ -32,10 +32,10 @@ support.
 
 \subsection{Nested (\code{pvalues_nested()})}{\tabular{llllllll}{
    Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Availability \tab Stability \cr
-   ML/MLM/MLR \tab continuous \tab single or multi \tab complete \tab 2000 \tab delta or exact \tab available \tab stable \cr
-   GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 \tab delta or exact \tab available \tab stable \cr
-   ML / MLR (FIML) \tab continuous \tab single or multi \tab FIML (both fits) \tab 2000 only \tab delta or exact \tab available \tab stable \cr
-   DWLS/ULS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab delta only \tab available \tab stable \cr
+   ML/MLM/MLR \tab continuous \tab single or multi \tab complete \tab 2000 \tab weighted, delta, or exact \tab available \tab stable \cr
+   GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 \tab weighted, delta, or exact \tab available \tab stable \cr
+   ML / MLR (FIML) \tab continuous \tab single or multi \tab FIML (both fits) \tab 2000 only \tab weighted, delta, or exact \tab available \tab stable \cr
+   DWLS/ULS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab weighted or delta \tab available \tab stable \cr
    any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \tab -- \cr
 }
 
@@ -106,8 +106,8 @@ normalizations, and other first-stage conventions keep their existing paths.
 lavaan's biased \code{UGamma} and its unscaled estimator statistic. Expected-
 information fits compute the spectrum in residual space. Supported
 estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
-ULSMV). Nested comparison is restricted to \code{method = "2000"} and
-\code{A.method = "delta"}.
+ULSMV). Nested comparison is restricted to \code{method = "2000"}, with
+\code{A.method = "weighted"} or \code{"delta"}.
 \item \strong{Pairwise categorical missingness} means support for lavaan's pairwise
 sample-statistic and \code{UGamma} calculation. Pairwise deletion has its own
 missingness assumptions and does not provide FIML or generally MAR-valid
@@ -119,7 +119,7 @@ random-x inference, using \code{fixed.x = FALSE} and \code{conditional.x = FALSE
 semTests uses observed saturated and model information, following the
 recommendation of Kenward and Molenberghs (1998), and is independently
 validated against magmaan. The deprecated \code{fiml.convention = "lavaan"}
-reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
+reproduces lavaan's inspected robust-test spectrum, including its
 expected H1 weight.
 }
 }

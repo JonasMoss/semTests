@@ -4,22 +4,23 @@
 \alias{check_supported_nested}
 \title{Reject a nested pair whose configuration is outside the supported surface.}
 \usage{
-check_supported_nested(m0, m1, method, A.method = "delta")
+check_supported_nested(m0, m1, method, A.method = "weighted")
 }
 \arguments{
 \item{m0, m1}{Two nested \code{lavaan} objects (canonical order: \code{m0} constrained).}
 
 \item{method}{The nested reduction method, \code{"2000"} or \code{"2001"}.}
 
-\item{A.method}{The restriction matrix, \code{"delta"} or \code{"exact"} (see
-\code{\link[=get_a_matrix]{get_a_matrix()}}). Categorical pairs support \code{"delta"} only.}
+\item{A.method}{The restriction matrix, \code{"weighted"}, \code{"delta"}, or
+\code{"exact"} (see \code{\link[=get_a_matrix]{get_a_matrix()}}). Categorical pairs do not support
+\code{"exact"}.}
 }
 \value{
 \code{TRUE}, invisibly.
 }
 \description{
 The single entry-level gate for \code{\link[=pvalues_nested]{pvalues_nested()}}: categorical nesting uses
-Satorra 2000 with a delta restriction map, missing-data nesting otherwise
+Satorra 2000 with a moment-space restriction map, missing-data nesting otherwise
 requires both fits to be FIML, and FIML nesting supports \code{method = "2000"}
 only. Each fit is also run through
 \code{\link[=check_supported]{check_supported()}}. The \code{UG}-gamma rejection for FIML stays in the p-value

@@ -66,7 +66,7 @@
 #' FIML (missing data), and categorical DWLS/ULS families, with single- and
 #' multi-group continuous, ordered, and mixed-indicator fits.
 #' `pvalues_nested()` supports continuous estimators and categorical
-#' Satorra-2000 comparisons with a delta restriction map. The fitted model must
+#' Satorra-2000 comparisons with a moment-space restriction map. The fitted model must
 #' expose the asymptotic moment covariance. Robust choices such as
 #' `test = "satorra.bentler"` or `estimator = "MLM"`, `"MLR"`, or `"DWLS"`
 #' provide it. The RLS statistic (`browne.residual.nt.model`) and the unbiased
@@ -91,7 +91,7 @@
 #' For FIML, semTests uses observed saturated and model information
 #' throughout. An independent implementation validates this construction.
 #' The deprecated `fiml.convention` argument can instead select `"lavaan"`,
-#' which reproduces lavaan 0.7-2's robust-test construction. For a single model it uses lavaan's
+#' which reproduces lavaan's robust-test construction. For a single model it uses lavaan's
 #' inspected `UGamma`. For nested models it uses lavaan's H1 weight convention
 #' and selected model information. The returned object records the convention,
 #' which keeps this inferential choice visible in saved results.
@@ -99,7 +99,7 @@
 #' For a single FIML model, `"lavaan"` means the eigenvalue spectrum returned by
 #' `lavInspect(fit, "UGamma")`. The scalar Yuan--Bentler--Mplus test stored by a
 #' default MLR fit is a different correction and may give a different result.
-#' For nested FIML models, `"lavaan"` reproduces
+#' For nested FIML models, `"lavaan"` with `A.method = "delta"` reproduces
 #' `lavTestLRT(..., method = "satorra.2000")`.
 #'
 #' @param object,m0,m1 One or two `lavaan` objects, or a `semTests_test` result
@@ -116,19 +116,22 @@
 #'   (the paper-recommended default) is available. The Satorra--Bentler `"2001"`
 #'   construction has been withdrawn because it performs poorly, and requesting
 #'   it points you to `"2000"`.
-#' @param A.method The restriction matrix of the nested test, named as in
-#'   lavaan's `lavTestLRT()`. `"delta"` (the default) is lavaan's default: the
-#'   moment-tangent map with each model's Jacobian at its own estimate. It
-#'   applies to any nesting, including restricted models that drop or fix
-#'   paths, and does not depend on how the factors are identified. `"exact"`
-#'   is lavaan's literal parameter restriction map. It requires the same
-#'   underlying free parameters in both models, as with equality constraints,
-#'   and its p-values shift slightly with the identification (for example
-#'   `std.lv = TRUE` versus marker loadings). Categorical nested models support
-#'   `"delta"` only.
+#' @param A.method The restriction matrix of the nested test. `"weighted"`
+#'   (the default) is the moment-tangent map, with each model's Jacobian at its
+#'   own estimate, projected in the fit's weight metric. It applies to any
+#'   nesting, including restricted models that drop or fix paths, and does not
+#'   depend on how the factors are identified or on the units of the observed
+#'   variables. `"delta"` is the same map projected in the Euclidean metric,
+#'   lavaan's default; use it to reproduce
+#'   `lavTestLRT(..., method = "satorra.2000")`. Its p-values change with the
+#'   units of the observed variables. `"exact"` is lavaan's literal parameter
+#'   restriction map. It requires the same underlying free parameters in both
+#'   models, as with equality constraints, and its p-values shift slightly with
+#'   the identification (for example `std.lv = TRUE` versus marker loadings).
+#'   Categorical nested models do not support `"exact"`.
 #' @param fiml.convention Deprecated, and will be removed in a future release.
 #'   For FIML fits, use the fully observed-information convention
-#'   (`"observed"`, the default) or reproduce lavaan 0.7-2's inspected
+#'   (`"observed"`, the default) or reproduce lavaan's inspected
 #'   robust-test spectrum (`"lavaan"`). Supplying it, with either value, gives
 #'   a warning of class `semTests_warning_deprecated`. The `"lavaan"` spectrum
 #'   changes with the fit's `information` and `h1.information` options; use
@@ -292,7 +295,7 @@ pvalues.default <- function(object, tests,
 #' @export
 pvalues_nested <- function(m0, m1, method = c("2000", "2001"),
                            tests = if (is_classic_nt(m0)) "PALL_UG_ML" else "PALL",
-                           A.method = c("delta", "exact"),
+                           A.method = c("weighted", "delta", "exact"),
                            fiml.convention = c("observed", "lavaan")) {
   supplied <- !missing(fiml.convention)
   method <- match.arg(method)
@@ -581,7 +584,7 @@ compute_spectra <- function(m0, m1, unbiased, df, A.method, fiml.convention) {
 #' @keywords internal
 compute_pvalues <- function(m0, unbiased, trad, eba, peba, pols,
                             chisq = c("ml", "rls"), m1 = NULL,
-                            A.method = "delta",
+                            A.method = "weighted",
                             fiml.convention = "observed", cache = NULL) {
   use_trad <- setdiff(trad, "std")
   df <- cached_inference(cache, "df", {
