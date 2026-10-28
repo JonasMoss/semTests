@@ -217,8 +217,12 @@ run_fiml <- function(seed) {
     }
     single_tests <- tests_for_df(lavaan::fitmeasures(lav_h1, "df"))
     nested_tests <- tests_for_df(nested_df_of(lav_h0, lav_h1))
-    mag_h1 <- magmaanlab::fit_model(h1_model, data, estimator = "FIML")
-    mag_h0 <- magmaanlab::fit_model(h0_model, data, estimator = "FIML")
+    # Identify the factors as lavaan does here (std.lv = TRUE): the "exact"
+    # restriction depends on the identification, "delta" does not.
+    spec_h1 <- magmaanlab::model_spec(h1_model, std_lv = TRUE, meanstructure = TRUE)
+    spec_h0 <- magmaanlab::model_spec(h0_model, std_lv = TRUE, meanstructure = TRUE)
+    mag_h1 <- magmaanlab::fit_model(spec_h1, data, estimator = "FIML")
+    mag_h0 <- magmaanlab::fit_model(spec_h0, data, estimator = "FIML")
     if (!isTRUE(mag_h1$converged) || !isTRUE(mag_h0$converged)) return(out)
 
     mag_single <- magmaanlab::fmg_tests(mag_h1, tests = single_tests)
