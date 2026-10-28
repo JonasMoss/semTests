@@ -82,7 +82,7 @@ Missing values are fine too. Fit the model with `missing = "fiml"` and
 call `pvalues()` as usual. `semTests` uses observed information by
 default, following [Savalei (2010)](https://doi.org/10.1037/a0020143).
 The [FIML vignette](vignettes/fiml-missing-data.Rmd) explains this
-choice and shows the other options.
+choice.
 
 ``` r
 HS <- lavaan::HolzingerSwineford1939
@@ -113,12 +113,13 @@ pvalues(fit_ordinal)
 
 ## More examples
 
-- `vignette("continuous-data", package = "semTests")`
-- `vignette("categorical-data", package = "semTests")`
-- `vignette("fiml-missing-data", package = "semTests")`
-- `vignette("latent-growth", package = "semTests")`
-- `vignette("measurement-invariance", package = "semTests")`
-- `vignette("semTests", package = "semTests")`
+- `vignette("semTests", package = "semTests")`: getting started
+- `vignette("categorical-data", package = "semTests")`: ordinal indicators
+  and measurement invariance
+- `vignette("fiml-missing-data", package = "semTests")`: missing data with
+  FIML
+- `vignette("score-criterion", package = "semTests")`: score and criterion
+  tests
 
 The help page `?semTests-support` gives the exact supported
 combinations.
