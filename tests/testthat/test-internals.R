@@ -253,8 +253,9 @@ test_that("model_parameter_basis evaluates nonlinear constraints at the estimate
   # constant, and wrong for a nonlinear one. The basis must span the tangent
   # space of the restriction at the solution.
   d <- lavaan::HolzingerSwineford1939
+  # lavaan >= 0.7-3 adds Browne's test by default, which warns here.
   fit <- lavaan::cfa("f =~ x1 + a*x2 + b*x3 + x4\na*b == 0.5", d,
-                     meanstructure = TRUE)
+                     meanstructure = TRUE, test = "standard")
   skip_if_not(lavaan::lavInspect(fit, "converged"))
 
   basis <- model_parameter_basis(fit)
