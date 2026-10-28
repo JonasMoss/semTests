@@ -158,14 +158,14 @@ pattern_score_products <- function(parts, G, score_covariance, tile_rows=256L) {
   list(score=score,score_covariance=symmetrize(score_cov))
 }
 
-gaussian_global_score_parts <- function(object, score_covariance, curvature, metric="information") {
+gaussian_global_score_parts <- function(object, score_covariance, curvature, observed_weight = FALSE) {
   parts <- gaussian_pattern_parts(object)
   E <- lavaan::lav_matrix_bdiag(parts$expected)
   H <- if (curvature == "expected") E else lavaan::lav_matrix_bdiag(parts$observed)
   K <- model_effective_delta(object)
   D <- inference_complement(K)
   G <- D - K %*% inference_solve(crossprod(K,H%*%K),crossprod(K,H%*%D))
-  M <- if (metric=="observed") lavaan::lav_matrix_bdiag(parts$observed) else E
+  M <- if (observed_weight) lavaan::lav_matrix_bdiag(parts$observed) else E
   products <- pattern_score_products(parts,G,score_covariance)
   # Model-based information in the covariance slot. Distinct from the empirical
   # products only where the information equality fails, i.e. under missing data.

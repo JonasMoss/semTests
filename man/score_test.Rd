@@ -6,7 +6,7 @@
 \usage{
 score_test(
   object,
-  metric = c("information", "sandwich", "observed"),
+  weight = c("curvature", "expected_curvature", "score_covariance"),
   score_covariance = c("uncentered", "centered", "expected"),
   keep = FALSE,
   tolerance = 1e-10,
@@ -16,9 +16,11 @@ score_test(
 \arguments{
 \item{object}{A converged \code{lavaan} fit in the supported scope.}
 
-\item{metric}{\code{"information"} for the Fisher-metric quadratic, or
-\code{"sandwich"} for full efficient-score studentization, or \code{"observed"}
-for observed saturated curvature (must be positive in tested directions).}
+\item{weight}{The matrix in the quadratic form, as in \code{\link[=semtest]{semtest()}}:
+\code{"curvature"} for the selected saturated curvature (an observed one must be
+positive in the tested directions), \code{"expected_curvature"} for expected
+saturated curvature whatever the curvature used for projection, or
+\code{"score_covariance"} for full efficient-score studentization.}
 
 \item{score_covariance}{\code{"uncentered"} for raw score products, or \code{"centered"}
 for separate within-group centering.}

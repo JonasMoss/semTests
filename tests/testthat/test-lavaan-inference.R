@@ -62,7 +62,7 @@ test_that("global score projection removes the model tangent across groups", {
     expect_equal(centered$statistic, out$statistic)
     expect_gte(min(eigen(out$ingredients$score_covariance - centered$ingredients$score_covariance,
                          symmetric = TRUE, only.values = TRUE)$values), -1e-10)
-    expect_identical(score_test(fit, metric = "sandwich")$reference, "chisq")
+    expect_identical(score_test(fit, weight = "score_covariance")$reference, "chisq")
   }
 })
 

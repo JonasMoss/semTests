@@ -78,7 +78,7 @@ test_that("nested score accepts an unoptimized affine template and checks embedd
   expect_equal(a$eigenvalues,b$eigenvalues,tolerance=1e-10)
   expect_equal(a$df,1L)
   expect_lt(a$diagnostics$nuisance_stationarity_norm,1e-5)
-  expect_identical(score_test_nested(f0,f1,metric="sandwich")$reference,"chisq")
+  expect_identical(score_test_nested(f0,f1,weight="score_covariance")$reference,"chisq")
   lr <- criterion_test_nested(f0,f1)
   expect_equal(lr$statistic,as.numeric(lavaan::fitMeasures(f0,"chisq")-lavaan::fitMeasures(f1,"chisq")),tolerance=1e-9)
   expect_equal(lr$eigenvalues,a$eigenvalues,tolerance=1e-10)

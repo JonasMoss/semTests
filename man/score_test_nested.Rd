@@ -7,7 +7,7 @@
 score_test_nested(
   object,
   alternative,
-  metric = c("information", "expected", "sandwich"),
+  weight = c("curvature", "expected_curvature", "score_covariance"),
   curvature = c("observed", "expected"),
   score_covariance = c("centered", "uncentered", "expected"),
   weight_effect = c("estimated", "fixed"),
@@ -23,9 +23,11 @@ score_test_nested(
 \item{alternative}{Nested alternative lavaan fit or unoptimized template,
 using the same observations, estimator and moment conventions.}
 
-\item{metric}{\code{"information"} uses the selected sensitivity for the quadratic,
-\code{"expected"} uses Fisher/Gauss--Newton curvature while retaining the selected
-nuisance sensitivity, and \code{"sandwich"} fully studentizes the profile score.}
+\item{weight}{The matrix in the quadratic form, as in \code{\link[=semtest]{semtest()}}:
+\code{"curvature"} uses the selected curvature, \code{"expected_curvature"} uses
+Fisher/Gauss--Newton curvature while keeping the selected curvature for the
+nuisance projection, and \code{"score_covariance"} fully studentizes the profile
+score.}
 
 \item{curvature}{\code{"observed"} (default) or \code{"expected"} comparator.}
 

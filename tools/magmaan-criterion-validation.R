@@ -54,11 +54,11 @@ for(categories in c(2L,3L)) {
   for(curvature in c('expected','observed')) {
     case<-paste0('ordinal-',categories,' ',curvature)
     ref0<-magmaanlab::score_tests_robust(mag0,estimated_weight=TRUE,bread=curvature)
-    out<-score_test_nested(fit0,fit,curvature=curvature,metric='sandwich')
+    out<-score_test_nested(fit0,fit,curvature=curvature,weight='score_covariance')
     check(case,'nested complete studentized score',out$statistic,ref0$mi.scaled,2e-4)
     # magmaan's mi and scaling factor weight the score by expected information
-    # whatever the bread; semTests' default weight follows the curvature.
-    weighted<-score_test_nested(fit0,fit,curvature=curvature,metric='expected')
+    # whatever the bread; semTests' weight = 'curvature' follows the curvature.
+    weighted<-score_test_nested(fit0,fit,curvature=curvature,weight='expected_curvature')
     # The magmaan score uses N; lavaan's LS criterion uses N-1.
     check(case,'nested quadratic',weighted$statistic,ref0$mi*(nrow(d)-1)/nrow(d),2e-4)
     check(case,'nested spectrum',weighted$eigenvalues,ref0$scaling.factor*(nrow(d)-1)/nrow(d),2e-4)

@@ -74,9 +74,11 @@ nested_criterion_embedding <- function(object, alternative, tolerance) {
 #' @param object Converged restricted lavaan fit.
 #' @param alternative Nested alternative lavaan fit or unoptimized template,
 #'   using the same observations, estimator and moment conventions.
-#' @param metric `"information"` uses the selected sensitivity for the quadratic,
-#'   `"expected"` uses Fisher/Gauss--Newton curvature while retaining the selected
-#'   nuisance sensitivity, and `"sandwich"` fully studentizes the profile score.
+#' @param weight The matrix in the quadratic form, as in [semtest()]:
+#'   `"curvature"` uses the selected curvature, `"expected_curvature"` uses
+#'   Fisher/Gauss--Newton curvature while keeping the selected curvature for the
+#'   nuisance projection, and `"score_covariance"` fully studentizes the profile
+#'   score.
 #' @param curvature `"observed"` (default) or `"expected"` comparator.
 #' @param score_covariance Group-centered or uncentered Gaussian score products.
 #'   LS influence functions are centered by definition and require `"centered"`.
@@ -92,7 +94,7 @@ nested_criterion_embedding <- function(object, alternative, tolerance) {
 #'   establish validity under fixed structural misspecification.
 #' @keywords internal
 score_test_nested <- function(object,alternative,
-                              metric=c("information","expected","sandwich"),
+                              weight=c("curvature","expected_curvature","score_covariance"),
                               curvature=c("observed","expected"),
                               score_covariance=c("centered","uncentered","expected"),
                               weight_effect=c("estimated","fixed"),
@@ -100,7 +102,7 @@ score_test_nested <- function(object,alternative,
                               hypothesis="Common criterion pseudo-target satisfies the restricted model",
                               keep=FALSE,tolerance=1e-10) {
   check_criterion_adapter(object)
-  metric <- match.arg(metric)
+  weight <- match.arg(weight)
   curvature <- match.arg(curvature)
   score_covariance <- match.arg(score_covariance)
   weight_effect <- match.arg(weight_effect)
@@ -111,12 +113,13 @@ score_test_nested <- function(object,alternative,
   first <- if (object@Options$estimator=="ML") NULL else ls_first_stage(object,weight_effect,derivative_step)
   parts <- parameter_inference_parts(embed$object,curvature,score_covariance,weight_effect,
     derivative_step,basis=embed$basis,theta=embed$theta,first_stage=first)
-  M <- switch(metric,information=parts$curvature,expected=parts$expected,sandwich=NULL)
+  M <- switch(weight,curvature=parts$curvature,expected_curvature=parts$expected,
+    score_covariance=NULL)
   out <- profile_score_test_matrices(parts$score,parts$curvature,parts$score_covariance,
     embed$nuisance,M,parts$nobs,hypothesis,keep,tolerance)
   out$provenance <- c(out$provenance,parts$provenance,list(
     lavaan_version=as.character(utils::packageVersion("lavaan")),
-    estimator=requested_estimator(object),metric=metric,group_nobs=parts$group_nobs))
+    estimator=requested_estimator(object),weight=weight,group_nobs=parts$group_nobs))
   out$provenance$backend <- "lavaan restricted criterion"
   out$diagnostics$nuisance_stationarity_norm <- max(abs(out$diagnostics$nuisance_score),0)/parts$nobs
   out$diagnostics$curvature_asymmetry <- parts$curvature_asymmetry
@@ -153,7 +156,8 @@ criterion_test_nested <- function(object,alternative,
         stop("Nested criterion differences require identical first-stage moments and weights.",call.=FALSE)
     }
   }
-  out <- score_test_nested(object,alternative,metric="information",
+  # The criterion difference weights by curvature by construction.
+  out <- score_test_nested(object,alternative,weight="curvature",
     curvature=match.arg(curvature),score_covariance=match.arg(score_covariance),
     weight_effect=match.arg(weight_effect),derivative_step=derivative_step,
     hypothesis=hypothesis,keep=keep,tolerance=tolerance)

@@ -20,9 +20,13 @@ for(grouped in c(FALSE,TRUE)) {
     group_labels=if(grouped) unique(as.character(d$school)) else NULL)
   mag <- magmaanlab::fit_model(spec,d,estimator="FIML")
   for(sensitivity in c("expected","observed")) for(metric in c("expected","observed")) {
+    # semTests weights by observed curvature only when it also profiles with it,
+    # the combinations semtest() offers; magmaan also allows the fourth.
+    if(sensitivity=="expected" && metric=="observed") next
+    weight <- if(metric=="expected") "expected_curvature" else "curvature"
     ref <- tryCatch(magmaanlab::global_score_flip_test(mag,n_flips=1L,sensitivity=sensitivity,metric=metric),error=identity)
     if(inherits(ref,"error")) {
-      out <- tryCatch(score_test(fit,curvature =sensitivity,metric=if(metric=="expected") "information" else "observed"),error=identity)
+      out <- tryCatch(score_test(fit,curvature =sensitivity,weight=weight),error=identity)
       stopifnot(grepl("positive definite",conditionMessage(ref)),
                 inherits(out,"semTests_error_unstable_spectrum"),
                 grepl("positive definite",conditionMessage(out)))
@@ -30,8 +34,8 @@ for(grouped in c(FALSE,TRUE)) {
         quantity="both reject indefinite metric",gap=0,tolerance=0)
       next
     }
-    out <- score_test(fit,curvature =sensitivity,metric=if(metric=="expected") "information" else "observed")
-    full <- score_test(fit,curvature =sensitivity,metric="sandwich")
+    out <- score_test(fit,curvature =sensitivity,weight=weight)
+    full <- score_test(fit,curvature =sensitivity,weight="score_covariance")
     values <- list(df=c(out$df,ref$df),statistic=c(out$statistic,ref$statistic_effective),
       spectrum=cbind(sort(out$eigenvalues),sort(ref$eigenvalues)),
       sandwich=c(full$statistic,ref$statistic_sandwich),p=c(out$p_value,ref$p_mixture))

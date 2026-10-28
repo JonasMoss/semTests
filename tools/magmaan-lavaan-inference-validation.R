@@ -37,7 +37,7 @@ for (case in names(cases)) {
   stopifnot(isTRUE(lavaan::lavInspect(fit, "converged")), isTRUE(mag$converged))
   reference <- magmaanlab::global_score_flip_test(mag, args$data, n_flips = 1L)
   score <- semTests:::score_test(fit)
-  sandwich <- semTests:::score_test(fit, metric = "sandwich")
+  sandwich <- semTests:::score_test(fit, weight = "score_covariance")
   # Separate optimizers: tolerances concern endpoint differences, not just
   # floating-point algebra. One flip only enables the deterministic comparators.
   check(case, "df", score$df, reference$df, 0)

@@ -139,9 +139,11 @@ ml_global_score_parts <- function(object, score_covariance, tile_rows = 256L) {
 #' reference. Other metrics use the full eigenvalue mixture by default.
 #'
 #' @param object A converged `lavaan` fit in the supported scope.
-#' @param metric `"information"` for the Fisher-metric quadratic, or
-#'   `"sandwich"` for full efficient-score studentization, or `"observed"`
-#'   for observed saturated curvature (must be positive in tested directions).
+#' @param weight The matrix in the quadratic form, as in [semtest()]:
+#'   `"curvature"` for the selected saturated curvature (an observed one must be
+#'   positive in the tested directions), `"expected_curvature"` for expected
+#'   saturated curvature whatever the curvature used for projection, or
+#'   `"score_covariance"` for full efficient-score studentization.
 #' @param score_covariance `"uncentered"` for raw score products, or `"centered"`
 #'   for separate within-group centering.
 #' @param keep Retain normalized matrices, tangent and projection.
@@ -155,28 +157,32 @@ ml_global_score_parts <- function(object, score_covariance, tile_rows = 256L) {
 #'                    lavaan::HolzingerSwineford1939, estimator = "ML")
 #' s <- semTests:::score_test(fit)
 #' pvalues(s, c("SB", "ALL", "PEBA2"))
-score_test <- function(object, metric = c("information", "sandwich", "observed"),
+score_test <- function(object,
+                        weight = c("curvature", "expected_curvature", "score_covariance"),
                         score_covariance = c("uncentered", "centered", "expected"), keep = FALSE,
                         tolerance = 1e-10, curvature = c("expected", "observed")) {
   check_ml_inference_adapter(object, "score_test()", allow_fiml = TRUE)
   curvature <- match.arg(curvature)
-  metric <- match.arg(metric)
+  weight <- match.arg(weight)
   score_covariance <- match.arg(score_covariance)
   inference_options("Exact fit against saturated moments", keep, tolerance)
+  # Only weight = "curvature" with observed curvature weights by the observed
+  # matrix; every other choice weights by expected curvature or studentizes.
+  observed_weight <- weight == "curvature" && curvature == "observed"
   # The reduced complete-data route has no expected-covariance slot; the pattern
   # route carries the per-pattern expected information needed for it.
-  parts <- if (!is_fiml(object) && curvature == "expected" && metric != "observed" &&
+  parts <- if (!is_fiml(object) && curvature == "expected" &&
                score_covariance != "expected") {
     ml_global_score_parts(object, score_covariance)
   } else {
-    gaussian_global_score_parts(object, score_covariance, curvature, metric)
+    gaussian_global_score_parts(object, score_covariance, curvature, observed_weight)
   }
   result <- score_test_matrices(parts$score,
-    metric = if (metric == "sandwich") NULL else parts$metric,
+    metric = if (weight == "score_covariance") NULL else parts$metric,
     score_covariance = parts$score_covariance, nobs = parts$nobs,
     hypothesis = "Exact fit against saturated moments", keep = keep, tolerance = tolerance)
   result$provenance <- c(result$provenance, list(lavaan_version = as.character(utils::packageVersion("lavaan")),
-    estimator = requested_estimator(object), curvature = curvature, metric = metric,
+    estimator = requested_estimator(object), curvature = curvature, weight = weight,
     score_covariance = score_covariance, group_nobs = parts$group_nobs))
   result$provenance$backend <- if (is_fiml(object)) "lavaan FIML pattern scores" else "lavaan complete-data ML"
   result$diagnostics$nuisance_gradient <- parts$nuisance_gradient

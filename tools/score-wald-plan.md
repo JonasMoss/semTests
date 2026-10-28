@@ -81,12 +81,9 @@ sandwich-literature jargon, because the audience reads lavaan documentation.
 Defaults and numerics are unchanged by the rename. Wald sampling covariance
 remains `vcov`; score weighting remains `metric`.
 
-Open naming work, tracked but not yet applied: `metric` levels still read
-`"information"` / `"expected"` / `"sandwich"`, which do not say which matrix
-they select and collide across functions (`"information"` resolves to expected
-Fisher in `score_test()` but to the selected `curvature` in
-`score_test_nested()`). `fiml.convention` is slated for removal. See the
-handoff notes at the end of this document.
+The internal `metric` levels were replaced on 2026-10-28 by `semtest()`'s own
+`weight` levels; see B1. `fiml.convention` is deprecated. See the handoff
+notes at the end of this document.
 
 The three remaining implementation workstreams are now implemented in the
 explicitly documented scope:
@@ -552,6 +549,19 @@ chi-square reference. This drops the mixed comparator reachable today as
 nuisance projection). Confirm nothing in `tools/magmaan-*` depends on that
 combination before removing it. If an expected-weighted quadratic is still
 wanted it is reachable as `metric = "curvature"` with `curvature = "expected"`.
+
+**Done 2026-10-28, with three levels rather than two.** `score_test()` and
+`score_test_nested()` take `weight = c("curvature", "expected_curvature",
+"score_covariance")`, the levels `semtest()` exposes, and `semtest()` passes
+its argument through instead of translating it twice. The mixed comparator
+stays: `weight = "expected_curvature"` with observed curvature is a public
+`semtest()` option, and it is what magmaan's ordinal score tests compute by
+default. The overall-fit kernel can no longer weight by observed curvature
+while profiling with expected curvature, which `semtest()` never offered.
+The matrix-valued `metric` input of `score_test_matrices()` is unchanged.
+All 76 `semtest()` results across weight, curvature and score covariance (ML
+and FIML, overall and nested, plus criterion differences) are bit-identical
+before and after.
 
 ### B2. Decide the `score_covariance` default
 

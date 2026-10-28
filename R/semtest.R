@@ -96,38 +96,22 @@ semtest <- function(object, alternative = NULL,
         "so it must be optimized. An unoptimized template works with ",
         "statistic = \"score\"."), "semTests_error_invalid_inference")
     }
-    # The criterion difference weights by curvature by construction.
-    out <- criterion_test_nested(object, alternative,
+    return(criterion_test_nested(object, alternative,
       curvature = control$curvature, score_covariance = control$score_covariance,
       weight_effect = control$weight_effect,
       derivative_step = control$derivative_step,
-      keep = control$keep, tolerance = control$tolerance)
-    out$provenance$weight <- "curvature"
-    return(out)
+      keep = control$keep, tolerance = control$tolerance))
   }
-  out <- score_test_nested(object, alternative,
-    metric = switch(weight, score_covariance = "sandwich",
-                    expected_curvature = "expected", "information"),
+  score_test_nested(object, alternative, weight = weight,
     curvature = control$curvature, score_covariance = control$score_covariance,
     weight_effect = control$weight_effect,
     derivative_step = control$derivative_step,
     keep = control$keep, tolerance = control$tolerance)
-  out$provenance$weight <- weight
-  out
 }
 
-# The global adapter spells the weighting choice in terms of its own metric
-# levels: "information" is the expected saturated metric regardless of the
-# curvature used for projection, so weight and curvature stay independent.
 semtest_fit <- function(object, weight, control) {
-  metric <- switch(weight,
-    score_covariance = "sandwich",
-    expected_curvature = "information",
-    if (control$curvature == "observed") "observed" else "information")
-  out <- score_test(object, metric = metric,
-                    score_covariance = control$score_covariance,
-                    keep = control$keep, tolerance = control$tolerance,
-                    curvature = control$curvature)
-  out$provenance$weight <- weight
-  out
+  score_test(object, weight = weight,
+             score_covariance = control$score_covariance,
+             keep = control$keep, tolerance = control$tolerance,
+             curvature = control$curvature)
 }
