@@ -152,9 +152,9 @@ comparators rather than complete corrections under misspecification.
 
 Both require unweighted single-level raw observations, joint random-x
 inference and affine equality constraints. Ordinal inference requires
-nonempty pairwise cells. Its first-stage influence is computed in closed
-form; the estimated-weight derivative is closed form for DWLS and ULS and
-numerical for full WLS. Mixed indicators, pairwise missingness, case
+nonempty pairwise cells. Its first-stage influence and the derivative of the
+estimated weight are computed in closed form. Mixed indicators, pairwise
+missingness, case
 weights, clusters, bounds and nonlinear constraints are excluded. Full WLS
 is admitted for nested inference under misspecification; its exact-fit
 correction refusal in \code{\link[=pvalues]{pvalues()}} is unchanged.

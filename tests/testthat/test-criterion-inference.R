@@ -124,7 +124,7 @@ test_that("continuous complete weight influences agree with empirical contaminat
   }
 })
 
-test_that("ordinal numerical IJ converges and estimated weights matter off null", {
+test_that("ordinal first stage is step-stable and estimated weights matter off null", {
   d <- lavaan::HolzingerSwineford1939[,paste0("x",1:4)]
   d[] <- lapply(d,function(x) as.integer(x>median(x)))
   f <- lavaan::cfa('f =~ x1+x2+x3+x4',d,ordered=names(d))
@@ -168,6 +168,45 @@ test_that("multi-category first-stage derivatives are stable and retain native w
   # exceeds 2x2, where (a-1)+(b-1)+1 parameters stop saturating its ab-1 cells.
   expect_equal(crossprod(a$influence)/nrow(d), f@SampleStats@NACOV[[1]],
                tolerance = 1e-8, ignore_attr = TRUE)
+})
+
+test_that("full WLS weight derivative is closed form and matches its diagonal", {
+  d <- lavaan::HolzingerSwineford1939[,paste0("x",1:4)]
+  d[] <- lapply(d,function(x) as.integer(x>median(x)))
+  f <- lavaan::cfa('f =~ x1+x2+x3+x4',d,ordered=names(d),estimator="WLS")
+  f0 <- lavaan::cfa('f =~ x1+a*x2+a*x3+x4',d,ordered=names(d),estimator="WLS")
+  # Reference from the numerical derivative of lavaan's own first stage, which
+  # semTests used before 2.0.0. On binary items the two agree to 3e-10.
+  estimated <- semtest(f0,f,weight="score_covariance")
+  expect_equal(estimated$statistic,0.0497520611292,tolerance=1e-5)
+  fixed <- semtest(f0,f,weight="score_covariance",weight_effect="fixed")
+  expect_gt(abs(estimated$statistic-fixed$statistic),5e-4)
+
+  # With three categories, the diagonal of the full derivative is the DWLS one.
+  d[] <- lapply(lavaan::HolzingerSwineford1939[,paste0("x",1:4)],function(x)
+    as.integer(cut(x,quantile(x,c(0,1/3,2/3,1)),include.lowest=TRUE)))
+  f <- lavaan::cfa('f =~ x1+x2+x3+x4',d,ordered=names(d),estimator="WLS")
+  a <- ordinal_first_stage(f,1,"estimated",1e-4)
+  b <- ordinal_first_stage(f,1,"estimated",5e-5)
+  r <- a$observed-inference_implied(f)[[1]]
+  expect_equal(a$correction(r),b$correction(r),tolerance=1e-6)
+  thresholds <- split(a$observed[1:8],rep(1:4,each=2))
+  wi <- ordinal_weight_influence(f@Data@X[[1]],thresholds,a$observed[-(1:8)],
+                                 step=1e-2,full=TRUE)
+  m <- length(a$observed)
+  full_diagonal <- vapply(seq_len(m),function(k) wi$derivative(diag(m)[,k])[,k],
+                          numeric(nrow(d)))
+  expect_equal(full_diagonal,wi$diagonal,tolerance=1e-8)
+})
+
+test_that("ordinal inference refuses empty pairwise cells", {
+  hs <- lavaan::HolzingerSwineford1939
+  d <- hs[,paste0("x",1:4)]
+  d[] <- lapply(d,function(x) as.integer(x>median(x)))
+  d$x1 <- as.integer(hs$x1>stats::quantile(hs$x1,.9))
+  d$x2 <- as.integer(hs$x2<stats::quantile(hs$x2,.05))
+  f <- lavaan::cfa('f =~ x1+x2+x3+x4',d,ordered=names(d))
+  expect_error(ordinal_first_stage(f,1,"fixed",1e-4),"x1 and x2 have an empty one")
 })
 
 test_that("unequal-group LS curvature follows the fitted N-minus-one criterion", {

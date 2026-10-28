@@ -192,7 +192,14 @@ ordinal_moment_influence <- function(X, thresholds, rho, parts = FALSE) {
 # than converging. All three are below; only channel 2 needs finite differences,
 # and those are taken on a closed-form function of kappa, not a re-solved
 # polychoric optimizer.
-ordinal_weight_influence <- function(X, thresholds, rho, step = 1e-5) {
+#
+# DWLS needs only the diagonal of each case's derivative dGamma_i. Full WLS
+# needs all of it, and `full = TRUE` adds `derivative(v)`, the n by m matrix
+# whose row i is dGamma_i v. Off the diagonal, channel 3 moves entry (k, l)
+# through the bread of either column, so it contributes B_i + t(B_i), where row
+# k of B_i is the bread derivative of phi_k against every column of phi.
+ordinal_weight_influence <- function(X, thresholds, rho, step = 1e-5,
+                                     full = FALSE) {
   n <- nrow(X)
   p <- length(thresholds)
   built <- ordinal_moment_influence(X, thresholds, rho, parts = TRUE)
@@ -206,6 +213,7 @@ ordinal_weight_influence <- function(X, thresholds, rho, step = 1e-5) {
   # Channels 1 and 3, in closed form. E[phi_k dphi_k/deps_i] for the threshold
   # block is zero: a threshold influence has no bread and no sample mean in it.
   cross <- matrix(0, n, m)
+  bread <- vector("list", length(built$detail))
   for (k in seq_along(built$detail)) {
     d <- built$detail[[k]]
     column <- n_threshold + k
@@ -222,6 +230,12 @@ ordinal_weight_influence <- function(X, thresholds, rho, step = 1e-5) {
     cross[, column] <- 2 * (
       -(drop(d_cu %*% g_u) + drop(d_cv %*% g_v)) / d$a22 -
         gamma[column, column] * d_a22 / d$a22)
+    if (full) {
+      bread[[k]] <- list(column = column, a22 = d$a22, d_cu = d_cu,
+                         d_cv = d_cv, d_a22 = d_a22,
+                         g_u = crossprod(built$TH[, iu, drop = FALSE], phi) / n,
+                         g_v = crossprod(built$TH[, iv, drop = FALSE], phi) / n)
+    }
   }
 
   # Channel 2. kappa moves by phi_i, so accumulate dGamma/dkappa_c weighted by
@@ -233,21 +247,49 @@ ordinal_weight_influence <- function(X, thresholds, rho, step = 1e-5) {
          rho = k[-seq_len(n_threshold)])
   }
   kappa_channel <- matrix(0, m, m)
-  quadratic <- function(k) {
+  # dGamma/dkappa_c, all of it when full, else its diagonal.
+  kappa_gamma <- if (full) array(0, c(m, m, m)) else NULL
+  gamma_at <- function(k) {
     u <- unpack(k)
-    colSums(ordinal_moment_influence(X, u$thresholds, u$rho)^2) / n
+    influence <- ordinal_moment_influence(X, u$thresholds, u$rho)
+    if (full) crossprod(influence) / n else colSums(influence^2) / n
   }
   for (cc in seq_len(m)) {
     h <- step * max(1, abs(kappa[cc]))
-    shift <- function(delta) quadratic(`[<-`(kappa, cc, kappa[cc] + delta))
+    shift <- function(delta) gamma_at(`[<-`(kappa, cc, kappa[cc] + delta))
     # Richardson extrapolation. The integrand is closed form and smooth, so the
     # O(h^4) estimate is essentially step-free, which matters because the step
     # is user-visible and results should not move with it.
     coarse <- (shift(h) - shift(-h)) / (2 * h)
     fine <- (shift(h / 2) - shift(-h / 2)) / h
-    kappa_channel[, cc] <- (4 * fine - coarse) / 3
+    value <- (4 * fine - coarse) / 3
+    if (full) {
+      kappa_gamma[, , cc] <- value
+      value <- diag(value)
+    }
+    kappa_channel[, cc] <- value
   }
 
   diagonal <- sweep(phi^2, 2L, diag(gamma), "-") + cross + phi %*% t(kappa_channel)
-  list(gamma = gamma, diagonal = diagonal, phi = phi)
+  out <- list(gamma = gamma, diagonal = diagonal, phi = phi)
+  if (!full) return(out)
+
+  out$derivative <- function(v) {
+    # Channel 1: phi_i (phi_i' v) - Gamma v.
+    result <- phi * drop(phi %*% v) -
+      matrix(drop(gamma %*% v), n, m, byrow = TRUE)
+    # Channel 2: sum over c of phi_ic dGamma/dkappa_c v.
+    moved <- vapply(seq_len(m), function(cc) drop(kappa_gamma[, , cc] %*% v),
+                    numeric(m))
+    result <- result + phi %*% t(moved)
+    # Channel 3: (B_i + t(B_i)) v, one correlation column at a time.
+    for (b in bread) {
+      row <- -(b$d_cu %*% b$g_u + b$d_cv %*% b$g_v) / b$a22 -
+        outer(b$d_a22, gamma[b$column, ]) / b$a22
+      result[, b$column] <- result[, b$column] + drop(row %*% v)
+      result <- result + row * v[b$column]
+    }
+    result
+  }
+  out
 }

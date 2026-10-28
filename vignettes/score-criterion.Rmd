@@ -338,9 +338,8 @@ score$diagnostics$nuisance_stationarity_norm
 
 For ordinal data, the first-stage influence of the thresholds and polychoric
 correlations is computed in closed form, using lavaan's score-product
-convention for the first-stage weight. The derivative of the estimated weight
-is also closed form for DWLS and ULS. Full WLS differentiates its weight
-numerically, which can be slow with many distinct response patterns.
+convention for the first-stage weight. So is the derivative of the estimated
+weight, for DWLS and full WLS alike.
 
 ## References
 
