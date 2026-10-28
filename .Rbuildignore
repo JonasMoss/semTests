@@ -13,3 +13,4 @@ README_cache
 \.Rhistory$
 ^\.claude$
 ^\.lintr$
+^tools$
