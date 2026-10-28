@@ -1,5 +1,38 @@
 # Efficient inference, score and Wald implementation plan
 
+## Status update, 2026-10-28
+
+B4 is settled: keep the unstructured saturated information in the released
+FIML path; see the result under B4 below. The public `weight` argument of
+`semtest()` keeps its name, and the two unsupported metric combinations
+(observed weight with expected-curvature profiling; different score
+covariances in the statistic and the reference) stay out.
+
+The magmaan runners were rerun against magmaan 0.2.2 (main c0dc6e29). Since
+the same-point nested restriction became semTests' default, the gate and the
+parity simulation pair semTests `"delta"` with magmaan `"exact"`, and semTests
+`"legacy"` with magmaan `"delta"`. Two magmaan-side changes break runners and
+are not fixed here: pairwise-missing ordinal inference fails because the R
+glue does not carry `pd_gamma = "overlap"` back into the C++ statistics
+(`robust_ordinal_ij` then rejects missing cells), and estimated-weight
+inference now refuses a caller-supplied `W` (the criterion runner's continuous
+WLS case).
+
+Full parity simulation (200 draws per cell, N = 500, 8 cells, simbox): the
+legacy pairing reproduces the 1.0.0 baseline exactly, 100% within tolerance,
+at the known optimizer-endpoint floor (1.56e-3 single, 7.4e-4 nested;
+multigroup ordinal 4.48e-3 and 2.17e-3). The same-point pairing gives the same
+numbers in every cell but FIML, where lavaan is fitted with `std.lv = TRUE`
+and magmaan with marker identification: worst 8.9e-3, 66.5% of draws within
+2e-3. With marker identification on both sides that gap falls to about 1e-6
+(5 draws checked). The pairwise ordinal cell has no valid draws because of
+the magmaan glue issue above.
+
+Open: the same-point restriction is not invariant to identification. On the
+same data, `std.lv = TRUE` and marker identification give nested p-values
+about 2e-3 apart at n = 300 under `A.method = "delta"` or `"exact"` (ML,
+MLR with means, DWLS and FIML alike), while `"legacy"` agrees to 1e-6.
+
 ## Status update, 2026-09-29
 
 The Wald test has been removed from the package: `wald_test()`,
@@ -565,6 +598,29 @@ result: if the gap is inside MCSE, pick structured on principle and say so.
 Note the stakes. If structured wins or ties, the path that needs changing is the
 released `fiml_h1_information_observed()` override, not the new inference code,
 and that is what the FIML manuscript reports.
+
+**Result, 2026-10-28: unstructured wins; the released override stays.**
+`tools/fiml-h1-information-simulation.R`, 2000 replications per data cell on
+simbox (lavaan 0.7.2). MAR missingness as in
+`tools/fiml-validation-simulation.R`; misspecification is an omitted .20
+cross-loading of y4 on f1. Both conventions are computed on every draw, with
+the same statistic, Gamma and Delta, so the comparison is paired. Switching
+only the saturated information to structured makes every test reject more
+often in every cell, by 4.8 to 18 paired Monte Carlo standard errors. Rejection
+at 5% under the correct model, SB, unstructured vs structured:
+
+| N | normal | t5 |
+|--:|:--|:--|
+| 100 | .101 vs .171 | .114 vs .256 |
+| 200 | .072 vs .097 | .112 vs .175 |
+| 400 | .060 vs .071 | .073 vs .105 |
+
+pEBA4 and PALL behave the same. Size-adjusted power (critical value from the
+matching correct-model cell) is equal within 1.5 points, so the extra
+rejections are size distortion, not power. The simulation does not test
+`semtest()`'s FIML score test, which is structured throughout (its score
+covariance also sits at the implied moments), so it does not show that
+`semtest()` should switch.
 
 ### B5. Open design question
 

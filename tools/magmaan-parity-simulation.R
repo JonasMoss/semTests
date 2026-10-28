@@ -14,6 +14,8 @@
 #     Rscript tools/magmaan-parity-simulation.R
 #
 # CELLS is a comma-separated filter of cell names (default "all").
+# Nested tests are compared under two pairings of restriction constructions;
+# see nested_both().
 
 if (!requireNamespace("magmaanlab", quietly = TRUE)) {
   stop("Install magmaanlab (magmaan's r-package/) before running this optional check.",
@@ -118,9 +120,27 @@ p_diff <- function(semtests, magmaan) {
   max(abs(semtests - magmaan))
 }
 
-na_pair <- c(single = NA_real_, nested = NA_real_)
+# The two libraries name the nested restriction constructions differently.
+# semTests "delta" (its default) takes both Jacobians at the H0 solution, the
+# exact parameter-nesting restriction that magmaan calls "exact"; semTests
+# "legacy" is the mixed-point lavaan delta method that magmaan calls "delta".
+# Compare both pairings; each is NA when either side errors.
+nested_both <- function(semtests_at, magmaan_at) {
+  pairing <- function(semtests_method, magmaan_method) {
+    tryCatch(
+      p_diff(semtests_at(semtests_method),
+             magmaan_at(magmaan_method)$p_value),
+      error = function(e) NA_real_
+    )
+  }
+  c(nested = pairing("delta", "exact"),
+    nested_legacy = pairing("legacy", "delta"))
+}
 
-# ---- cell runners: each returns c(single = <max diff>, nested = <max diff>) ---
+na_pair <- c(single = NA_real_, nested = NA_real_, nested_legacy = NA_real_)
+
+# ---- cell runners: each returns the max p-value difference for the single-
+# model tests and for the two nested pairings (see nested_both()) -----------
 
 run_continuous_ls <- function(seed, estimator, gamma) {
   out <- na_pair
@@ -164,15 +184,14 @@ run_continuous_ls <- function(seed, estimator, gamma) {
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaanlab::fmg_nested(
-      mag_h1, mag_h0, data = data, tests = nested_tests,
-      A.method = "delta", gamma = gamma, weight = weight
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, method = "2000", tests = nested_tests
+    out[c("nested", "nested_legacy")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, method = "2000", tests = nested_tests, A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested(
+        mag_h1, mag_h0, data = data, tests = nested_tests,
+        A.method = a, gamma = gamma, weight = weight
+      )
     )
   }, silent = TRUE)
   out
@@ -209,15 +228,13 @@ run_fiml <- function(seed) {
       semTests::pvalues(lav_h1, single_tests),
       mag_single$p_value
     )
-    mag_nested <- magmaanlab::fmg_nested(
-      mag_h1, mag_h0, tests = nested_tests, A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests,
-        A.method = "delta"
+    out[c("nested", "nested_legacy")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested(
+        mag_h1, mag_h0, tests = nested_tests, A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -267,16 +284,14 @@ run_categorical <- function(seed, pairwise,
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaanlab::fmg_nested_ordinal(
-      mag_h1, mag_h0, stats, tests = nested_tests, weight = magmaan_estimator,
-      A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests, method = "2000",
-        A.method = "delta"
+    out[c("nested", "nested_legacy")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested_ordinal(
+        mag_h1, mag_h0, stats, tests = nested_tests,
+        weight = magmaan_estimator, A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -324,16 +339,14 @@ run_multigroup_categorical <- function(seed) {
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaanlab::fmg_nested_ordinal(
-      mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
-      A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests, method = "2000",
-        A.method = "delta"
+    out[c("nested", "nested_legacy")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested_ordinal(
+        mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
+        A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -378,16 +391,14 @@ run_mixed_categorical <- function(seed) {
     out["single"] <- p_diff(
       semTests::pvalues(lav_h1, single_tests), mag_single$p_value
     )
-    mag_nested <- magmaanlab::fmg_nested_mixed_ordinal(
-      mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
-      A.method = "delta"
-    )
-    out["nested"] <- p_diff(
-      semTests::pvalues_nested(
-        lav_h0, lav_h1, tests = nested_tests, method = "2000",
-        A.method = "delta"
+    out[c("nested", "nested_legacy")] <- nested_both(
+      function(a) semTests::pvalues_nested(
+        lav_h0, lav_h1, tests = nested_tests, method = "2000", A.method = a
       ),
-      mag_nested$p_value
+      function(a) magmaanlab::fmg_nested_mixed_ordinal(
+        mag_h1, mag_h0, stats, tests = nested_tests, weight = "DWLS",
+        A.method = a
+      )
     )
   }, silent = TRUE)
   out
@@ -439,27 +450,32 @@ summary_rows <- lapply(cells, function(cell) {
     mc.cores = ncores, mc.preschedule = TRUE
   )
   mat <- do.call(rbind, draws)
-  worst <- apply(mat, 2L, max, na.rm = TRUE)
-  worst[!is.finite(worst)] <- NA_real_
-  pass <- vapply(c("single", "nested"), function(kind) {
+  kinds <- colnames(mat)
+  worst <- apply(mat, 2L, function(x) {
+    if (any(is.finite(x))) max(x, na.rm = TRUE) else NA_real_
+  })
+  pass <- vapply(kinds, function(kind) {
     mean(mat[, kind] < cell$tol, na.rm = TRUE)
   }, numeric(1))
+  valid <- colSums(is.finite(mat))
   row <- data.frame(
     cell = cell$name,
     tolerance = cell$tol,
-    valid_single = sum(is.finite(mat[, "single"])),
-    valid_nested = sum(is.finite(mat[, "nested"])),
+    valid_single = valid[["single"]],
+    valid_nested = valid[["nested"]],
+    valid_nested_legacy = valid[["nested_legacy"]],
     worst_single = worst[["single"]],
     worst_nested = worst[["nested"]],
+    worst_nested_legacy = worst[["nested_legacy"]],
     pass_rate_single = pass[["single"]],
     pass_rate_nested = pass[["nested"]],
+    pass_rate_nested_legacy = pass[["nested_legacy"]],
     stringsAsFactors = FALSE
   )
   cat(sprintf(
-    "%-30s worst single=%.2e nested=%.2e | pass s=%.0f%% n=%.0f%% | valid %d/%d\n",
-    cell$name, row$worst_single, row$worst_nested,
-    100 * row$pass_rate_single, 100 * row$pass_rate_nested,
-    row$valid_single, reps
+    "%-28s worst single=%.2e nested=%.2e legacy=%.2e | valid %d/%d/%d of %d\n",
+    cell$name, row$worst_single, row$worst_nested, row$worst_nested_legacy,
+    row$valid_single, row$valid_nested, row$valid_nested_legacy, reps
   ))
   row
 })
@@ -477,7 +493,8 @@ if (nzchar(sim_output)) {
 }
 
 worst_overall <- max(
-  c(summary_table$worst_single, summary_table$worst_nested), na.rm = TRUE
+  c(summary_table$worst_single, summary_table$worst_nested,
+    summary_table$worst_nested_legacy), na.rm = TRUE
 )
 cat(sprintf(
   "\nWorst parity difference across all cells: %.2e\n", worst_overall

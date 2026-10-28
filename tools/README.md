@@ -7,6 +7,7 @@ package root after installing the required local packages.
 
 ```sh
 Rscript tools/magmaan-validation.R
+NESTED_PAIRING=legacy Rscript tools/magmaan-validation.R
 ```
 
 This opt-in check loads the current semTests source tree and compares it with
@@ -19,8 +20,7 @@ in that repository is a user-facing layer and is not used here. It covers:
   `EBA`, `pEBA`, and several `pOLS` penalties) on identical fixed spectra;
 - classical complete-data ML, including biased and Du--Bentler unbiased gamma,
   ML and RLS base statistics, and the full shared test family;
-- classical nested method 2000 with the delta restriction map, biased and
-  Du--Bentler unbiased gamma, both ML and RLS base statistics, and a
+- classical nested method 2000, biased and Du--Bentler unbiased gamma, both ML and RLS base statistics, and a
   multigroup mean-structure check;
 - continuous GLS and ULS single-model and nested spectra, with lavaan's explicit
   `N-1` covariance scaling and the estimator-specific empirical/normal-theory
@@ -56,9 +56,17 @@ PARITY_OUTPUT=workspace/magmaan-parity.csv \
 
 Passing the script certifies only the combinations above. In particular:
 
-- complete-data nested parity requires `method = "2000"` and magmaan
-  `A.method = "delta"`; magmaan's `"exact"` default is a different restriction
-  construction;
+- complete-data nested parity requires `method = "2000"`;
+- the two libraries name the nested restriction constructions differently.
+  semTests `A.method = "delta"` (the default since 1.0.0.9000) takes both
+  Jacobians at the restricted solution, which magmaan calls `"exact"`;
+  semTests `"legacy"` is the mixed-point lavaan delta method, which magmaan
+  calls `"delta"`. `NESTED_PAIRING` (`"same-point"` by default, or `"legacy"`)
+  selects which pair the gate compares; the parity simulation reports both;
+- the same-point construction depends on how the factors are identified
+  (`std.lv = TRUE` versus marker loadings give p-values about 2e-3 apart at
+  n = 300 on the same data), while the legacy one does not. Same-point parity
+  therefore also requires both libraries to use the same identification;
 - magmaan does not yet expose the complete-data method-2001 difference
   spectrum;
 - semTests' FIML parity target is `fiml.convention = "observed"`, not its
@@ -92,7 +100,15 @@ CORE_REPS=500 STRESS_REPS=300 N=500 NCORES=8 \
 
 NREP=500 N=400 NCORES=8 \
   Rscript tools/fiml-validation-simulation.R
+
+REPS=2000 CHUNK=250 NCORES=4 OUT_DIR=workspace/fiml-h1-information \
+  Rscript tools/fiml-h1-information-simulation.R
 ```
+
+The last one settles plan item B4: it computes the released FIML
+goodness-of-fit tests with structured and with unstructured saturated
+information on the same draws, and writes one file per finished chunk so an
+interrupted run resumes.
 
 These scripts estimate rejection rates at 1%, 5%, and 10% under seeded null
 scenarios. They write CSV results under `workspace/` and report the number of
